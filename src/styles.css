@@ -362,3 +362,18 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: #cf
 .kv-note { padding: 10px 0 2px; color: var(--muted); }
 .sub-head { display: flex; align-items: center; gap: 4px; }
 .sub-head .icon-btn { font-size: 24px; }
+
+.app.fading .page[aria-hidden="false"] { animation: pagefade 260ms ease-out; }
+@keyframes pagefade { from { opacity: 0; } to { opacity: 1; } }
+.acct-period { display: flex; gap: 8px; margin: 10px 0 0; }
+.acct-period .pill-btn { flex: 1 1 0; min-width: 0; }
+.period-switch { flex: 3 1 0; display: flex; align-items: stretch; border: 1px solid var(--line); background: var(--card); border-radius: 12px; overflow: hidden; }
+.period-switch button { border: 0; background: none; font-size: 15px; font-weight: 600; padding: 10px 0; }
+.period-switch .arrow { flex: 0 0 15%; font-size: 18px; }
+.period-switch .arrow:disabled { opacity: .3; }
+.period-switch .label { flex: 1; }
+.pct { font-weight: 700; color: var(--text); }
+.amt-light { color: #a3a9b4; font-weight: 400; }
+.today-note { font-size: 12px; color: var(--muted); margin-left: 8px; font-weight: 400; }
+.chart-legend { display: flex; gap: 14px; font-size: 12px; margin-top: 4px; }
+.chart-legend i { display: inline-block; width: 12px; height: 3px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }

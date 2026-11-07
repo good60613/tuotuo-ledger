@@ -122,7 +122,7 @@ export function SettingsPage() {
       );
       if (!ok) return;
       await saveData(next);
-      setState({ data: next, detail: { accountId: null, categoryId: null, day: null }, statsAccountId: null });
+      setState({ data: next, detail: { accountId: null, categoryId: null, day: null, period: null }, statsAccountId: null, statsPeriod: null });
       showToast('已從備份還原');
     } catch (e) {
       showToast(e instanceof Error ? e.message : '匯入失敗');

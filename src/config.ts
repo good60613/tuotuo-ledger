@@ -41,6 +41,11 @@ export const PAGER = {
   animMs: 260,
 } as const;
 
+/** 跳頁的淡入淡出（統計頁點分類或日期 → 明細頁） */
+export const TRANSITION = {
+  fadeMs: 260,
+} as const;
+
 /** 備註記憶模式 */
 export const NOTES = {
   /** 輸入頁備註格數（「更多…」另外算） */

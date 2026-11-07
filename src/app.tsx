@@ -35,13 +35,13 @@ export function App() {
   const pages = [<ReimbursePage />, <StatsPage />, <HomePage />, <DetailPage />, <SettingsPage />];
 
   return (
-    <div class="app">
+    <div class={`app${s.fade ? ' fading' : ''}`}>
       <div class="pager" ref={pagerRef}>
         <div
           class="track"
           style={{
             transform: `translateX(calc(${-s.page * 100}% + ${offset ?? 0}px))`,
-            transition: offset === null ? `transform ${PAGER.animMs}ms ease-out` : 'none',
+            transition: s.fade ? 'none' : offset === null ? `transform ${PAGER.animMs}ms ease-out` : 'none',
           }}
         >
           {pages.map((p, i) => (

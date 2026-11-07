@@ -3,7 +3,7 @@ import { useEffect, useState } from 'preact/hooks';
 import type { AppData } from './data/types';
 import { loadData, saveData, requestPersistence } from './data/storage';
 import { sampleData } from './data/seed';
-import { TOAST_MS } from './config';
+import { TOAST_MS, TRANSITION } from './config';
 
 export const PAGES = ['報帳', '統計', '首頁', '明細', '設定'] as const;
 export const HOME_PAGE = 2;
@@ -25,6 +25,8 @@ export interface DetailFilter {
   accountId: string | null; // null = 全部
   categoryId: string | null;
   day: string | null; // YYYY-MM-DD
+  /** 結算期 'YYYY-MM'；null＝目前這一期（到結算日會自動換下一期） */
+  period?: string | null;
 }
 
 export interface Toast {
@@ -53,6 +55,10 @@ export interface State {
   overlays: Overlay[];
   detail: DetailFilter;
   statsAccountId: string | null;
+  /** 統計頁看的結算期；null＝目前這一期 */
+  statsPeriod: string | null;
+  /** 跳頁時用淡入淡出（不滑動） */
+  fade: boolean;
   toast: Toast | null;
   /** 拖曳中：鎖住換頁 */
   dragging: boolean;
@@ -66,6 +72,8 @@ let state: State = {
   overlays: [],
   detail: { accountId: null, categoryId: null, day: null },
   statsAccountId: null,
+  statsPeriod: null,
+  fade: false,
   toast: null,
   dragging: false,
 };
@@ -153,8 +161,11 @@ if (typeof window !== 'undefined') {
     if (state.overlays.length > depth) setState((s) => ({ overlays: s.overlays.slice(0, depth) }));
   });
 }
-export function goPage(page: number) {
-  setState({ page: Math.max(0, Math.min(PAGES.length - 1, page)) });
+export function goPage(page: number, fade = false) {
+  const p = Math.max(0, Math.min(PAGES.length - 1, page));
+  if (!fade) return setState({ page: p });
+  setState({ page: p, fade: true });
+  setTimeout(() => setState({ fade: false }), TRANSITION.fadeMs);
 }
 
 export async function initStore() {

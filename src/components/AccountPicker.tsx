@@ -9,6 +9,8 @@ interface Props {
   value: string | null;
   /** 顯示「全部」選項（明細、統計篩選用） */
   allowAll?: boolean;
+  /** 只列一般帳戶（明細、統計的篩選用；小帳戶看各自的子畫面） */
+  mainOnly?: boolean;
   /** 不列出的帳戶（例如刪除帳戶時，不能選自己） */
   exclude?: string;
   /** 額外的「不設定」選項 */
@@ -63,7 +65,7 @@ export function AccountPicker(p: Props) {
       )}
       <div class="pick-group">一般帳戶</div>
       {bankAccounts(d).map((a) => row(a.id, a.name, KIND_ICON.bank))}
-      {balls(d).map((b) =>
+      {!p.mainOnly && balls(d).map((b) =>
         b.accounts.length === 0 ? null : (
           <div key={b.kind}>
             <div class="pick-group">{b.label}</div>
