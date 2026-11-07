@@ -1,10 +1,11 @@
 // 記帳頁（支出／收入）與轉帳輸入，共用同一個畫面。
 import { useRef, useState } from 'preact/hooks';
 import { getState, updateData, closeOverlay, showToast, confirmDanger, type Overlay } from '../store';
-import { addTransaction, updateTransaction, deleteTransaction, isLocked, byOrder, OpError, type TxInput } from '../data/ops';
+import { addTransaction, updateTransaction, deleteTransaction, isLocked, OpError, type TxInput } from '../data/ops';
 import { roundAmount } from '../data/calc';
 import { pressKey, evaluate, hasOperator, displayExpr, numberToExpr, type CalcKey } from '../calcExpr';
-import { accountName, categoriesOf, categoryOf } from '../selectors';
+import { accountName, categoryOf } from '../selectors';
+import { sortedCategories, suggestedNotes } from '../data/notes';
 import { Calculator } from '../components/Calculator';
 import { AccountPicker } from '../components/AccountPicker';
 import { CategoryForm, TagManager } from '../components/Editors';
@@ -32,7 +33,8 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
   const saving = useRef(false);
 
   const isTransfer = mode === 'transfer';
-  const cats = isTransfer ? [] : categoriesOf(d, mode);
+  // 分類格：自動排序關閉時完全照設定裡的順序；開啟時依最近 90 天使用次數
+  const cats = isTransfer ? [] : sortedCategories(d, mode);
   const cat = categoryOf(d, catId ?? undefined);
   const value = evaluate(expr);
   const amount = value === null ? 0 : roundAmount(value);
@@ -113,7 +115,8 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
     showToast('已刪除');
   };
 
-  const tags = [...d.noteTags].sort(byOrder);
+  // 備註 5 格：釘選在前，其餘用最近使用的補滿；選了分類就看該分類
+  const tags = suggestedNotes(d, isTransfer ? null : catId);
 
   return (
     <div class="entry">
@@ -183,7 +186,7 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
 
       <div class="tags" data-no-swipe>
         {tags.map((t) => (
-          <button key={t.id} class={`tag${note === t.text ? ' on' : ''}`} onClick={() => setNote(t.text)}>{t.text}</button>
+          <button key={t} class={`tag${note === t ? ' on' : ''}`} onClick={() => setNote(t)}>{t}</button>
         ))}
         <button class="tag more" onClick={() => setSheet('tags')}>更多…</button>
       </div>

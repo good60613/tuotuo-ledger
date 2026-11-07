@@ -15,9 +15,14 @@ import { Sheet } from '../components/Sheet';
 import { AccountPicker } from '../components/AccountPicker';
 import { CategoryForm, TagManager } from '../components/Editors';
 import { money } from '../format';
+import { pinnedCount } from '../data/notes';
+import { SETTLE } from '../config';
 
 /** 可以有多個帳戶的小帳戶類型（其他類型固定一個） */
-const MULTI_KINDS: AccountKind[] = ['ewallet', 'other'];
+const MULTI_KINDS: AccountKind[] = ['ewallet', 'invest', 'saving', 'other'];
+
+/** 設定目錄的項目（首頁只列項目，點了才進入子頁） */
+type View = 'menu' | 'accounts' | 'small' | 'categories' | 'backup' | 'demo';
 
 type SheetState =
   | null
@@ -25,6 +30,7 @@ type SheetState =
   | { k: 'category'; type: CategoryType; existing?: Category }
   | { k: 'tags' }
   | { k: 'defaultReimb' }
+  | { k: 'settle' }
   | { k: 'moveAccount'; from: Account }
   | { k: 'moveCategory'; from: Category };
 
@@ -33,6 +39,7 @@ export function SettingsPage() {
   const d = s.data;
   const bal = allBalances(d);
   const [sheet, setSheet] = useState<SheetState>(null);
+  const [view, setView] = useState<View>('menu');
   const [catType, setCatType] = useState<CategoryType>('expense');
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -157,34 +164,65 @@ export function SettingsPage() {
 
   return (
     <div class="page-pad settings">
-      <h1 class="page-title">設定</h1>
+      {view === 'menu' ? (
+        <>
+          <h1 class="page-title">設定</h1>
+          <section class="panel">
+            <button class="setting-row" onClick={() => setView('accounts')}><span>帳戶管理</span><span class="muted">{banks.length} 個 ›</span></button>
+            <button class="setting-row" onClick={() => setView('small')}><span>小帳戶管理</span><span class="muted">電子錢包、投資標的、儲蓄目標 ›</span></button>
+            <button class="setting-row" onClick={() => setView('categories')}>
+              <span>分類管理</span>
+              <span class="muted">{d.settings.autoSortCategories ? '自動排序' : '手動排序'} ›</span>
+            </button>
+            <button class="setting-row" onClick={() => setSheet({ k: 'tags' })}>
+              <span>備註標籤</span>
+              <span class="muted">自動篩選，已釘選 {pinnedCount(d)} 個 ›</span>
+            </button>
+            <button class="setting-row" onClick={() => setSheet({ k: 'defaultReimb' })}>
+              <span>預設報帳帳戶</span>
+              <span class="muted">{d.settings.defaultReimburseAccountId ? accountName(d, d.settings.defaultReimburseAccountId) : '不設定'} ›</span>
+            </button>
+            <button class="setting-row" onClick={() => setSheet({ k: 'settle' })}>
+              <span>結算日</span>
+              <span class="muted">每月 {d.settings.settleDay} 號 ›</span>
+            </button>
+            <button class="setting-row" onClick={() => setView('backup')}><span>資料備份</span><span class="muted">›</span></button>
+            <button class="setting-row" onClick={() => setView('demo')}><span>試玩資料</span><span class="muted">›</span></button>
+          </section>
+        </>
+      ) : (
+        <div class="sub-head">
+          <button class="icon-btn" onClick={() => setView('menu')} aria-label="返回設定">‹</button>
+          <h1 class="page-title">{{ accounts: '帳戶管理', small: '小帳戶管理', categories: '分類管理', backup: '資料備份', demo: '試玩資料' }[view]}</h1>
+        </div>
+      )}
 
-      <section class="panel">
-        <h3>帳戶管理（首頁卡片）</h3>
+      {view === 'accounts' && <section class="panel">
+        <h3>首頁卡片</h3>
         {banks.map((a, i) => accRow(a, banks, i, true))}
         <button class="add-row" onClick={() => setSheet({ k: 'account', kind: 'bank' })}>＋ 新增帳戶</button>
-      </section>
+      </section>}
 
-      <section class="panel">
-        <h3>小帳戶管理（五顆球）</h3>
+      {view === 'small' && <section class="panel">
+        <h3>五顆球</h3>
         {SMALL_KINDS.map((kind) => {
           const list = accountsOfKind(d, kind);
           const multi = MULTI_KINDS.includes(kind);
           return (
             <div key={kind} class="kind-group">
               <div class="kind-title">{KIND_ICON[kind]} {KIND_LABEL[kind]}{multi && <span class="muted small">（可以有多個）</span>}</div>
-              {list.map((a, i) => accRow(a, list, i, multi || list.length > 1))}
+              {list.map((a, i) => accRow(a, list, i, (multi || list.length > 1) && !(a.kind === 'invest' && a.subtype !== 'holding')))}
               {(multi || list.length === 0) && (
                 <button class="add-row" onClick={() => setSheet({ k: 'account', kind })}>＋ 新增{KIND_LABEL[kind]}</button>
               )}
             </div>
           );
         })}
-      </section>
+      </section>}
 
-      <section class="panel">
+      {view === 'categories' && <section class="panel">
         <div class="panel-head">
-          <h3>分類管理</h3>
+          <h3>分類</h3>
           <div class="mini-seg">
             <button class={catType === 'expense' ? 'on' : ''} onClick={() => setCatType('expense')}>支出</button>
             <button class={catType === 'income' ? 'on' : ''} onClick={() => setCatType('income')}>收入</button>
@@ -201,23 +239,21 @@ export function SettingsPage() {
           </div>
         ))}
         <button class="add-row" onClick={() => setSheet({ k: 'category', type: catType })}>＋ 新增{catType === 'expense' ? '支出' : '收入'}分類</button>
-      </section>
+        <label class="setting-row">
+          <span>自動排序<span class="muted small"> 常用的排前面（最近 90 天）</span></span>
+          <input
+            type="checkbox"
+            checked={d.settings.autoSortCategories}
+            onChange={(e) => {
+              const on = e.currentTarget.checked;
+              updateData((x) => ({ ...x, settings: { ...x.settings, autoSortCategories: on } }));
+            }}
+          />
+        </label>
+      </section>}
 
-      <section class="panel">
-        <button class="setting-row" onClick={() => setSheet({ k: 'tags' })}>
-          <span>常用備註標籤</span>
-          <span class="muted">{d.noteTags.length} 個 ›</span>
-        </button>
-        <button class="setting-row" onClick={() => setSheet({ k: 'defaultReimb' })}>
-          <span>預設報帳帳戶</span>
-          <span class="muted">
-            {d.settings.defaultReimburseAccountId ? accountName(d, d.settings.defaultReimburseAccountId) : '不設定'} ›
-          </span>
-        </button>
-      </section>
-
-      <section class="panel">
-        <h3>資料備份</h3>
+      {view === 'backup' && <section class="panel">
+        <h3>匯出與匯入</h3>
         <p class="muted small">資料只存在這支手機上。換手機或清除瀏覽器資料前，請先匯出備份。</p>
         <div class="btn-row">
           <button class="btn" onClick={doExport}>匯出備份</button>
@@ -234,18 +270,19 @@ export function SettingsPage() {
             if (f) doImport(f);
           }}
         />
-      </section>
+      </section>}
 
-      <section class="panel">
-        <h3>試玩資料</h3>
+      {view === 'demo' && <section class="panel">
+        <h3>清空或換範例</h3>
         <div class="btn-row">
           <button class="btn danger" onClick={() => resetTo('blank')}>清空所有資料</button>
           <button class="btn secondary" onClick={() => resetTo('sample')}>載入範例資料</button>
         </div>
-      </section>
+      </section>}
 
       {sheet?.k === 'account' && <AccountForm kind={sheet.kind} existing={sheet.existing} onClose={() => setSheet(null)} />}
       {sheet?.k === 'category' && <CategoryForm type={sheet.type} existing={sheet.existing} onClose={() => setSheet(null)} />}
+      {sheet?.k === 'settle' && <SettleForm onClose={() => setSheet(null)} />}
       {sheet?.k === 'tags' && <TagManager onClose={() => setSheet(null)} />}
       {sheet?.k === 'defaultReimb' && (
         <AccountPicker
@@ -309,6 +346,7 @@ function AccountForm({ kind, existing, onClose }: { kind: AccountKind; existing?
   const d = useAppState().data;
   const [name, setName] = useState(existing?.name ?? (kind === 'bank' ? '' : KIND_LABEL[kind]));
   const [init, setInit] = useState(existing ? String(existing.initialBalance) : '0');
+  const [target, setTarget] = useState(existing?.target ? String(existing.target) : '');
   const parsed = Number(init.replace(/,/g, ''));
   const ok = name.trim() !== '' && init.trim() !== '' && Number.isFinite(parsed);
   const save = () => {
@@ -321,7 +359,9 @@ function AccountForm({ kind, existing, onClose }: { kind: AccountKind; existing?
           kind,
           initialBalance: Math.round(parsed),
           order: d.accounts.filter((a) => a.kind === kind).sort(byOrder).length,
+          ...(kind === 'invest' ? { subtype: 'holding' } : {}),
         };
+    if (kind === 'saving') acc.target = Math.round(Number(target.replace(/,/g, ''))) || 0;
     updateData((x) => upsertAccount(x, acc));
     showToast(existing ? '已更新帳戶' : '已新增帳戶');
     onClose();
@@ -336,7 +376,43 @@ function AccountForm({ kind, existing, onClose }: { kind: AccountKind; existing?
         <span>初始餘額（元，可以是負數）</span>
         <input value={init} inputMode="numeric" onInput={(e) => setInit(e.currentTarget.value)} />
       </label>
+      {kind === 'saving' && (
+        <label class="field">
+          <span>目標金額（元）</span>
+          <input value={target} inputMode="numeric" onInput={(e) => setTarget(e.currentTarget.value)} />
+        </label>
+      )}
       <button class="btn block" disabled={!ok} onClick={save}>儲存</button>
+    </Sheet>
+  );
+}
+
+function SettleForm({ onClose }: { onClose: () => void }) {
+  const cur = useAppState().data.settings.settleDay;
+  const [v, setV] = useState(String(cur));
+  const n = Number(v);
+  const ok = Number.isInteger(n) && n >= SETTLE.minDay && n <= SETTLE.maxDay;
+  return (
+    <Sheet title="結算日" onClose={onClose}>
+      <p class="muted small">
+        每月幾號開始新的一期。例如 5 號：「十月」＝10/5～11/4。明細、統計只看當期，帳戶餘額照常累積。
+        該月沒有這一天時（例如 31 號遇到 2 月），改從月底開始。
+      </p>
+      <label class="field">
+        <span>每月幾號（{SETTLE.minDay}～{SETTLE.maxDay}）</span>
+        <input value={v} inputMode="numeric" onInput={(e) => setV(e.currentTarget.value)} />
+      </label>
+      <button
+        class="btn block"
+        disabled={!ok}
+        onClick={() => {
+          updateData((x) => ({ ...x, settings: { ...x.settings, settleDay: n } }));
+          showToast('已更新結算日');
+          onClose();
+        }}
+      >
+        儲存
+      </button>
     </Sheet>
   );
 }

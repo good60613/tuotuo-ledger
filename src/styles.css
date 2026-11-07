@@ -360,3 +360,5 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: #cf
 .kv { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
 .kv > span:first-child { color: var(--muted); }
 .kv-note { padding: 10px 0 2px; color: var(--muted); }
+.sub-head { display: flex; align-items: center; gap: 4px; }
+.sub-head .icon-btn { font-size: 24px; }

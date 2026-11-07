@@ -1,7 +1,8 @@
 import { useState } from 'preact/hooks';
 import { Sheet } from './Sheet';
 import { useAppState, updateData } from '../store';
-import { byOrder, reorder, uid, upsertCategory } from '../data/ops';
+import { uid, upsertCategory } from '../data/ops';
+import { allNotes, hideNote, togglePin } from '../data/notes';
 import type { Category, CategoryType } from '../data/types';
 
 /** 新增或改名分類 */
@@ -42,44 +43,31 @@ export function CategoryForm({
   );
 }
 
-/** 常用備註標籤：新增、刪除、排序 */
+/**
+ * 備註標籤（記憶模式）：列出所有用過的備註，可以加星星釘選、刪除。
+ * 釘選的備註所有分類都看得到，排在輸入頁 5 格最前面。
+ */
 export function TagManager({ onClose }: { onClose: () => void }) {
   const d = useAppState().data;
-  const tags = [...d.noteTags].sort(byOrder);
-  const [text, setText] = useState('');
-  const move = (i: number, dir: -1 | 1) => {
-    const ids = tags.map((t) => t.id);
-    const j = i + dir;
-    if (j < 0 || j >= ids.length) return;
-    [ids[i], ids[j]] = [ids[j], ids[i]];
-    updateData((x) => ({ ...x, noteTags: reorder(x.noteTags, ids) }));
-  };
-  const add = () => {
-    const t = text.trim();
-    if (!t) return;
-    updateData((x) => ({ ...x, noteTags: [...x.noteTags, { id: uid('n'), text: t, order: x.noteTags.length, pinned: false }] }));
-    setText('');
-  };
+  const notes = allNotes(d);
   return (
-    <Sheet title="常用備註標籤" onClose={onClose}>
-      {tags.map((t, i) => (
-        <div class="list-row" key={t.id}>
-          <span class="grow">{t.text}</span>
-          <button class="icon-btn" onClick={() => move(i, -1)} disabled={i === 0} aria-label="上移">↑</button>
-          <button class="icon-btn" onClick={() => move(i, 1)} disabled={i === tags.length - 1} aria-label="下移">↓</button>
+    <Sheet title="備註標籤" onClose={onClose}>
+      <p class="muted small">輸入頁會自動顯示最近用過的備註。加星星＝釘選，所有分類都會顯示在最前面。</p>
+      {notes.length === 0 && <div class="empty-list small">還沒有用過的備註</div>}
+      {notes.map((n) => (
+        <div class="list-row" key={n.text}>
+          <span class="grow">{n.text}</span>
           <button
-            class="icon-btn danger"
-            onClick={() => updateData((x) => ({ ...x, noteTags: x.noteTags.filter((n) => n.id !== t.id) }))}
-            aria-label="刪除"
+            class="icon-btn"
+            style={{ color: n.pinned ? '#f5a623' : undefined }}
+            onClick={() => updateData((x) => togglePin(x, n.text))}
+            aria-label={n.pinned ? '取消釘選' : '釘選'}
           >
-            🗑
+            {n.pinned ? '★' : '☆'}
           </button>
+          <button class="icon-btn danger" onClick={() => updateData((x) => hideNote(x, n.text))} aria-label="刪除">🗑</button>
         </div>
       ))}
-      <div class="inline-add">
-        <input value={text} maxLength={12} onInput={(e) => setText(e.currentTarget.value)} placeholder="新增標籤" />
-        <button class="btn" disabled={!text.trim()} onClick={add}>新增</button>
-      </div>
     </Sheet>
   );
 }
