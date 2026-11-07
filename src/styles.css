@@ -355,3 +355,8 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: #cf
   .amt-mid { font-size: 18px; }
   .calc { grid-auto-rows: 46px; }
 }
+.detail-head { display: flex; align-items: center; gap: 10px; padding: 6px 0 10px; }
+.detail-name { font-size: 18px; font-weight: 700; }
+.kv { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.kv > span:first-child { color: var(--muted); }
+.kv-note { padding: 10px 0 2px; color: var(--muted); }

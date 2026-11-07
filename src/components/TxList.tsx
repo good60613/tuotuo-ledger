@@ -3,6 +3,9 @@ import type { AppData, Transaction } from '../data/types';
 import { countsInStats, dayKey } from '../data/calc';
 import { accountName, categoryOf, KIND_ICON } from '../selectors';
 import { money, mdLabel, weekday, hm } from '../format';
+import { GESTURE } from '../config';
+import { vibrate } from '../gestures/haptics';
+import { blockClicks } from '../gestures/guard';
 
 interface Props {
   data: AppData;
@@ -11,9 +14,46 @@ interface Props {
   /** 多選模式 */
   selected?: Set<string>;
   empty?: string;
+  /** 長按一筆（報帳頁用來進入多選） */
+  onLongPress?: (t: Transaction) => void;
 }
 
-export function TxList({ data, txs, onTap, selected, empty }: Props) {
+/** 長按判斷：時間與移動門檻沿用 config.ts 的手勢設定 */
+// 狀態放在外面：長按觸發後畫面會重畫，放在函式裡會被重設（同時只會有一根手指在按）
+let lpTimer: ReturnType<typeof setTimeout> | undefined;
+let lpX0 = 0, lpY0 = 0;
+let lpFired = false;
+
+function longPressHandlers(t: Transaction, cb?: (t: Transaction) => void) {
+  if (!cb) return {};
+  const cancel = () => clearTimeout(lpTimer);
+  return {
+    onPointerDown: (e: PointerEvent) => {
+      lpX0 = e.clientX;
+      lpY0 = e.clientY;
+      lpFired = false;
+      cancel();
+      lpTimer = setTimeout(() => {
+        lpFired = true;
+        vibrate(GESTURE.liftVibrateMs);
+        cb(t);
+      }, GESTURE.longPressMs);
+    },
+    onPointerMove: (e: PointerEvent) => {
+      if (Math.hypot(e.clientX - lpX0, e.clientY - lpY0) > GESTURE.moveTolerancePx) cancel();
+    },
+    onPointerUp: () => {
+      cancel();
+      // 長按後放開手指的那一下，不要再算成點擊
+      if (lpFired) blockClicks(GESTURE.afterDropCooldownMs);
+      lpFired = false;
+    },
+    onPointerCancel: cancel,
+    onPointerLeave: cancel,
+  };
+}
+
+export function TxList({ data, txs, onTap, selected, empty, onLongPress }: Props) {
   const sorted = [...txs].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
   if (sorted.length === 0) return <div class="empty-list">{empty ?? '沒有紀錄'}</div>;
 
@@ -55,7 +95,7 @@ export function TxList({ data, txs, onTap, selected, empty }: Props) {
                     {mark && <span class="tl-hour">{String(h).padStart(2, '0')}:00</span>}
                     <span class="tl-dot" />
                   </div>
-                  <TxCard data={data} t={t} onTap={onTap} selected={selected?.has(t.id)} selectable={!!selected} />
+                  <TxCard data={data} t={t} onTap={onTap} selected={selected?.has(t.id)} selectable={!!selected} onLongPress={onLongPress} />
                 </div>
               );
             })}
@@ -66,7 +106,7 @@ export function TxList({ data, txs, onTap, selected, empty }: Props) {
   );
 }
 
-function TxCard({ data, t, onTap, selected, selectable }: { data: AppData; t: Transaction; onTap: (t: Transaction) => void; selected?: boolean; selectable: boolean }) {
+function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { data: AppData; t: Transaction; onTap: (t: Transaction) => void; selected?: boolean; selectable: boolean; onLongPress?: (t: Transaction) => void }) {
   const d = new Date(t.occurredAt);
   const acc = data.accounts.find((a) => a.id === (t.type === 'reimburse_in' ? t.toAccountId : t.accountId));
   let icon = '？', title = '', amt = '', cls = '';
@@ -88,7 +128,7 @@ function TxCard({ data, t, onTap, selected, selectable }: { data: AppData; t: Tr
     cls = t.type;
   }
   return (
-    <button class={`tx-card${selected ? ' selected' : ''}`} onClick={() => onTap(t)}>
+    <button class={`tx-card${selected ? ' selected' : ''}`} onClick={() => onTap(t)} {...longPressHandlers(t, onLongPress)}>
       {selectable && <span class={`check${selected ? ' on' : ''}`}>{selected ? '✓' : ''}</span>}
       <span class={`tx-icon ${cls}`}>{icon}</span>
       <span class="tx-mid">

@@ -3,12 +3,12 @@ import { useState } from 'preact/hooks';
 import { useAppState, getState, updateData, showToast } from '../store';
 import { markReimbursed, defaultReimburseAccount, OpError } from '../data/ops';
 import type { Transaction } from '../data/types';
-import { accountName } from '../selectors';
+import { accountName, categoryOf } from '../selectors';
 import { TxList } from '../components/TxList';
 import { Sheet } from '../components/Sheet';
 import { AccountPicker } from '../components/AccountPicker';
-import { askRevertBatch } from '../actions';
-import { money } from '../format';
+import { askRevertBatch, openTx } from '../actions';
+import { money, hm } from '../format';
 
 export function ReimbursePage() {
   const s = useAppState();
@@ -16,7 +16,10 @@ export function ReimbursePage() {
   const [tab, setTab] = useState<'pending' | 'done'>('pending');
   const [multi, setMulti] = useState(false);
   const [sel, setSel] = useState<string[]>([]);
-  const [confirming, setConfirming] = useState(false);
+  /** 要報帳確認的紀錄（null＝沒開確認視窗） */
+  const [confirmIds, setConfirmIds] = useState<string[] | null>(null);
+  /** 點一筆時跳出的詳細卡片 */
+  const [detail, setDetail] = useState<Transaction | null>(null);
 
   const pending = d.transactions.filter((t) => t.reimbursable && t.reimburseStatus === 'pending');
   const done = d.transactions.filter((t) => t.reimbursable && t.reimburseStatus === 'done');
@@ -28,8 +31,9 @@ export function ReimbursePage() {
 
   const onTapPending = (t: Transaction) => {
     if (multi) setSel((x) => (x.includes(t.id) ? x.filter((i) => i !== t.id) : [...x, t.id]));
-    else setSel((x) => (x.length === 1 && x[0] === t.id ? [] : [t.id]));
+    else setDetail(t);
   };
+  const sumOf = (ids: string[]) => d.transactions.filter((t) => ids.includes(t.id)).reduce((a, t) => a + t.amount, 0);
 
   const switchTab = (t: 'pending' | 'done') => {
     setTab(t);
@@ -53,7 +57,7 @@ export function ReimbursePage() {
       {tab === 'pending' ? (
         <>
           <div class="reimb-tools">
-            <span class="muted">{multi ? '點選要報帳的紀錄（可多筆）' : '點一筆選取，或進入多選'}</span>
+            <span class="muted">{multi ? '點選要報帳的紀錄（可多筆）' : '點一筆看詳細；長按可多選'}</span>
             <button
               class={`pill-btn small${multi ? ' on' : ''}`}
               onClick={() => {
@@ -64,37 +68,102 @@ export function ReimbursePage() {
               {multi ? '結束多選' : '多選'}
             </button>
           </div>
-          <TxList data={d} txs={pending} onTap={onTapPending} selected={new Set(selected)} empty="沒有待報帳的紀錄 🎉" />
+          <TxList
+            data={d}
+            txs={pending}
+            onTap={onTapPending}
+            selected={multi ? new Set(selected) : undefined}
+            empty="沒有待報帳的紀錄 🎉"
+            onLongPress={(t) => {
+              // 長按＝進入多選，並勾起這一筆
+              setMulti(true);
+              setSel((x) => (multi ? (x.includes(t.id) ? x : [...x, t.id]) : [t.id]));
+            }}
+          />
         </>
       ) : (
         <>
           <div class="reimb-tools"><span class="muted">按錯了？點一筆可整批退回待報帳</span></div>
-          <TxList data={d} txs={done} onTap={(t) => t.reimburseBatchId && askRevertBatch(t.reimburseBatchId)} empty="還沒有已報帳的紀錄" />
+          <TxList data={d} txs={done} onTap={setDetail} empty="還沒有已報帳的紀錄" />
         </>
       )}
 
-      {tab === 'pending' && selected.length > 0 && (
+      {tab === 'pending' && multi && selected.length > 0 && (
         <div class="action-bar">
           <span>
             已選 {selected.length} 筆 <b class="reimb-color">{money(selTotal)}</b>
           </span>
-          <button class="btn reimb-btn" onClick={() => setConfirming(true)}>已報帳</button>
+          <button class="btn reimb-btn" onClick={() => setConfirmIds(selected)}>已報帳</button>
         </div>
       )}
 
-      {confirming && (
+      {detail && (
+        <TxDetail
+          t={d.transactions.find((x) => x.id === detail.id) ?? detail}
+          onClose={() => setDetail(null)}
+          onReimburse={() => {
+            setConfirmIds([detail.id]);
+            setDetail(null);
+          }}
+          onRevert={() => {
+            const b = detail.reimburseBatchId;
+            setDetail(null);
+            if (b) askRevertBatch(b);
+          }}
+        />
+      )}
+
+      {confirmIds && (
         <ReimburseConfirm
-          ids={selected}
-          total={selTotal}
-          onClose={() => setConfirming(false)}
+          ids={confirmIds}
+          total={sumOf(confirmIds)}
+          onClose={() => setConfirmIds(null)}
           onDone={() => {
-            setConfirming(false);
+            setConfirmIds(null);
             setSel([]);
             setMulti(false);
           }}
         />
       )}
     </div>
+  );
+}
+
+/** 點一筆時跳出的詳細卡片（參考 PK 舊 App 的做法） */
+function TxDetail({ t, onClose, onReimburse, onRevert }: { t: Transaction; onClose: () => void; onReimburse: () => void; onRevert: () => void }) {
+  const d = useAppState().data;
+  const c = categoryOf(d, t.categoryId);
+  const when = new Date(t.occurredAt);
+  const isDone = t.reimburseStatus === 'done';
+  return (
+    <Sheet title="報帳紀錄" onClose={onClose}>
+      <div class="detail-head">
+        <span class="tx-icon">{c?.icon ?? '？'}</span>
+        <span class="grow detail-name">{c?.name ?? '（已刪除分類）'}</span>
+        <span class="amt-mid expense">-{money(t.amount)}</span>
+      </div>
+      <div class="kv"><span>日期</span><span>{when.getFullYear()}/{when.getMonth() + 1}/{when.getDate()}</span></div>
+      <div class="kv"><span>時間</span><span>{hm(when)}</span></div>
+      <div class="kv"><span>扣款帳戶</span><span>{accountName(d, t.accountId)}</span></div>
+      <div class="kv"><span>狀態</span><span class="reimb-color">{isDone ? '已報帳' : '待報帳'}</span></div>
+      {t.note && <div class="kv-note">{t.note}</div>}
+      <div class="dialog-btns">
+        <button
+          class="btn secondary"
+          onClick={() => {
+            onClose();
+            openTx(t);
+          }}
+        >
+          ✏️ 編輯
+        </button>
+        {isDone ? (
+          <button class="btn danger" onClick={onRevert}>退回待報帳</button>
+        ) : (
+          <button class="btn reimb-btn" onClick={onReimburse}>已報帳</button>
+        )}
+      </div>
+    </Sheet>
   );
 }
 
