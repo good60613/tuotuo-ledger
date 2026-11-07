@@ -33,7 +33,20 @@ export interface Toast {
   undo?: () => void;
 }
 
+export interface DialogButton {
+  label: string;
+  value: string;
+  style?: 'primary' | 'danger' | 'secondary';
+}
+export interface Dialog {
+  title: string;
+  body?: string;
+  buttons: DialogButton[];
+  resolve: (v: string | null) => void;
+}
+
 export interface State {
+  dialog: Dialog | null;
   ready: boolean;
   data: AppData;
   page: number;
@@ -46,6 +59,7 @@ export interface State {
 }
 
 let state: State = {
+  dialog: null,
   ready: false,
   data: sampleData(),
   page: HOME_PAGE,
@@ -103,11 +117,41 @@ export function showToast(text: string, undo?: () => void) {
 }
 export const hideToast = () => setState({ toast: null });
 
+/** 跳出選擇視窗，回傳按下的按鈕 value；按背景關閉回傳 null */
+export function ask(title: string, body: string | undefined, buttons: DialogButton[]): Promise<string | null> {
+  return new Promise((resolve) => setState({ dialog: { title, body, buttons, resolve } }));
+}
+export async function confirmDanger(title: string, body: string, okLabel = '刪除'): Promise<boolean> {
+  const v = await ask(title, body, [
+    { label: '取消', value: 'no', style: 'secondary' },
+    { label: okLabel, value: 'yes', style: 'danger' },
+  ]);
+  return v === 'yes';
+}
+export function closeDialog(v: string | null) {
+  const d = state.dialog;
+  setState({ dialog: null });
+  d?.resolve(v);
+}
+
+// 疊層畫面與手機「返回鍵」連動：開畫面時記一筆瀏覽紀錄，按返回就關掉最上層。
 export function openOverlay(o: Overlay) {
   setState((s) => ({ overlays: [...s.overlays, o] }));
+  try {
+    history.pushState({ overlay: state.overlays.length }, '');
+  } catch { /* ignore */ }
 }
 export function closeOverlay() {
-  setState((s) => ({ overlays: s.overlays.slice(0, -1) }));
+  if (state.overlays.length === 0) return;
+  if (history.state && typeof history.state.overlay === 'number') history.back();
+  else setState((s) => ({ overlays: s.overlays.slice(0, -1) }));
+}
+if (typeof window !== 'undefined') {
+  window.addEventListener('popstate', () => {
+    if (state.dialog) closeDialog(null);
+    const depth = typeof history.state?.overlay === 'number' ? history.state.overlay : 0;
+    if (state.overlays.length > depth) setState((s) => ({ overlays: s.overlays.slice(0, depth) }));
+  });
 }
 export function goPage(page: number) {
   setState({ page: Math.max(0, Math.min(PAGES.length - 1, page)) });

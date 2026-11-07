@@ -4,6 +4,7 @@ import { attachPager } from './gestures/pager';
 import { PAGER } from './config';
 import { HomePage } from './pages/Home';
 import { OverlayHost } from './pages/OverlayHost';
+import { DialogHost } from './components/DialogHost';
 import { DetailPage } from './pages/Detail';
 import { StatsPage } from './pages/Stats';
 import { ReimbursePage } from './pages/Reimburse';
@@ -66,6 +67,7 @@ export function App() {
       </nav>
 
       <OverlayHost />
+      <DialogHost />
 
       {s.toast && (
         <div class="toast" role="status">
