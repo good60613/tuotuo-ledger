@@ -340,3 +340,18 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: #cf
 .setting-row:last-child { border-bottom: 0; }
 .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
 .btn-row .btn { flex: 1; }
+
+/* ---------- 矮螢幕：首頁縮一點，確保一頁放得下 ---------- */
+@media (max-height: 700px) {
+  .home-head { height: 62px; padding-top: 6px; }
+  .drag-hint { height: 20px; line-height: 20px; font-size: 13px; }
+  .card { min-height: 72px; padding: 10px 12px; }
+  .card-balance { font-size: 20px; }
+  .cards { gap: 8px; }
+  .home .balls { margin: 10px 0 4px; }
+  .ball-dot { width: 42px; height: 42px; font-size: 19px; }
+  .amt-big { font-size: 32px; }
+  .amt-l2 { margin: 4px 0; }
+  .amt-mid { font-size: 18px; }
+  .calc { grid-auto-rows: 46px; }
+}
