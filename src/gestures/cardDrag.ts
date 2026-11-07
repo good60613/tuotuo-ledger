@@ -53,6 +53,7 @@ export function attachCardDrag(el: HTMLElement, opt: CardDragOptions): () => voi
   let ghost: HTMLElement | null = null;
   let hover: DropTarget | null = null;
   let lastX = 0, lastY = 0;
+  let shrunk = false;
 
   const highlight = (t: DropTarget | null) => {
     document.querySelectorAll('.drop-hover').forEach((n) => n.classList.remove('drop-hover'));
@@ -115,6 +116,7 @@ export function attachCardDrag(el: HTMLElement, opt: CardDragOptions): () => voi
     const r = el.getBoundingClientRect();
     grabDx = x0 - r.left;
     grabDy = y0 - r.top;
+    shrunk = false;
     ghost = el.cloneNode(true) as HTMLElement;
     ghost.classList.add('drag-ghost');
     ghost.removeAttribute('data-drop');
@@ -128,6 +130,7 @@ export function attachCardDrag(el: HTMLElement, opt: CardDragOptions): () => voi
       pointerEvents: 'none',
       zIndex: '1000',
       transform: `scale(${GESTURE.liftScale})`,
+      transformOrigin: `${grabDx}px ${grabDy}px`,
       transition: 'transform .12s ease-out',
     });
     document.body.appendChild(ghost);
@@ -141,8 +144,14 @@ export function attachCardDrag(el: HTMLElement, opt: CardDragOptions): () => voi
 
   const moveGhost = (x: number, y: number) => {
     if (!ghost) return;
+    if (!shrunk && Math.hypot(x - x0, y - y0) > GESTURE.shrinkAfterPx) {
+      shrunk = true;
+      ghost.style.transition = 'transform .12s ease-out, opacity .12s';
+      ghost.style.transform = `scale(${GESTURE.dragScale})`;
+      ghost.style.opacity = String(GESTURE.dragOpacity);
+    }
     ghost.style.left = `${x - grabDx}px`;
-    ghost.style.top = `${y - grabDy + GESTURE.dragOffsetY}px`;
+    ghost.style.top = `${y - grabDy + (shrunk ? GESTURE.dragOffsetY : 0)}px`;
     const t = parseTarget(document.elementFromPoint(x, y));
     if (!sameTarget(t, hover)) {
       hover = t;

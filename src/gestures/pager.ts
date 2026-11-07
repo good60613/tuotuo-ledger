@@ -83,8 +83,9 @@ export function attachPager(el: HTMLElement, opt: PagerOptions): () => void {
       const w = el.clientWidth || 1;
       const p = opt.getPage();
       let next = p;
-      if (dx < -w * PAGER.switchRatio || vx < -PAGER.flickVelocity) next = p + 1;
-      else if (dx > w * PAGER.switchRatio || vx > PAGER.flickVelocity) next = p - 1;
+      const flick = Math.abs(dx) >= PAGER.flickMinPx;
+      if (dx < -w * PAGER.switchRatio || (flick && dx < 0 && vx < -PAGER.flickVelocity)) next = p + 1;
+      else if (dx > w * PAGER.switchRatio || (flick && dx > 0 && vx > PAGER.flickVelocity)) next = p - 1;
       next = Math.max(0, Math.min(opt.pageCount - 1, next));
       opt.onOffset(null);
       if (next !== p) opt.setPage(next);

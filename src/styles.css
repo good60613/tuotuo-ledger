@@ -79,8 +79,8 @@ button { font: inherit; color: inherit; }
   animation: zone-in .15s ease-out;
 }
 .zone-icon { font-size: 22px; }
-.zone-expense { color: var(--expense); border-color: var(--expense); background: #fdf0f0; }
-.zone-income { color: var(--income); border-color: var(--income); background: #ecf8f2; }
+.zone-expense { color: var(--expense); border-color: var(--expense); background: #fbe3e3; }
+.zone-income { color: var(--income); border-color: var(--income); background: #dcf3e8; }
 .drop-zone.drop-hover { border-style: solid; color: #fff; transform: scale(1.04); }
 .zone-expense.drop-hover { background: var(--expense); }
 .zone-income.drop-hover { background: var(--income); }
