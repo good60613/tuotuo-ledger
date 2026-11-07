@@ -9,6 +9,10 @@ interface Props {
   value: string | null;
   /** 顯示「全部」選項（明細、統計篩選用） */
   allowAll?: boolean;
+  /** 不列出的帳戶（例如刪除帳戶時，不能選自己） */
+  exclude?: string;
+  /** 額外的「不設定」選項 */
+  noneLabel?: string;
   onPick: (id: string | null) => void;
   onClose: () => void;
 }
@@ -17,7 +21,7 @@ interface Props {
 export function AccountPicker(p: Props) {
   const d = useAppState().data;
   const bal = allBalances(d);
-  const row = (id: string, name: string, icon: string) => (
+  const row = (id: string, name: string, icon: string) => id === p.exclude ? null : (
     <button
       key={id}
       class={`pick-row${p.value === id ? ' selected' : ''}`}
@@ -33,6 +37,18 @@ export function AccountPicker(p: Props) {
   );
   return (
     <Sheet title={p.title} onClose={p.onClose}>
+      {p.noneLabel && (
+        <button
+          class={`pick-row${p.value === null ? ' selected' : ''}`}
+          onClick={() => {
+            p.onPick(null);
+            p.onClose();
+          }}
+        >
+          <span class="pick-icon">⊘</span>
+          <span class="pick-name">{p.noneLabel}</span>
+        </button>
+      )}
       {p.allowAll && (
         <button
           class={`pick-row${p.value === null ? ' selected' : ''}`}

@@ -329,3 +329,14 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: #cf
 .btn.reimb-btn { background: var(--reimb); color: #fff; }
 .confirm-sum { text-align: center; padding: 8px 0 4px; }
 .sheet .dialog-btns { margin-top: 12px; }
+
+/* ---------- 設定 ---------- */
+.small { font-size: 12px; }
+.row-main { flex: 1; min-width: 0; border: 0; background: none; text-align: left; display: flex; flex-direction: column; gap: 2px; padding: 6px 0; font-size: 15px; }
+.add-row { width: 100%; border: 1px dashed var(--line); background: none; border-radius: 10px; padding: 10px; margin-top: 8px; color: var(--accent); font-weight: 600; }
+.kind-group { margin-bottom: 10px; }
+.kind-title { font-weight: 700; font-size: 14px; padding-top: 6px; }
+.setting-row { display: flex; justify-content: space-between; width: 100%; border: 0; background: none; padding: 14px 0; font-size: 15px; border-bottom: 1px solid var(--line); }
+.setting-row:last-child { border-bottom: 0; }
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn-row .btn { flex: 1; }

@@ -13,7 +13,8 @@ const DETAIL = PAGES.indexOf('明細');
 export function StatsPage() {
   const s = useAppState();
   const d = s.data;
-  const acc = s.statsAccountId;
+  // 篩選的帳戶若已被刪除，就當作「全部」
+  const acc = d.accounts.some((a) => a.id === s.statsAccountId) ? s.statsAccountId : null;
   const now = new Date();
   const month = monthKey(now);
   const m = totals(d.transactions, { month, accountId: acc });

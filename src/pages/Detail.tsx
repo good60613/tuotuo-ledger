@@ -12,7 +12,8 @@ import { money, mdLabel } from '../format';
 export function DetailPage() {
   const s = useAppState();
   const d = s.data;
-  const f = s.detail;
+  // 篩選的帳戶若已被刪除，就當作「全部」
+  const f = d.accounts.some((a) => a.id === s.detail.accountId) ? s.detail : { ...s.detail, accountId: null };
   const [picking, setPicking] = useState(false);
   const now = new Date();
   const m = totals(d.transactions, { month: monthKey(now), accountId: f.accountId });
