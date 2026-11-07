@@ -1,7 +1,8 @@
 import { useState } from 'preact/hooks';
 import { useAppState, setState, openOverlay, showToast } from '../store';
-import { allBalances, spendableTotal, totals, monthKey, dayKey } from '../data/calc';
-import { accountsOfKind, bankAccounts, accountName } from '../selectors';
+import { allBalances, spendableTotal, totals, periodKey, dayKey } from '../data/calc';
+import { bankAccounts, accountName } from '../selectors';
+import { ballDropTarget } from '../data/ops';
 import { KIND_LABEL, type Account, type AccountKind } from '../data/types';
 import { AccountCard } from '../components/AccountCard';
 import { Balls } from '../components/Balls';
@@ -13,12 +14,12 @@ export function HomePage() {
   const d = s.data;
   const bal = allBalances(d);
   const now = new Date();
-  const m = totals(d.transactions, { month: monthKey(now) });
-  const t = totals(d.transactions, { day: dayKey(now) });
+  const m = totals(d, { period: periodKey(now, d.settings.settleDay) });
+  const t = totals(d, { day: dayKey(now) });
   const [lifted, setLifted] = useState<Account | null>(null);
   const [hover, setHover] = useState<DropTarget | null>(null);
 
-  const ballFirst = (kind: string) => accountsOfKind(d, kind as AccountKind)[0];
+  const ballFirst = (kind: string) => ballDropTarget(d, kind as AccountKind);
 
   const hint = (() => {
     if (!lifted) return '';

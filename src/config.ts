@@ -41,5 +41,24 @@ export const PAGER = {
   animMs: 260,
 } as const;
 
+/** 備註記憶模式 */
+export const NOTES = {
+  /** 輸入頁備註格數（「更多…」另外算） */
+  slots: 5,
+} as const;
+
+/** 分類自動排序 */
+export const CATEGORY_SORT = {
+  /** 依最近幾天的使用次數排序 */
+  recentDays: 90,
+} as const;
+
+/** 結算日預設值與可選範圍 */
+export const SETTLE = {
+  defaultDay: 1,
+  minDay: 1,
+  maxDay: 31,
+} as const;
+
 /** 「已記一筆」提示停留多久（可按復原） */
 export const TOAST_MS = 4000;

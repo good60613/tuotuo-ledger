@@ -57,7 +57,7 @@ export function TagManager({ onClose }: { onClose: () => void }) {
   const add = () => {
     const t = text.trim();
     if (!t) return;
-    updateData((x) => ({ ...x, noteTags: [...x.noteTags, { id: uid('n'), text: t, order: x.noteTags.length }] }));
+    updateData((x) => ({ ...x, noteTags: [...x.noteTags, { id: uid('n'), text: t, order: x.noteTags.length, pinned: false }] }));
     setText('');
   };
   return (

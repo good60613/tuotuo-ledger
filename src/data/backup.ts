@@ -1,5 +1,7 @@
 // 資料備份：匯出／匯入全部資料（JSON 檔）。
 import type { AppData } from './types';
+import { DATA_VERSION } from './types';
+import { migrate } from './migrate';
 
 export function exportJson(data: AppData): string {
   return JSON.stringify({ app: 'ledger-app', exportedAt: new Date().toISOString(), data }, null, 2);
@@ -15,14 +17,14 @@ export function parseBackup(text: string): AppData {
   const d = (obj as { data?: AppData })?.data ?? (obj as AppData);
   const ok =
     d &&
-    d.version === 1 &&
+    ((d.version as number) === 1 || d.version === DATA_VERSION) &&
     Array.isArray(d.accounts) &&
     Array.isArray(d.transactions) &&
     Array.isArray(d.categories) &&
     Array.isArray(d.noteTags) &&
     typeof d.settings === 'object';
   if (!ok) throw new Error('檔案不是這個 App 的備份');
-  return d;
+  return migrate(d);
 }
 
 /** 在手機上觸發下載 */

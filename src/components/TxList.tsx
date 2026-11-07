@@ -1,6 +1,6 @@
 // 時間軸明細列表：明細頁、報帳頁共用。
 import type { AppData, Transaction } from '../data/types';
-import { countsInStats, dayKey } from '../data/calc';
+import { statEffect, kindLookup, dayKey } from '../data/calc';
 import { accountName, categoryOf, KIND_ICON } from '../selectors';
 import { money, mdLabel, weekday, hm } from '../format';
 import { GESTURE } from '../config';
@@ -57,6 +57,7 @@ export function TxList({ data, txs, onTap, selected, empty, onLongPress }: Props
   const sorted = [...txs].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
   if (sorted.length === 0) return <div class="empty-list">{empty ?? '沒有紀錄'}</div>;
 
+  const kindOf = kindLookup(data.accounts);
   const groups: { day: string; items: Transaction[] }[] = [];
   for (const t of sorted) {
     const k = dayKey(t.occurredAt);
@@ -70,9 +71,10 @@ export function TxList({ data, txs, onTap, selected, empty, onLongPress }: Props
         const date = new Date(g.items[0].occurredAt);
         let inc = 0, exp = 0;
         for (const t of g.items) {
-          if (!countsInStats(t)) continue;
-          if (t.type === 'income') inc += t.amount;
-          else exp += t.amount;
+          const e = statEffect(t, kindOf);
+          if (!e) continue;
+          if (e.type === 'income') inc += e.amount;
+          else exp += e.amount;
         }
         let lastHour = -1;
         return (
@@ -120,6 +122,16 @@ function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { data: A
     title = `報帳入帳 → ${accountName(data, t.toAccountId)}`;
     amt = '+' + money(t.amount);
     cls = 'reimb-in';
+  } else if (t.type === 'adjust') {
+    icon = '⚖';
+    title = '調整';
+    amt = (t.adjustDir === 'down' ? '-' : '+') + money(t.amount);
+    cls = 'transfer';
+  } else if (t.type === 'valuation') {
+    icon = '📈';
+    title = '更新市值';
+    amt = money(t.amount);
+    cls = 'transfer';
   } else {
     const c = categoryOf(data, t.categoryId);
     icon = c?.icon ?? '？';

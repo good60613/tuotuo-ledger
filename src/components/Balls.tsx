@@ -1,15 +1,14 @@
 import type { AppData } from '../data/types';
-import { allBalances } from '../data/calc';
+import { ballTotal } from '../data/calc';
 import { balls, KIND_ICON } from '../selectors';
 import { money } from '../format';
 
 /** 五顆小帳戶球。首頁上同時是拖曳目標（data-drop） */
 export function Balls({ data, droppable, onTap }: { data: AppData; droppable?: boolean; onTap?: (kind: string) => void }) {
-  const bal = allBalances(data);
   return (
     <div class="balls">
       {balls(data).map((b) => {
-        const sum = b.accounts.reduce((s, a) => s + (bal.get(a.id) ?? 0), 0);
+        const sum = ballTotal(data, b.kind);
         return (
           <div
             key={b.kind}

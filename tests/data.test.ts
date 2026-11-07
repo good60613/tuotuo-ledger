@@ -18,7 +18,7 @@ function base(): AppData {
     { id: 'B', name: '郵局', kind: 'bank', initialBalance: 5000, order: 1 },
     { id: 'E', name: '悠遊卡', kind: 'easycard', initialBalance: 100, order: 0 },
     { id: 'W', name: 'LINE Pay', kind: 'ewallet', initialBalance: 200, order: 1 },
-    { id: 'I', name: '投資', kind: 'invest', initialBalance: 50000, order: 2 },
+    { id: 'I', name: '待投入', kind: 'invest', subtype: 'cash', initialBalance: 50000, order: 2 },
     { id: 'S', name: '儲蓄', kind: 'saving', initialBalance: 80000, order: 3 },
     { id: 'O', name: '其他', kind: 'other', initialBalance: 50, order: 4 },
   ];
@@ -29,17 +29,17 @@ const month = monthKey(NOW);
 const today = dayKey(NOW);
 
 describe('餘額與金額區', () => {
-  it('剩餘可用＝一般帳戶＋悠遊卡＋電子錢包＋其他，不含儲蓄與投資', () => {
-    expect(spendableTotal(base())).toBe(10000 + 5000 + 100 + 200 + 50);
+  it('剩餘可用只算一般帳戶（第二批 C）', () => {
+    expect(spendableTotal(base())).toBe(10000 + 5000);
   });
 
   it('記一筆支出：帳戶餘額、剩餘可用、當月與當日支出都更新', () => {
     let d = base();
     d = addTransaction(d, { type: 'expense', amount: 120, accountId: 'A', categoryId: 'c-e1', occurredAt: NOW.toISOString() }).data;
     expect(bal(d, 'A')).toBe(9880);
-    expect(spendableTotal(d)).toBe(15350 - 120);
-    expect(totals(d.transactions, { month }).expense).toBe(120);
-    expect(totals(d.transactions, { day: today }).expense).toBe(120);
+    expect(spendableTotal(d)).toBe(15000 - 120);
+    expect(totals(d, { period: month }).expense).toBe(120);
+    expect(totals(d, { day: today }).expense).toBe(120);
   });
 
   it('轉帳：來源減、目的增，不算收支；轉到儲蓄會讓剩餘可用變少', () => {
@@ -47,15 +47,16 @@ describe('餘額與金額區', () => {
     d = addTransaction(d, { type: 'transfer', amount: 1000, accountId: 'A', toAccountId: 'S', occurredAt: NOW.toISOString() }).data;
     expect(bal(d, 'A')).toBe(9000);
     expect(bal(d, 'S')).toBe(81000);
-    expect(totals(d.transactions, { month })).toEqual({ income: 0, expense: 0 });
-    expect(spendableTotal(d)).toBe(15350 - 1000);
+    expect(totals(d, { period: month })).toEqual({ income: 0, expense: 0 });
+    expect(spendableTotal(d)).toBe(15000 - 1000);
   });
 
-  it('轉帳到悠遊卡（儲值）：剩餘可用不變', () => {
+  it('轉帳到悠遊卡（儲值）＝主帳支出，剩餘可用減少（第二批 C）', () => {
     let d = base();
     d = addTransaction(d, { type: 'transfer', amount: 500, accountId: 'A', toAccountId: 'E', occurredAt: NOW.toISOString() }).data;
     expect(bal(d, 'E')).toBe(600);
-    expect(spendableTotal(d)).toBe(15350);
+    expect(spendableTotal(d)).toBe(15000 - 500);
+    expect(totals(d, { period: month }).expense).toBe(500);
   });
 
   it('allBalances 與 balanceOf 結果一致', () => {
@@ -85,8 +86,8 @@ describe('報帳流程（PK 確認過的邏輯）', () => {
     const t = d.transactions.find((x) => x.id === r.id)!;
     expect(t.reimburseStatus).toBe('pending');
     expect(bal(d, 'B')).toBe(5000 - 860); // 扣款
-    expect(spendableTotal(d)).toBe(15350 - 860); // 總剩餘跟著減少
-    expect(totals(d.transactions, { month })).toEqual({ income: 0, expense: 0 }); // 不計入當月支出
+    expect(spendableTotal(d)).toBe(15000 - 860); // 總剩餘跟著減少
+    expect(totals(d, { period: month })).toEqual({ income: 0, expense: 0 }); // 不計入當月支出
 
     // 2. 按已報帳，錢退回薪轉帳戶，按下當天新增一筆報帳入帳
     d = markReimbursed(d, [r.id], 'A', NOW, 'batch1');
@@ -95,8 +96,8 @@ describe('報帳流程（PK 確認過的邏輯）', () => {
     expect(dayKey(inTx.occurredAt)).toBe(today);
     expect(bal(d, 'A')).toBe(10000 + 860);
     expect(bal(d, 'B')).toBe(5000 - 860); // 原扣款不變，不會重複扣
-    expect(spendableTotal(d)).toBe(15350); // 錢回來了
-    expect(totals(d.transactions, { month })).toEqual({ income: 0, expense: 0 }); // 入帳也不計入當月收入
+    expect(spendableTotal(d)).toBe(15000); // 錢回來了
+    expect(totals(d, { period: month })).toEqual({ income: 0, expense: 0 }); // 入帳也不計入當月收入
     expect(d.transactions.filter((x) => x.type === 'expense').length).toBe(1); // 沒有多出支出
 
     // 3. 退回待報帳：入帳的錢從薪轉扣回
@@ -160,7 +161,7 @@ describe('報帳流程（PK 確認過的邏輯）', () => {
     let d = base();
     d = addTransaction(d, { type: 'expense', amount: 100, accountId: 'B', categoryId: 'c1', occurredAt: NOW.toISOString(), reimbursable: true }).data;
     d = addTransaction(d, { type: 'expense', amount: 40, accountId: 'B', categoryId: 'c2', occurredAt: NOW.toISOString() }).data;
-    const br = categoryBreakdown(d.transactions, 'expense', month, null);
+    const br = categoryBreakdown(d, 'expense', month, null);
     expect(br.map((x) => x.categoryId)).toEqual(['c2']);
   });
 });

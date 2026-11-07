@@ -1,5 +1,7 @@
 // 所有會改動資料的操作。全部是「舊資料 → 新資料」的純函式，方便單元測試。
 import type { Account, AppData, Category, Transaction, TxType } from './types';
+import { TX_SOURCE_NO_CATEGORY } from './types';
+import { allBalances } from './calc';
 
 export function uid(prefix = ''): string {
   const r = Math.random().toString(36).slice(2, 8);
@@ -7,7 +9,7 @@ export function uid(prefix = ''): string {
 }
 
 export interface TxInput {
-  type: Exclude<TxType, 'reimburse_in'>;
+  type: Exclude<TxType, 'reimburse_in' | 'adjust' | 'valuation'>;
   amount: number;
   accountId: string;
   toAccountId?: string;
@@ -15,6 +17,8 @@ export interface TxInput {
   note?: string;
   occurredAt: string;
   reimbursable?: boolean;
+  /** 來源畫面標記（投資、儲蓄的記一筆），見 Transaction.source */
+  source?: string;
 }
 
 export class OpError extends Error {}
@@ -26,7 +30,7 @@ function validate(data: AppData, input: TxInput) {
     if (!input.toAccountId || !data.accounts.some((a) => a.id === input.toAccountId))
       throw new OpError('找不到目的帳戶');
     if (input.toAccountId === input.accountId) throw new OpError('來源和目的不能相同');
-  } else if (!input.categoryId) throw new OpError('請選分類');
+  } else if (!input.categoryId && !TX_SOURCE_NO_CATEGORY.includes(input.source ?? '')) throw new OpError('請選分類');
 }
 
 function build(input: TxInput, id: string, createdAt: string): Transaction {
@@ -42,6 +46,7 @@ function build(input: TxInput, id: string, createdAt: string): Transaction {
     occurredAt: input.occurredAt,
     reimbursable: isReimb,
     reimburseStatus: isReimb ? 'pending' : undefined,
+    source: input.source,
     createdAt,
   };
 }
@@ -68,6 +73,7 @@ export function updateTransaction(data: AppData, id: string, input: TxInput): Ap
   const old = data.transactions.find((t) => t.id === id);
   if (!old) throw new OpError('找不到這筆紀錄');
   if (old.type === 'reimburse_in') throw new OpError('報帳入帳請用「退回待報帳」處理');
+  if (old.type === 'adjust' || old.type === 'valuation') throw new OpError('調整、市值紀錄不能編輯，只能刪除後重新校正');
   validate(data, input);
   let next: Transaction;
   if (isLocked(old)) {
@@ -278,3 +284,84 @@ export function reorder<T extends { id: string; order: number }>(list: T[], ids:
 }
 
 export const byOrder = <T extends { order: number }>(a: T, b: T) => a.order - b.order;
+
+// ---------------- 小帳戶：校正、投資、儲蓄 ----------------
+
+/**
+ * 校正：輸入實際餘額，差額自動產生一筆「調整」紀錄（不算主帳收支）。
+ * 差額為 0 時不產生紀錄，回傳原資料。投資標的請用 updateMarketValue。
+ */
+export function calibrate(
+  data: AppData,
+  accountId: string,
+  actual: number,
+  now: Date = new Date(),
+  id = uid('t'),
+): AppData {
+  const acc = data.accounts.find((a) => a.id === accountId);
+  if (!acc) throw new OpError('找不到帳戶');
+  if (acc.kind === 'invest' && acc.subtype === 'holding') throw new OpError('投資標的請用「更新市值」');
+  if (!Number.isInteger(actual)) throw new OpError('金額必須是整數');
+  const diff = actual - (allBalances(data).get(accountId) ?? 0);
+  if (diff === 0) return data;
+  const at = now.toISOString();
+  const tx: Transaction = {
+    id,
+    type: 'adjust',
+    amount: Math.abs(diff),
+    adjustDir: diff > 0 ? 'up' : 'down',
+    accountId,
+    note: '',
+    occurredAt: at,
+    reimbursable: false,
+    createdAt: at,
+  };
+  return { ...data, transactions: [...data.transactions, tx] };
+}
+
+/** 投資標的「更新市值」：記下現值，損益由 holdingStats 推算（不算主帳收支） */
+export function updateMarketValue(
+  data: AppData,
+  holdingId: string,
+  value: number,
+  now: Date = new Date(),
+  id = uid('t'),
+): AppData {
+  const acc = data.accounts.find((a) => a.id === holdingId);
+  if (!acc || acc.kind !== 'invest' || acc.subtype !== 'holding') throw new OpError('找不到投資標的');
+  if (!(value >= 0) || !Number.isInteger(value)) throw new OpError('現值必須是 0 以上的整數');
+  const at = now.toISOString();
+  const tx: Transaction = {
+    id,
+    type: 'valuation',
+    amount: value,
+    accountId: holdingId,
+    note: '',
+    occurredAt: at,
+    reimbursable: false,
+    createdAt: at,
+  };
+  return { ...data, transactions: [...data.transactions, tx] };
+}
+
+/** 投資的「待投入」帳戶（固定一個） */
+export function investCashAccount(data: AppData): Account | undefined {
+  return data.accounts.find((a) => a.kind === 'invest' && a.subtype !== 'holding');
+}
+
+/** 投資標的，照排序 */
+export const holdings = (data: AppData) =>
+  data.accounts.filter((a) => a.kind === 'invest' && a.subtype === 'holding').sort(byOrder);
+
+/** 儲蓄目標，照畫面由上到下（order 小→大；越下面越必要） */
+export const savingGoals = (data: AppData) => data.accounts.filter((a) => a.kind === 'saving').sort(byOrder);
+
+/** 從首頁拖到小帳戶球時，預設的目的帳戶 */
+export function ballDropTarget(data: AppData, kind: Account['kind']): Account | undefined {
+  if (kind === 'invest') return investCashAccount(data);
+  if (kind === 'saving') {
+    const g = savingGoals(data);
+    return g[g.length - 1]; // 最下面（最必要）的目標
+  }
+  return data.accounts.filter((a) => a.kind === kind).sort(byOrder)[0];
+}

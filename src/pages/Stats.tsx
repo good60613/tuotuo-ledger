@@ -1,7 +1,7 @@
 // 統計頁（左一）：看全貌。點分類或日期 → 跳到明細頁並篩選好。
 import { useState } from 'preact/hooks';
 import { useAppState, setState, goPage, PAGES } from '../store';
-import { totals, monthKey, categoryBreakdown, dailySeries, dayKey, type CategorySum } from '../data/calc';
+import { totals, periodKey, categoryBreakdown, dailySeries, dayKey, type CategorySum } from '../data/calc';
 import { accountName, categoryOf } from '../selectors';
 import type { AppData } from '../data/types';
 import { AccountPicker } from '../components/AccountPicker';
@@ -16,9 +16,9 @@ export function StatsPage() {
   // 篩選的帳戶若已被刪除，就當作「全部」
   const acc = d.accounts.some((a) => a.id === s.statsAccountId) ? s.statsAccountId : null;
   const now = new Date();
-  const month = monthKey(now);
-  const m = totals(d.transactions, { month, accountId: acc });
-  const series = dailySeries(d.transactions, month, acc);
+  const month = periodKey(now, d.settings.settleDay);
+  const m = totals(d, { period: month, accountId: acc });
+  const series = dailySeries(d, month, acc);
   const [picking, setPicking] = useState(false);
   const [lineShow, setLineShow] = useState<'both' | 'expense' | 'income'>('both');
   const [barShow, setBarShow] = useState<'expense' | 'income'>('expense');
@@ -53,8 +53,8 @@ export function StatsPage() {
         </button>
       </div>
 
-      <CategorySection title="支出分類" data={d} list={categoryBreakdown(d.transactions, 'expense', month, acc)} total={m.expense} onPick={(id) => jump({ categoryId: id })} />
-      <CategorySection title="收入分類" data={d} list={categoryBreakdown(d.transactions, 'income', month, acc)} total={m.income} onPick={(id) => jump({ categoryId: id })} />
+      <CategorySection title="支出分類" data={d} list={categoryBreakdown(d, 'expense', month, acc)} total={m.expense} onPick={(id) => jump({ categoryId: id })} />
+      <CategorySection title="收入分類" data={d} list={categoryBreakdown(d, 'income', month, acc)} total={m.income} onPick={(id) => jump({ categoryId: id })} />
 
       <section class="panel">
         <h3>日曆</h3>

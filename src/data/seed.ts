@@ -1,14 +1,21 @@
 // 範例資料：一打開就能試。設定裡可以清空。
 import type { Account, AppData, Category, NoteTag, Transaction } from './types';
+import { DATA_VERSION } from './types';
+import { SETTLE } from '../config';
 
 export function emptyData(): AppData {
   return {
-    version: 1,
+    version: DATA_VERSION,
     accounts: [],
     transactions: [],
     categories: defaultCategories(),
     noteTags: defaultTags(),
-    settings: { defaultReimburseAccountId: null, lastUsedAccountId: null },
+    settings: {
+      defaultReimburseAccountId: null,
+      lastUsedAccountId: null,
+      settleDay: SETTLE.defaultDay,
+      autoSortCategories: false,
+    },
   };
 }
 
@@ -26,8 +33,15 @@ function smallAccounts(scale: number): Account[] {
     { id: 'a-easy', name: '悠遊卡', kind: 'easycard', initialBalance: 350 * scale, order: 0 },
     { id: 'a-linepay', name: 'LINE Pay', kind: 'ewallet', initialBalance: 1200 * scale, order: 1 },
     { id: 'a-jko', name: '街口支付', kind: 'ewallet', initialBalance: 300 * scale, order: 2 },
-    { id: 'a-invest', name: '投資', kind: 'invest', initialBalance: 50000 * scale, order: 3 },
-    { id: 'a-saving', name: '儲蓄', kind: 'saving', initialBalance: 120000 * scale, order: 4 },
+    { id: 'a-invest', name: '待投入', kind: 'invest', subtype: 'cash', initialBalance: 20000 * scale, order: 0 },
+    ...(scale
+      ? [{ id: 'a-0050', name: '0050', kind: 'invest' as const, subtype: 'holding', initialBalance: 30000, order: 1 }]
+      : []),
+    // 儲蓄目標：越下面（order 越大）越必要
+    ...(scale
+      ? [{ id: 'a-travel', name: '旅行', kind: 'saving' as const, initialBalance: 20000, target: 50000, order: 0 }]
+      : []),
+    { id: 'a-saving', name: '緊急預備金', kind: 'saving', initialBalance: 100000 * scale, target: 150000, order: 1 },
     { id: 'a-other', name: '其他', kind: 'other', initialBalance: 0, order: 5 },
   ];
 }
@@ -48,7 +62,7 @@ function defaultCategories(): Category[] {
 }
 
 function defaultTags(): NoteTag[] {
-  return ['麥噹噹', '711', '全家', '星巴克', '便當'].map((text, i) => ({ id: `n${i}`, text, order: i }));
+  return ['麥噹噹', '711', '全家', '星巴克', '便當'].map((text, i) => ({ id: `n${i}`, text, order: i, pinned: false }));
 }
 
 export function sampleData(now: Date = new Date()): AppData {
@@ -94,6 +108,8 @@ export function sampleData(now: Date = new Date()): AppData {
     tx({ type: 'expense', amount: 150, accountId: 'a-taishin', categoryId: 'c-e3', note: '星巴克', occurredAt: at(today, 9, 40) }),
     tx({ type: 'income', amount: 1500, accountId: 'a-post', categoryId: 'c-i3', note: '', occurredAt: at(today, 11) }),
     tx({ type: 'transfer', amount: 5000, accountId: 'a-salary', toAccountId: 'a-saving', note: '存起來', occurredAt: at(today, 8) }),
+    tx({ type: 'transfer', amount: 10000, accountId: 'a-invest', toAccountId: 'a-0050', note: '', source: 'invest-buy', occurredAt: at(2, 10) }),
+    tx({ type: 'valuation', amount: 42500, accountId: 'a-0050', note: '', occurredAt: at(today, 13) }),
   ];
   return d;
 }

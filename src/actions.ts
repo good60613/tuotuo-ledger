@@ -12,6 +12,8 @@ export function openTx(t: Transaction) {
     if (t.reimburseBatchId) askRevertBatch(t.reimburseBatchId);
     return;
   }
+  // 調整、市值紀錄在小帳戶子畫面處理（第 4、5 段）
+  if (t.type === 'adjust' || t.type === 'valuation') return;
   openOverlay({ kind: 'entry', mode: t.type, accountId: t.accountId, toAccountId: t.toAccountId ?? null, txId: t.id });
 }
 

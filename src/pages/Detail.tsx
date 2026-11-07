@@ -1,7 +1,7 @@
 // 明細頁（右一）：時間軸列出每一筆
 import { useState } from 'preact/hooks';
 import { useAppState, setState, showToast } from '../store';
-import { totals, monthKey, dayKey, touchesAccount } from '../data/calc';
+import { totals, periodKey, dayKey, touchesAccount } from '../data/calc';
 import { accountName, categoryOf } from '../selectors';
 import { Balls } from '../components/Balls';
 import { TxList } from '../components/TxList';
@@ -16,7 +16,7 @@ export function DetailPage() {
   const f = d.accounts.some((a) => a.id === s.detail.accountId) ? s.detail : { ...s.detail, accountId: null };
   const [picking, setPicking] = useState(false);
   const now = new Date();
-  const m = totals(d.transactions, { month: monthKey(now), accountId: f.accountId });
+  const m = totals(d, { period: periodKey(now, d.settings.settleDay), accountId: f.accountId });
 
   const txs = d.transactions.filter(
     (t) =>
