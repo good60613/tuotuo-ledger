@@ -313,3 +313,19 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: #cf
 .cal-d.today { outline: 2px solid var(--accent); }
 .cal-n { font-size: 12px; }
 .cal-v { font-size: 9.5px; font-weight: 700; font-variant-numeric: tabular-nums; max-width: 100%; overflow: hidden; }
+
+/* ---------- 報帳頁 ---------- */
+.reimb { min-height: 100%; display: flex; flex-direction: column; padding-bottom: 16px; }
+.reimb-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.reimb-head .seg { flex: none; justify-content: flex-start; }
+.reimb-head .seg button { padding: 8px 14px; font-size: 15px; }
+.seg button.on.reimb { background: var(--reimb); color: #fff; }
+.reimb-total { text-align: right; }
+.reimb-color { color: var(--reimb); }
+.reimb-tools { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 12px; font-size: 13px; }
+.pill-btn.small { flex: none; padding: 6px 14px; font-size: 13px; }
+.pill-btn.on { background: var(--reimb); color: #fff; border-color: var(--reimb); }
+.action-bar { position: sticky; bottom: 12px; margin-top: auto; display: flex; justify-content: space-between; align-items: center; background: #23262b; color: #fff; border-radius: 14px; padding: 10px 10px 10px 16px; box-shadow: 0 6px 18px rgba(0,0,0,.25); z-index: 5; }
+.btn.reimb-btn { background: var(--reimb); color: #fff; }
+.confirm-sum { text-align: center; padding: 8px 0 4px; }
+.sheet .dialog-btns { margin-top: 12px; }
