@@ -2,3 +2,10 @@ node_modules/
 dist/
 *.log
 test-results/
+
+# 簽章金鑰與密碼（萬一放進專案也不要上傳）
+*.jks
+*.keystore
+keystore.properties
+key.properties
+android/local.properties

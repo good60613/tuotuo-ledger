@@ -8,7 +8,7 @@ import {
 import { SMALL_KINDS, KIND_LABEL, type Account, type AccountKind, type Category, type CategoryType } from '../data/types';
 import { allBalances } from '../data/calc';
 import { accountName, accountsOfKind, bankAccounts, categoriesOf, KIND_ICON } from '../selectors';
-import { exportJson, parseBackup, downloadText } from '../data/backup';
+import { exportJson, parseBackup, saveBackupFile } from '../data/backup';
 import { sampleData, blankData } from '../data/seed';
 import { saveData } from '../data/storage';
 import { Sheet } from '../components/Sheet';
@@ -109,8 +109,9 @@ export function SettingsPage() {
   // ---- 備份 ----
   const doExport = () => {
     const stamp = new Date().toISOString().slice(0, 10);
-    downloadText(`記帳備份-${stamp}.json`, exportJson(getState().data));
-    showToast('已匯出備份檔（在手機的「下載」資料夾）');
+    saveBackupFile(`記帳備份-${stamp}.json`, exportJson(getState().data))
+      .then((msg) => msg && showToast(msg))
+      .catch(() => showToast('匯出失敗'));
   };
   const doImport = async (file: File) => {
     try {
