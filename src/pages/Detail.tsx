@@ -5,6 +5,7 @@ import { categoryDisplay } from '../selectors';
 import { Balls } from '../components/Balls';
 import { TxList } from '../components/TxList';
 import { PeriodBar } from '../components/PeriodBar';
+import { BottomBar } from '../components/BottomBar';
 import { openTx, quickEntry } from '../actions';
 import { money, mdLabel } from '../format';
 
@@ -30,7 +31,7 @@ export function DetailPage() {
   const setFilter = (p: Partial<typeof f>) => setState((st) => ({ detail: { ...st.detail, ...p } }));
 
   return (
-    <div class="page-pad detail">
+    <div class="page-pad detail has-bar">
       <div class="month-sum">
         <div>
           <div class="amt-label">本期支出</div>
@@ -41,13 +42,6 @@ export function DetailPage() {
           <div class="amt-mid income">{money(m.income)}</div>
         </div>
       </div>
-
-      <PeriodBar
-        accountId={f.accountId}
-        onAccount={(id) => setFilter({ accountId: id })}
-        period={period}
-        onPeriod={(p) => setFilter({ period: p })}
-      />
 
       <Balls data={d} />
 
@@ -69,6 +63,15 @@ export function DetailPage() {
       <TxList data={d} txs={txs} onTap={openTx} empty="這個條件下沒有紀錄" />
 
       <button class="fab" onClick={() => quickEntry(f.accountId)} aria-label="快速記帳">＋</button>
+
+      <BottomBar>
+        <PeriodBar
+          accountId={f.accountId}
+          onAccount={(id) => setFilter({ accountId: id })}
+          period={period}
+          onPeriod={(p) => setFilter({ period: p })}
+        />
+      </BottomBar>
 
     </div>
   );
