@@ -224,11 +224,11 @@ describe('舊資料升級', () => {
       settings: { defaultReimburseAccountId: null, lastUsedAccountId: null },
     };
     const d = migrate(v1);
-    expect(d.version).toBe(2);
+    expect(d.version).toBe(3); // 第三批起升到 v3
     expect(d.settings).toMatchObject({ settleDay: 1, autoSortCategories: false });
     expect(d.noteTags[0].pinned).toBe(false);
     expect(d.accounts[0].subtype).toBe('cash');
-    expect(parseBackup(JSON.stringify({ data: v1 })).version).toBe(2);
+    expect(parseBackup(JSON.stringify({ data: v1 })).version).toBe(3);
   });
   it('範例資料可匯出再匯入；範例投資有損益', () => {
     const d = sampleData(NOW);

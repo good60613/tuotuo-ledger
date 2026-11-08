@@ -4,6 +4,7 @@ import { useAppState, updateData } from '../store';
 import { uid, upsertCategory } from '../data/ops';
 import { allNotes, hideNote, togglePin } from '../data/notes';
 import type { Category, CategoryType } from '../data/types';
+import { DEFAULT_COLOR } from '../categoryStyle';
 
 /** 新增或改名分類 */
 export function CategoryForm({
@@ -22,6 +23,7 @@ export function CategoryForm({
           type,
           name: n,
           icon: icon.trim() || n.slice(0, 1),
+          color: DEFAULT_COLOR,
           order: d.categories.filter((c) => c.type === type).length,
         };
     updateData((x) => upsertCategory(x, cat));

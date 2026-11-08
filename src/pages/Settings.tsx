@@ -8,7 +8,7 @@ import {
 import { SMALL_KINDS, KIND_LABEL, type Account, type AccountKind, type Category, type CategoryType } from '../data/types';
 import { allBalances } from '../data/calc';
 import { accountName, accountsOfKind, bankAccounts, categoriesOf, KIND_ICON } from '../selectors';
-import { exportJson, parseBackup, saveBackupFile } from '../data/backup';
+import { applySettingsImport, checkSettingsImport, exportJson, readBackup, saveBackupFile, type SettingsImportMapping } from '../data/backup';
 import { sampleData, blankData } from '../data/seed';
 import { saveData } from '../data/storage';
 import { Sheet } from '../components/Sheet';
@@ -107,24 +107,88 @@ export function SettingsPage() {
   };
 
   // ---- 備份 ----
-  const doExport = () => {
+  const doExport = (type: 'full' | 'settings') => {
     const stamp = new Date().toISOString().slice(0, 10);
-    saveBackupFile(`記帳備份-${stamp}.json`, exportJson(getState().data))
+    const name = type === 'full' ? `記帳備份-${stamp}.json` : `記帳設定-${stamp}.json`;
+    saveBackupFile(name, exportJson(getState().data, type))
       .then((msg) => msg && showToast(msg))
       .catch(() => showToast('匯出失敗'));
   };
+  const resetFilters = { detail: { accountId: null, categoryId: null, day: null, period: null }, statsAccountId: null, statsPeriod: null };
   const doImport = async (file: File) => {
     try {
-      const next = parseBackup(await file.text());
+      const parsed = readBackup(await file.text());
+      if (parsed.type === 'full') {
+        const next = parsed.data;
+        const ok = await confirmDanger(
+          '用完整備份取代目前資料？',
+          `備份內有 ${next.accounts.length} 個帳戶、${next.transactions.length} 筆紀錄。\n目前手機上的資料會被整個取代。建議先匯出一份目前的資料。`,
+          '取代',
+        );
+        if (!ok) return;
+        await saveData(next);
+        setState({ data: next, ...resetFilters });
+        showToast('已從備份還原');
+        return;
+      }
+      // 只有設定：紀錄保留，找不到的帳戶、分類一個一個問要移到哪裡
+      const cur = getState().data;
+      const inc = parsed.data;
+      const check = checkSettingsImport(cur, inc);
+      const mapping: SettingsImportMapping = { accounts: {}, categories: {} };
+      const total = check.missingAccounts.length + check.missingCategories.length;
+      if (total > 0) {
+        const lines = [
+          ...check.missingAccounts.map((m) => `・帳戶「${m.name}」：${m.count} 筆`),
+          ...check.missingCategories.map((m) => `・分類「${m.name}」：${m.count} 筆`),
+        ];
+        const go = await ask(
+          '有紀錄對不上新設定',
+          `下面這些帳戶或分類在新設定裡找不到，但現有紀錄還在用：\n${lines.join('\n')}\n\n要匯入的話，需要一個一個選紀錄要移到哪裡。不會直接刪除紀錄。`,
+          [
+            { label: '取消匯入', value: 'no', style: 'secondary' },
+            { label: '逐一選擇去處', value: 'yes' },
+          ],
+        );
+        if (go !== 'yes') return;
+        for (const m of check.missingAccounts) {
+          if (m.candidates.length === 0) {
+            await ask('沒有可以移過去的帳戶', `新設定裡沒有跟「${m.name}」同種類的帳戶，這次無法匯入。`, [{ label: '知道了', value: 'ok' }]);
+            return;
+          }
+          const v = await ask(`「${m.name}」的 ${m.count} 筆紀錄要移到哪個帳戶？`, undefined, [
+            ...m.candidates.map((a) => ({ label: a.name, value: a.id, style: 'secondary' as const })),
+            { label: '取消匯入', value: '__cancel', style: 'danger' },
+          ]);
+          if (!v || v === '__cancel') return;
+          mapping.accounts[m.id] = v;
+        }
+        for (const m of check.missingCategories) {
+          if (m.candidates.length === 0) {
+            await ask('沒有可以移過去的分類', `新設定裡沒有${m.type === 'income' ? '收入' : '支出'}分類，這次無法匯入。`, [{ label: '知道了', value: 'ok' }]);
+            return;
+          }
+          const v = await ask(`「${m.name}」的 ${m.count} 筆紀錄要移到哪個分類？`, undefined, [
+            ...m.candidates.map((c) => ({ label: `${c.icon} ${c.name}`, value: c.id, style: 'secondary' as const })),
+            { label: '取消匯入', value: '__cancel', style: 'danger' },
+          ]);
+          if (!v || v === '__cancel') return;
+          mapping.categories[m.id] = v;
+        }
+      }
+      const { data: next, removedSelfTransfers } = applySettingsImport(cur, inc, mapping);
       const ok = await confirmDanger(
-        '用備份檔取代目前資料？',
-        `備份內有 ${next.accounts.length} 個帳戶、${next.transactions.length} 筆紀錄。\n目前手機上的資料會被整個取代。建議先匯出一份目前的資料。`,
-        '取代',
+        '只取代設定？',
+        `帳戶、小帳戶、分類、備註標籤、結算日等會換成備份檔裡的（${inc.accounts.length} 個帳戶、${inc.categories.length} 個分類）。\n` +
+          `現有的 ${next.transactions.length} 筆紀錄保留${total > 0 ? '，對不上的已照你選的移過去' : ''}。` +
+          (removedSelfTransfers > 0 ? `\n其中 ${removedSelfTransfers} 筆轉帳移完後變成「自己轉給自己」，會移除。` : '') +
+          '\n建議先匯出一份完整備份。',
+        '取代設定',
       );
       if (!ok) return;
       await saveData(next);
-      setState({ data: next, detail: { accountId: null, categoryId: null, day: null, period: null }, statsAccountId: null, statsPeriod: null });
-      showToast('已從備份還原');
+      setState({ data: next, ...resetFilters });
+      showToast('已匯入設定，紀錄保留');
     } catch (e) {
       showToast(e instanceof Error ? e.message : '匯入失敗');
     }
@@ -253,11 +317,16 @@ export function SettingsPage() {
 
       {(view === 'backup' || view === 'menu') && <section class="panel">
         <h3>匯出與匯入</h3>
-        <p class="muted small">資料只存在這支手機上。換手機或清除瀏覽器資料前，請先匯出備份。</p>
+        <p class="muted small">資料只存在這支手機上。換手機或清除瀏覽器資料前，請先匯出完整備份。</p>
         <div class="btn-row">
-          <button class="btn" onClick={doExport}>匯出備份</button>
+          <button class="btn" onClick={() => doExport('full')}>匯出完整備份</button>
+          <button class="btn secondary" onClick={() => doExport('settings')}>只匯出設定</button>
+        </div>
+        <p class="muted small">完整備份＝設定＋所有紀錄。只匯出設定＝帳戶、小帳戶、分類、備註標籤、結算日，不含紀錄。</p>
+        <div class="btn-row">
           <button class="btn secondary" onClick={() => fileRef.current?.click()}>從備份匯入</button>
         </div>
+        <p class="muted small">會自動判斷檔案類型：完整備份會取代全部資料；只有設定的檔案只取代設定，紀錄保留。</p>
         <input
           ref={fileRef}
           type="file"

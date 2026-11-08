@@ -1,4 +1,5 @@
 // 資料型別：欄位照「施工工單.md」的〈資料結構與計算規則〉。
+import type { CategoryColorKey } from '../categoryStyle';
 
 /** bank＝一般帳戶（首頁卡片）；其餘為五顆小帳戶球的類型 */
 export type AccountKind = 'bank' | 'easycard' | 'ewallet' | 'invest' | 'saving' | 'other';
@@ -74,8 +75,10 @@ export interface Category {
   id: string;
   type: CategoryType;
   name: string;
-  /** 試玩版圖示用一個字或 emoji，視覺風格之後再談 */
+  /** 圖示：只能從 categoryStyle.ts 的圖示選單選 */
   icon: string;
+  /** 顏色標籤（只是視覺標記，不影響統計）；舊資料沒有時為「其他」灰色 */
+  color: CategoryColorKey;
   order: number;
 }
 
@@ -106,7 +109,7 @@ export interface Settings {
 }
 
 export interface AppData {
-  version: 2;
+  version: 3;
   accounts: Account[];
   transactions: Transaction[];
   categories: Category[];
@@ -114,7 +117,7 @@ export interface AppData {
   settings: Settings;
 }
 
-export const DATA_VERSION = 2;
+export const DATA_VERSION = 3;
 
 /** 不需要分類的紀錄來源（投資配息、費用、儲蓄利息） */
 export const TX_SOURCE_NO_CATEGORY = ['invest-dividend', 'invest-fee', 'saving-interest'];

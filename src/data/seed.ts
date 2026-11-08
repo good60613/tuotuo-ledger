@@ -2,6 +2,7 @@
 import type { Account, AppData, Category, NoteTag, Transaction } from './types';
 import { DATA_VERSION } from './types';
 import { SETTLE } from '../config';
+import type { CategoryColorKey } from '../categoryStyle';
 
 export function emptyData(): AppData {
   return {
@@ -47,17 +48,17 @@ function smallAccounts(scale: number): Account[] {
 }
 
 function defaultCategories(): Category[] {
-  const ex: [string, string][] = [
-    ['早餐', '🥐'], ['午餐', '🍱'], ['晚餐', '🍜'], ['飲料', '🧋'],
-    ['交通', '🚌'], ['日用品', '🧴'], ['購物', '🛍️'], ['娛樂', '🎮'],
-    ['醫療', '💊'], ['居家', '🏠'], ['通訊', '📱'], ['其他', '📦'],
+  const ex: [string, string, CategoryColorKey][] = [
+    ['早餐', '🍞', 'food'], ['午餐', '🍱', 'food'], ['晚餐', '🍜', 'food'], ['飲料', '🧋', 'food'],
+    ['交通', '🚌', 'transport'], ['日用品', '🧴', 'living'], ['購物', '🛍️', 'shopping'], ['娛樂', '🎮', 'fun'],
+    ['醫療', '💊', 'health'], ['居家', '🏠', 'living'], ['通訊', '📱', 'digital'], ['其他', '📦', 'other'],
   ];
-  const inc: [string, string][] = [
-    ['薪水', '💰'], ['獎金', '🎁'], ['投資收益', '📈'], ['兼職', '💼'], ['其他', '📦'],
+  const inc: [string, string, CategoryColorKey][] = [
+    ['薪水', '💰', 'other'], ['獎金', '🎁', 'other'], ['投資收益', '📈', 'other'], ['兼職', '🤝', 'other'], ['其他', '📦', 'other'],
   ];
   return [
-    ...ex.map(([name, icon], i) => ({ id: `c-e${i}`, type: 'expense' as const, name, icon, order: i })),
-    ...inc.map(([name, icon], i) => ({ id: `c-i${i}`, type: 'income' as const, name, icon, order: i })),
+    ...ex.map(([name, icon, color], i) => ({ id: `c-e${i}`, type: 'expense' as const, name, icon, color, order: i })),
+    ...inc.map(([name, icon, color], i) => ({ id: `c-i${i}`, type: 'income' as const, name, icon, color, order: i })),
   ];
 }
 

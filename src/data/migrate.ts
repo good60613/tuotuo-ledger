@@ -1,7 +1,11 @@
 // 舊資料升級：讀取手機資料、匯入備份時都會經過這裡，舊版資料自動補成新格式。
-import type { Account, AppData } from './types';
+// 一版一版往上升：v1 → v2 → v3。
+import type { Account, AppData, Category } from './types';
 import { DATA_VERSION } from './types';
 import { SETTLE } from '../config';
+import { DEFAULT_COLOR, MISSING_ICON, isColorKey } from '../categoryStyle';
+
+type AnyData = Omit<AppData, 'version'> & { version: number };
 
 /**
  * v1 → v2（第二批）：
@@ -9,12 +13,8 @@ import { SETTLE } from '../config';
  * - 備註標籤補上「未釘選」。第一批的常用標籤保留在清單裡，但不自動釘選。
  * - 投資：原本的投資帳戶變成「待投入」；若一個都沒有，補一個待投入。
  */
-export function migrate(raw: unknown): AppData {
-  const d = raw as AppData & { version: number };
-  if (d.version === DATA_VERSION) return d;
-  if (d.version !== 1) throw new Error('不支援的資料版本');
-
-  let accounts: Account[] = d.accounts.map((a) => ({ ...a }));
+function v1to2(d: AnyData): AnyData {
+  const accounts: Account[] = d.accounts.map((a) => ({ ...a }));
   const inv = accounts.filter((a) => a.kind === 'invest');
   if (inv.length === 0) {
     accounts.push({ id: 'a-invest-cash', name: '待投入', kind: 'invest', subtype: 'cash', initialBalance: 0, order: 0 });
@@ -22,10 +22,9 @@ export function migrate(raw: unknown): AppData {
     // 第一個當待投入，其餘當標的（初始餘額視為本金與現值）
     inv.forEach((a, i) => (a.subtype = i === 0 ? 'cash' : 'holding'));
   }
-
   return {
     ...d,
-    version: DATA_VERSION,
+    version: 2,
     accounts,
     noteTags: d.noteTags.map((t) => ({ ...t, pinned: (t as { pinned?: boolean }).pinned ?? false })),
     settings: {
@@ -34,4 +33,27 @@ export function migrate(raw: unknown): AppData {
       autoSortCategories: d.settings.autoSortCategories ?? false,
     },
   };
+}
+
+/** v2 → v3（第三批）：分類補上顏色（沒有＝「其他」灰色）；沒有圖示的補問號 */
+function v2to3(d: AnyData): AnyData {
+  return { ...d, version: 3, categories: d.categories.map(fixCategory) };
+}
+
+/** 分類的圖示、顏色缺漏時補預設值（v3 資料也會檢查，防手動改過的備份檔） */
+function fixCategory(c: Category): Category {
+  const icon = typeof c.icon === 'string' && c.icon.trim() ? c.icon : MISSING_ICON;
+  const color = isColorKey(c.color) ? c.color : DEFAULT_COLOR;
+  return icon === c.icon && color === c.color ? c : { ...c, icon, color };
+}
+
+export function migrate(raw: unknown): AppData {
+  let d = raw as AnyData;
+  if (typeof d?.version !== 'number' || d.version < 1 || d.version > DATA_VERSION) {
+    throw new Error('不支援的資料版本');
+  }
+  if (d.version === 1) d = v1to2(d);
+  if (d.version === 2) d = v2to3(d);
+  const categories = d.categories.map(fixCategory);
+  return { ...d, version: DATA_VERSION, categories } as AppData;
 }
