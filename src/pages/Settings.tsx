@@ -186,8 +186,6 @@ export function SettingsPage() {
               <span>結算日</span>
               <span class="muted">每月 {d.settings.settleDay} 號 ›</span>
             </button>
-            <button class="setting-row" onClick={() => setView('backup')}><span>資料備份</span><span class="muted">›</span></button>
-            <button class="setting-row" onClick={() => setView('demo')}><span>試玩資料</span><span class="muted">›</span></button>
           </section>
         </>
       ) : (
@@ -252,7 +250,7 @@ export function SettingsPage() {
         </label>
       </section>}
 
-      {view === 'backup' && <section class="panel">
+      {(view === 'backup' || view === 'menu') && <section class="panel">
         <h3>匯出與匯入</h3>
         <p class="muted small">資料只存在這支手機上。換手機或清除瀏覽器資料前，請先匯出備份。</p>
         <div class="btn-row">
@@ -272,7 +270,7 @@ export function SettingsPage() {
         />
       </section>}
 
-      {view === 'demo' && <section class="panel">
+      {(view === 'demo' || view === 'menu') && <section class="panel">
         <h3>清空或換範例</h3>
         <div class="btn-row">
           <button class="btn danger" onClick={() => resetTo('blank')}>清空所有資料</button>
