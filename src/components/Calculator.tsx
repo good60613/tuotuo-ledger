@@ -1,4 +1,5 @@
 import type { CalcKey } from '../calcExpr';
+import { CALC } from '../config';
 
 interface Props {
   onKey: (k: CalcKey) => void;
@@ -8,24 +9,33 @@ interface Props {
   okDisabled: boolean;
 }
 
-const ROWS: CalcKey[][] = [
-  ['7', '8', '9', '÷'],
-  ['4', '5', '6', '×'],
-  ['1', '2', '3', '−'],
-  ['00', '0', '.', '+'],
-];
+// 五欄：左三欄數字、第四欄運算（÷ × + −）、第五欄 AC／退格／OK（OK 佔兩格高）
+const KEYS: CalcKey[] = ['7', '8', '9', '÷', 'AC', '4', '5', '6', '×', '⌫', '1', '2', '3', '+'];
+const LAST_ROW: CalcKey[] = ['00', '0', '.', '−'];
 
 export function Calculator({ onKey, onOk, okLabel, okDisabled }: Props) {
   return (
-    <div class="calc" data-no-swipe>
-      {ROWS.flat().map((k) => (
+    <div
+      class="calc"
+      data-no-swipe
+      style={{ '--calc-row': `${CALC.rowHeightPx}px`, '--calc-row-short': `${CALC.shortRowHeightPx}px`, '--calc-gap': `${CALC.gapPx}px` }}
+    >
+      {KEYS.map((k) => (
+        <button
+          key={k}
+          class={`calc-key${'÷×−+'.includes(k) ? ' op' : k === 'AC' || k === '⌫' ? ' fn' : ''}`}
+          onClick={() => onKey(k)}
+          aria-label={k === '⌫' ? '退格' : undefined}
+        >
+          {k}
+        </button>
+      ))}
+      <button class="calc-key ok" disabled={okDisabled} onClick={onOk}>{okLabel}</button>
+      {LAST_ROW.map((k) => (
         <button key={k} class={`calc-key${'÷×−+'.includes(k) ? ' op' : ''}`} onClick={() => onKey(k)}>
           {k}
         </button>
       ))}
-      <button class="calc-key fn" onClick={() => onKey('AC')}>AC</button>
-      <button class="calc-key fn" onClick={() => onKey('⌫')} aria-label="退格">⌫</button>
-      <button class="calc-key ok" disabled={okDisabled} onClick={onOk}>{okLabel}</button>
     </div>
   );
 }

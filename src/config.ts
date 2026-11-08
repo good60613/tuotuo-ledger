@@ -46,6 +46,22 @@ export const TRANSITION = {
   fadeMs: 260,
 } as const;
 
+/** 記帳頁計算機鍵盤（五欄布局）。手機上太擠就調這裡 */
+export const CALC = {
+  /** 每排高度 */
+  rowHeightPx: 52,
+  /** 矮螢幕時的每排高度 */
+  shortRowHeightPx: 46,
+  /** 按鍵之間的間距 */
+  gapPx: 1,
+} as const;
+
+/** 小帳戶子畫面右下角「＋」離螢幕邊緣的距離 */
+export const SUB_FAB = {
+  rightPx: 28,
+  bottomPx: 36,
+} as const;
+
 /** 備註記憶模式 */
 export const NOTES = {
   /** 輸入頁備註格數（「更多…」另外算） */

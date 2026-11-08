@@ -6,6 +6,7 @@ import { periodKey } from '../data/calc';
 import { PeriodBar } from './PeriodBar';
 import { TxList } from './TxList';
 import { openTx } from '../actions';
+import { SUB_FAB } from '../config';
 
 interface Props {
   title: string;
@@ -33,7 +34,7 @@ export function SubFrame({ title, total, subLine, topRight, accountIds, children
   );
 
   return (
-    <div class="sub-screen">
+    <div class="sub-screen" style={{ '--sub-fab-right': `${SUB_FAB.rightPx}px`, '--sub-fab-bottom': `${SUB_FAB.bottomPx}px` }}>
       <div class="sub-top">
         <button class="icon-btn" onClick={closeOverlay} aria-label="返回">‹</button>
         <span class="sub-title">{title}</span>
