@@ -117,6 +117,8 @@ export interface Settings {
   settleDay: number;
   /** 分類自動排序：開啟時依最近 90 天使用次數排序，預設關閉 */
   autoSortCategories: boolean;
+  /** 手機條碼載具號碼（例 /ABC1234）；沒有＝未設定。第七批加入，舊資料與舊備份缺這欄就當未設定 */
+  carrierCode?: string;
 }
 
 export interface AppData {

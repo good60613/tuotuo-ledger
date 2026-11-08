@@ -567,3 +567,9 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: #cf
   height: var(--tl-tail-todo, 10px);
 }
 .detail > .timeline > .day:last-child > .tl-row:last-child > .tl-axis::after { height: var(--tl-tail-detail, 74px); }
+/* 第七批 B 段：載具條碼預覽（白底黑條，四周留白方便掃描） */
+.field-error { color: var(--expense); font-size: 13px; margin: -4px 0 8px; }
+.carrier-preview { margin: 4px 0 12px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.barcode { background: #fff; padding: 10px 0 6px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; max-width: 100%; overflow: hidden; }
+.barcode svg { display: block; max-width: 100%; }
+.barcode-text { font-size: 14px; letter-spacing: 2px; font-variant-numeric: tabular-nums; color: #000; }

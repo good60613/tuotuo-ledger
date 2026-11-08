@@ -27,6 +27,8 @@ const dragCls = (id: string, drag: DragState | null) =>
 import { money } from '../format';
 import { pinnedCount } from '../data/notes';
 import { SETTLE } from '../config';
+import { carrierError, isValidCarrier, normalizeCarrier } from '../data/carrier';
+import { Barcode } from '../components/Barcode';
 
 /** 可以有多個帳戶的小帳戶類型（其他類型固定一個） */
 const MULTI_KINDS: AccountKind[] = ['ewallet', 'invest', 'saving', 'other'];
@@ -41,6 +43,7 @@ type SheetState =
   | { k: 'tags' }
   | { k: 'defaultReimb' }
   | { k: 'settle' }
+  | { k: 'carrier' }
   | { k: 'moveAccount'; from: Account }
   | { k: 'moveCategory'; from: Category };
 
@@ -282,6 +285,10 @@ export function SettingsPage() {
               <span>結算日</span>
               <span class="muted">每月 {d.settings.settleDay} 號 ›</span>
             </button>
+            <button class="setting-row" onClick={() => setSheet({ k: 'carrier' })}>
+              <span>手機條碼載具</span>
+              <span class="muted">{d.settings.carrierCode || '未設定'} ›</span>
+            </button>
           </section>
         </>
       ) : (
@@ -410,6 +417,7 @@ export function SettingsPage() {
       {sheet?.k === 'account' && <AccountForm kind={sheet.kind} existing={sheet.existing} onClose={() => setSheet(null)} />}
       {sheet?.k === 'category' && <CategoryForm type={sheet.type} existing={sheet.existing} onClose={() => setSheet(null)} />}
       {sheet?.k === 'settle' && <SettleForm onClose={() => setSheet(null)} />}
+      {sheet?.k === 'carrier' && <CarrierForm onClose={() => setSheet(null)} />}
       {sheet?.k === 'tags' && <TagManager onClose={() => setSheet(null)} />}
       {sheet?.k === 'defaultReimb' && (
         <AccountPicker
@@ -560,6 +568,56 @@ function SettleForm({ onClose }: { onClose: () => void }) {
         onClick={() => {
           updateData((x) => ({ ...x, settings: { ...x.settings, settleDay: n } }));
           showToast('已更新結算日');
+          onClose();
+        }}
+      >
+        儲存
+      </button>
+    </Sheet>
+  );
+}
+
+function CarrierForm({ onClose }: { onClose: () => void }) {
+  const cur = useAppState().data.settings.carrierCode ?? '';
+  const [v, setV] = useState(cur);
+  const code = normalizeCarrier(v);
+  const err = carrierError(code);
+  const ok = code === '' || isValidCarrier(code);
+  return (
+    <Sheet title="手機條碼載具" onClose={onClose}>
+      <p class="muted small">
+        財政部手機條碼：斜線「/」開頭，共 8 碼（例：/ABC1234）。存好後會顯示在桌面小工具上，結帳時給店員掃。清空再儲存＝取消設定。
+      </p>
+      <label class="field">
+        <span>載具號碼</span>
+        <input
+          value={v}
+          autoCapitalize="characters"
+          autoComplete="off"
+          spellcheck={false}
+          maxLength={10}
+          placeholder="/ABC1234"
+          onInput={(e) => setV(normalizeCarrier(e.currentTarget.value))}
+        />
+      </label>
+      {err && <p class="field-error">{err}</p>}
+      {isValidCarrier(code) && (
+        <div class="carrier-preview">
+          <div class="muted small">預覽條碼</div>
+          <Barcode code={code} />
+        </div>
+      )}
+      <button
+        class="btn block"
+        disabled={!ok}
+        onClick={() => {
+          updateData((x) => {
+            const settings = { ...x.settings };
+            if (code) settings.carrierCode = code;
+            else delete settings.carrierCode;
+            return { ...x, settings };
+          });
+          showToast(code ? '已儲存載具號碼' : '已取消載具號碼');
           onClose();
         }}
       >

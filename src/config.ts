@@ -145,6 +145,18 @@ export const ENTRY_ROW = {
  * 底部操作列與導覽列的尺寸（第五批，單手操作版面）。
  * 矮螢幕覺得擠就調這兩個（heightPx 與 navHeightPx）。
  */
+/** 手機條碼載具（設定頁預覽；桌面小工具的條碼大小在 android/app/src/main/res/values/widget_dimens.xml） */
+export const CARRIER = {
+  /** 粗條是細條的幾倍（Code 39 建議 2～3；越大越好掃，但條碼越寬） */
+  wideRatio: 3,
+  /** 預覽條碼：一條細條幾 px */
+  previewNarrowPx: 2,
+  /** 預覽條碼高度 */
+  previewHeightPx: 64,
+  /** 條碼左右要留的空白（幾條細條寬；掃描槍需要） */
+  quietModules: 10,
+} as const;
+
 /** 時間軸：左邊豎線在最後一筆下面再往下延伸多長（只畫線，不佔排版高度） */
 export const TIMELINE = {
   /** 待辦頁（報帳、預算）：延伸到清單底（清單外框會切掉多的部分，不可大於最後一天的下間距 10px，否則會多出捲動空間） */
