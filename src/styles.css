@@ -184,11 +184,10 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: #cf
 .entry { display: flex; flex-direction: column; height: 100%; background: var(--card); }
 .entry-top { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-bottom: 1px solid var(--line); }
 .seg { flex: 1; display: flex; justify-content: center; gap: 4px; }
-.seg button { border: 0; background: var(--bg); padding: 9px 22px; border-radius: 10px; font-size: 16px; font-weight: 700; color: var(--muted); }
+.seg button { border: 0; background: var(--bg); padding: 9px 16px; border-radius: 10px; font-size: 16px; font-weight: 700; color: var(--muted); }
 .seg button.on.expense { background: var(--expense); color: #fff; }
 .seg button.on.income { background: var(--income); color: #fff; }
-.seg-small { border: 1px solid var(--line); background: none; padding: 5px 9px; border-radius: 8px; font-size: 13px; color: var(--muted); }
-.seg-small.on { background: var(--transfer); color: #fff; border-color: var(--transfer); }
+.seg button.on.transfer { background: var(--transfer); color: #fff; }
 .notice { background: #fff6e0; color: #8a5a00; font-size: 13px; padding: 8px 12px; }
 
 .cat-grid { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(4, 1fr); align-content: start; gap: 4px; padding: 8px; }
@@ -220,17 +219,18 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: #cf
 .tag.more { color: var(--muted); }
 
 .date-row { display: flex; height: 42px; border-top: 1px solid var(--line); }
-.date-row > * { border: 0; border-right: 1px solid var(--line); background: none; font-size: 13px; }
-.date-cell { flex: 2; display: flex; align-items: center; padding: 0 8px; }
-.date-cell input { border: 0; background: none; font-size: 14px; width: 100%; color: var(--text); }
-.acc-cell { flex: 1; font-weight: 700; color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 4px; }
-.reimb-cell { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
-.reimb-cell:disabled { opacity: .35; }
-.switch { width: 30px; height: 18px; border-radius: 9px; background: #cfd3da; position: relative; transition: background .15s; }
-.switch::after { content: ''; position: absolute; left: 2px; top: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: left .15s; }
-.reimb-cell.on { color: var(--reimb); font-weight: 700; }
-.reimb-cell.on .switch { background: var(--reimb); }
-.reimb-cell.on .switch::after { left: 14px; }
+.date-row > * { flex-basis: 0; min-width: 0; border: 0; border-right: 1px solid var(--line); background: none; font-size: 13px; }
+.date-row > *:last-child { border-right: 0; }
+.date-cell { position: relative; display: flex; align-items: center; justify-content: center; padding: 0 4px; }
+.date-text { font-size: 13px; color: var(--text); white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* 原生 input 透明疊在文字上，點下去開手機的日期時間選單 */
+.date-cell input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; border: 0; padding: 0; }
+.acc-cell { font-weight: 700; color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 6px; }
+.acc-cell:disabled { opacity: .6; }
+.tag-cell { display: flex; align-items: center; justify-content: center; color: var(--muted); font-weight: 600; transition: background .12s, color .12s; }
+.tag-cell:active { opacity: .7; }
+.tag-cell.budget.on { background: var(--budget); color: #fff; font-weight: 700; }
+.tag-cell.reimb.on { background: var(--reimb); color: #fff; font-weight: 700; }
 
 .calc { display: grid; grid-template-columns: repeat(5, 1fr); grid-auto-rows: var(--calc-row, 52px); gap: var(--calc-gap, 1px); background: var(--line); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
 .calc-key { border: 0; background: #fff; font-size: 22px; font-variant-numeric: tabular-nums; }

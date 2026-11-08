@@ -2,7 +2,7 @@
 import { CatIcon } from '../components/CatIcon';
 import { useRef, useState } from 'preact/hooks';
 import { getState, updateData, closeOverlay, showToast, confirmDanger, type Overlay } from '../store';
-import { addTransaction, updateTransaction, deleteTransaction, isLocked, OpError, type TxInput } from '../data/ops';
+import { addTransaction, updateTransaction, deleteTransaction, isLocked, isBudgetPayment, OpError, type TxInput } from '../data/ops';
 import { roundAmount } from '../data/calc';
 import { pressKey, evaluate, hasOperator, displayExpr, numberToExpr, type CalcKey } from '../calcExpr';
 import { accountName, categoryOf } from '../selectors';
@@ -11,7 +11,16 @@ import { Calculator } from '../components/Calculator';
 import { AccountPicker } from '../components/AccountPicker';
 import { CategoryForm, TagManager } from '../components/Editors';
 import { useAppState } from '../store';
+import { ENTRY_ROW } from '../config';
 import { toLocalInput, fromLocalInput } from '../format';
+
+/** 日期格顯示：今年 11/08 07:42；非今年 25/12/31 07:42 */
+function whenLabel(v: string): string {
+  const m = /^(d{4})-(d{2})-(d{2})T(d{2}:d{2})/.exec(v);
+  if (!m) return v;
+  const thisYear = String(new Date().getFullYear());
+  return (m[1] === thisYear ? `${m[2]}/${m[3]}` : `${m[1].slice(2)}/${m[2]}/${m[3]}`) + ` ${m[4]}`;
+}
 
 type Mode = 'expense' | 'income' | 'transfer';
 type EntryOverlay = Extract<Overlay, { kind: 'entry' }>;
@@ -21,6 +30,7 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
   const d = s.data;
   const editing = o.txId ? d.transactions.find((t) => t.id === o.txId) : undefined;
   const locked = editing ? isLocked(editing) : false;
+  const isPay = editing ? isBudgetPayment(editing) : false;
 
   const [mode, setMode] = useState<Mode>((editing?.type as Mode) ?? o.mode);
   const [accountId, setAccountId] = useState<string | null>(editing?.accountId ?? o.accountId);
@@ -30,6 +40,7 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
   const [note, setNote] = useState(editing?.note ?? '');
   const [when, setWhen] = useState(editing ? toLocalInput(editing.occurredAt) : toLocalInput(new Date().toISOString()));
   const [reimb, setReimb] = useState(editing?.reimbursable ?? false);
+  const [budget, setBudget] = useState(editing?.budget ?? false);
   const [sheet, setSheet] = useState<null | 'account' | 'from' | 'to' | 'newCat' | 'tags'>(null);
   const saving = useRef(false);
 
@@ -52,13 +63,43 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
     if (m !== 'transfer') {
       // 分類各自獨立，換模式要重選
       if (cat && cat.type !== m) setCatId(null);
-      if (m === 'income') setReimb(false);
+      if (m !== 'expense') {
+        setReimb(false);
+        setBudget(false);
+      }
+    }
+  };
+
+  const lockedHint = () => {
+    if (isPay) showToast('這筆是預算付款，不能改成預算或報帳');
+    else showToast(editing?.budget ? '這筆預算已付款，不能再改預算或報帳' : '這筆已報帳，不能再改');
+  };
+  const bankOnly = (id: string | null) => !id || d.accounts.find((a) => a.id === id)?.kind === 'bank';
+  const onBudget = () => {
+    if (locked || isPay) return lockedHint();
+    if (budget) return setBudget(false);
+    if (!bankOnly(accountId)) return showToast('預算只能掛在一般帳戶');
+    setBudget(true);
+    setReimb(false);
+  };
+  const onReimb = () => {
+    if (locked || isPay) return lockedHint();
+    if (reimb) return setReimb(false);
+    setReimb(true);
+    setBudget(false);
+  };
+  // 換帳戶：已選預算卻換到非一般帳戶 → 自動取消預算並提示
+  const pickAccount = (id: string | null) => {
+    setAccountId(id);
+    if (budget && !bankOnly(id)) {
+      setBudget(false);
+      showToast('預算只能掛在一般帳戶，已取消預算');
     }
   };
 
   const onKey = (k: CalcKey) => {
     if (locked) {
-      showToast('這筆已報帳，要改金額請先在待辦頁退回待報帳');
+      showToast(editing?.budget ? '這筆預算已付款，要改金額請先在待辦頁退回未付' : '這筆已報帳，要改金額請先在待辦頁退回待報帳');
       return;
     }
     setExpr((e) => pressKey(e, k));
@@ -82,6 +123,7 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
       note: note.trim(),
       occurredAt: fromLocalInput(when),
       reimbursable: mode === 'expense' && reimb,
+      budget: mode === 'expense' && budget,
     };
     try {
       if (editing) {
@@ -106,8 +148,12 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
 
   const onDelete = async () => {
     if (!editing) return;
+    if (isPay) {
+      showToast('這筆是預算付款，請先在待辦頁退回未付再刪除');
+      return;
+    }
     if (locked) {
-      showToast('這筆已報帳，請先在待辦頁退回待報帳再刪除');
+      showToast(editing.budget ? '這筆預算已付款，請先在待辦頁退回未付再刪除' : '這筆已報帳，請先在待辦頁退回待報帳再刪除');
       return;
     }
     if (!(await confirmDanger('刪除這筆紀錄？', '刪除後無法復原。'))) return;
@@ -126,12 +172,18 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
         <div class="seg">
           <button class={mode === 'expense' ? 'on expense' : ''} onClick={() => switchMode('expense')} disabled={locked}>支出</button>
           <button class={mode === 'income' ? 'on income' : ''} onClick={() => switchMode('income')} disabled={locked}>收入</button>
+          <button class={mode === 'transfer' ? 'on transfer' : ''} onClick={() => switchMode('transfer')} disabled={locked}>轉帳</button>
         </div>
-        <button class={`seg-small${mode === 'transfer' ? ' on' : ''}`} onClick={() => switchMode('transfer')} disabled={locked}>轉帳</button>
         {editing && <button class="icon-btn danger" onClick={onDelete} aria-label="刪除">🗑</button>}
       </div>
 
-      {locked && <div class="notice">這筆已報帳，只能改分類、備註、日期。要改金額或帳戶請先在待辦頁退回。</div>}
+      {locked && (
+        <div class="notice">
+          {editing?.budget
+            ? '這筆預算已付款，只能改分類、備註、日期。要改金額或帳戶請先在待辦頁退回未付。'
+            : '這筆已報帳，只能改分類、備註、日期。要改金額或帳戶請先在待辦頁退回。'}
+        </div>
+      )}
 
       {isTransfer ? (
         <div class="transfer-box">
@@ -193,22 +245,50 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
       </div>
 
       <div class={`date-row${isTransfer ? ' transfer' : ''}`}>
-        <label class="date-cell">
-          <input type="datetime-local" value={when} onInput={(e) => e.currentTarget.value && setWhen(e.currentTarget.value)} />
+        <label class="date-cell" style={{ flexGrow: ENTRY_ROW.date }}>
+          <span class="date-text">{whenLabel(when)}</span>
+          <input
+            type="datetime-local"
+            value={when}
+            onInput={(e) => e.currentTarget.value && setWhen(e.currentTarget.value)}
+            onClick={(e) => {
+              // 部分 WebView 點透明 input 不會自己開選單，補呼叫 showPicker
+              try {
+                (e.currentTarget as HTMLInputElement).showPicker?.();
+              } catch {
+                /* 已經開著或不支援，忽略 */
+              }
+            }}
+          />
         </label>
         {!isTransfer && (
-          <button class="acc-cell" onClick={() => !locked && setSheet('account')} disabled={locked}>
+          <button
+            class="acc-cell"
+            style={{ flexGrow: ENTRY_ROW.account }}
+            onClick={() => !locked && setSheet('account')}
+            disabled={locked}
+          >
             {accountId ? accountName(d, accountId) : '選帳戶'}
           </button>
         )}
-        {!isTransfer && (
+        {mode === 'expense' && (
           <button
-            class={`reimb-cell${reimb ? ' on' : ''}`}
-            disabled={mode !== 'expense' || locked}
-            onClick={() => setReimb((r) => !r)}
-            aria-pressed={reimb}
+            class={`tag-cell budget${budget ? ' on' : ''}`}
+            style={{ flexGrow: ENTRY_ROW.budget }}
+            aria-pressed={budget}
+            onClick={onBudget}
           >
-            <span class="switch" />報帳
+            預算
+          </button>
+        )}
+        {mode === 'expense' && (
+          <button
+            class={`tag-cell reimb${reimb ? ' on' : ''}`}
+            style={{ flexGrow: ENTRY_ROW.reimb }}
+            aria-pressed={reimb}
+            onClick={onReimb}
+          >
+            報帳
           </button>
         )}
       </div>
@@ -220,7 +300,7 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
         okDisabled={pending ? expr === '' : !valid}
       />
 
-      {sheet === 'account' && <AccountPicker title="選擇帳戶" value={accountId} onPick={setAccountId} onClose={() => setSheet(null)} />}
+      {sheet === 'account' && <AccountPicker title="選擇帳戶" value={accountId} onPick={pickAccount} onClose={() => setSheet(null)} />}
       {sheet === 'from' && <AccountPicker title="從哪個帳戶" value={accountId} onPick={setAccountId} onClose={() => setSheet(null)} />}
       {sheet === 'to' && <AccountPicker title="轉到哪個帳戶" value={toAccountId} onPick={setToAccountId} onClose={() => setSheet(null)} />}
       {sheet === 'newCat' && !isTransfer && (
