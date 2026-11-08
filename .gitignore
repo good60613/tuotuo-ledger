@@ -13,3 +13,6 @@ android/local.properties
 # 打包好的 APK（方便找，不進 git）
 APK/
 *.apk
+
+# 宣傳片輸出的影片（不進 git）
+宣傳片輸出/
