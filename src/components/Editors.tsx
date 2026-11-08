@@ -1,7 +1,7 @@
 import { useState } from 'preact/hooks';
 import { Sheet } from './Sheet';
 import { useAppState, updateData } from '../store';
-import { uid, upsertCategory } from '../data/ops';
+import { nextCategoryOrder, uid, upsertCategory } from '../data/ops';
 import { addNoteTag, allNotes, hideNote, togglePin } from '../data/notes';
 import type { Category, CategoryType } from '../data/types';
 import { CATEGORY_COLORS, DEFAULT_COLOR, DEFAULT_NEW_ICON, ICON_GROUPS, type CategoryColorKey } from '../categoryStyle';
@@ -23,7 +23,7 @@ export function CategoryForm({
     if (!n) return;
     const cat: Category = existing
       ? { ...existing, name: n, icon, color }
-      : { id: uid('c'), type, name: n, icon, color, order: d.categories.filter((c) => c.type === type).length };
+      : { id: uid('c'), type, name: n, icon, color, order: nextCategoryOrder(d, type) };
     updateData((x) => upsertCategory(x, cat));
     onSaved?.(cat.id);
     onClose();

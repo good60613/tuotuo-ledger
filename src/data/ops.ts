@@ -381,3 +381,8 @@ export function ballDropTarget(data: AppData, kind: Account['kind']): Account | 
   }
   return data.accounts.filter((a) => a.kind === kind).sort(byOrder)[0];
 }
+
+/** 新分類的排序：排在同類型最後（用最大值＋1，刪除過分類也不會撞號） */
+export function nextCategoryOrder(data: AppData, type: Category['type']): number {
+  return Math.max(-1, ...data.categories.filter((c) => c.type === type).map((c) => c.order)) + 1;
+}

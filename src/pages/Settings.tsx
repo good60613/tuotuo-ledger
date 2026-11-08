@@ -15,6 +15,13 @@ import { saveData } from '../data/storage';
 import { Sheet } from '../components/Sheet';
 import { AccountPicker } from '../components/AccountPicker';
 import { CategoryForm, TagManager } from '../components/Editors';
+import { CatIcon } from '../components/CatIcon';
+import { Sortable, TRASH_ID, type DragState } from '../gestures/Sortable';
+import { sortedCategories } from '../data/notes';
+
+/** 拖曳中的樣式：拿起的那格、手指底下那格 */
+const dragCls = (id: string, drag: DragState | null) =>
+  !drag ? '' : drag.id === id ? ' lifted' : drag.over === id ? ' over' : '';
 import { money } from '../format';
 import { pinnedCount } from '../data/notes';
 import { SETTLE } from '../config';
@@ -44,19 +51,11 @@ export function SettingsPage() {
   const [catType, setCatType] = useState<CategoryType>('expense');
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const moveAcc = (list: Account[], i: number, dir: -1 | 1) => {
-    const ids = list.map((a) => a.id);
-    const j = i + dir;
-    if (j < 0 || j >= ids.length) return;
-    [ids[i], ids[j]] = [ids[j], ids[i]];
-    updateData((x) => ({ ...x, accounts: reorder(x.accounts, ids) }));
-  };
-  const moveCat = (list: Category[], i: number, dir: -1 | 1) => {
-    const ids = list.map((a) => a.id);
-    const j = i + dir;
-    if (j < 0 || j >= ids.length) return;
-    [ids[i], ids[j]] = [ids[j], ids[i]];
-    updateData((x) => ({ ...x, categories: reorder(x.categories, ids) }));
+  const sortAccounts = (ids: string[]) => updateData((x) => ({ ...x, accounts: reorder(x.accounts, ids) }));
+  const sortCategories = (ids: string[]) => updateData((x) => ({ ...x, categories: reorder(x.categories, ids) }));
+  const toggleAutoSort = async (on: boolean) => {
+    if (on && !(await confirmDanger('開啟自動排序？', '自動排序會打亂現在的排序，確定要嗎？\n關掉後會回到你現在的手動排序。', '開啟'))) return;
+    updateData((x) => ({ ...x, settings: { ...x.settings, autoSortCategories: on } }));
   };
 
   // ---- 刪除帳戶 ----
@@ -240,20 +239,19 @@ export function SettingsPage() {
   const banks = bankAccounts(d);
   const cats = categoriesOf(d, catType);
 
-  const accRow = (a: Account, list: Account[], i: number, canDelete: boolean) => (
-    <div class="list-row" key={a.id}>
+  const accRow = (a: Account, canDelete: boolean, bind: (id: string) => object, drag: DragState | null) => (
+    <div class={`list-row sort-row${dragCls(a.id, drag)}`} key={a.id} {...bind(a.id)}>
       <button class="row-main" onClick={() => setSheet({ k: 'account', kind: a.kind, existing: a })}>
         <span>{a.name}</span>
         <span class="muted small">目前 {money(bal.get(a.id) ?? 0)}</span>
       </button>
-      {list.length > 1 && (
-        <>
-          <button class="icon-btn" disabled={i === 0} onClick={() => moveAcc(list, i, -1)} aria-label="上移">↑</button>
-          <button class="icon-btn" disabled={i === list.length - 1} onClick={() => moveAcc(list, i, 1)} aria-label="下移">↓</button>
-        </>
-      )}
       {canDelete && <button class="icon-btn danger" onClick={() => deleteAccount(a)} aria-label="刪除">🗑</button>}
     </div>
+  );
+  const accList = (list: Account[], canDelete: (a: Account) => boolean) => (
+    <Sortable ids={list.map((a) => a.id)} enabled={list.length > 1} onReorder={sortAccounts}>
+      {(bind, drag) => list.map((a) => accRow(a, canDelete(a), bind, drag))}
+    </Sortable>
   );
 
   return (
@@ -291,7 +289,8 @@ export function SettingsPage() {
 
       {view === 'accounts' && <section class="panel">
         <h3>首頁卡片</h3>
-        {banks.map((a, i) => accRow(a, banks, i, true))}
+        {banks.length > 1 && <p class="muted small">點一下修改，長按拖曳換位置</p>}
+        {accList(banks, () => true)}
         <button class="add-row" onClick={() => setSheet({ k: 'account', kind: 'bank' })}>＋ 新增帳戶</button>
       </section>}
 
@@ -303,7 +302,7 @@ export function SettingsPage() {
           return (
             <div key={kind} class="kind-group">
               <div class="kind-title">{KIND_ICON[kind]} {KIND_LABEL[kind]}{multi && <span class="muted small">（可以有多個）</span>}</div>
-              {list.map((a, i) => accRow(a, list, i, (multi || list.length > 1) && !(a.kind === 'invest' && a.subtype !== 'holding')))}
+              {accList(list, (a) => (multi || list.length > 1) && !(a.kind === 'invest' && a.subtype !== 'holding'))}
               {(multi || list.length === 0) && (
                 <button class="add-row" onClick={() => setSheet({ k: 'account', kind })}>＋ 新增{KIND_LABEL[kind]}</button>
               )}
@@ -320,17 +319,41 @@ export function SettingsPage() {
             <button class={catType === 'income' ? 'on' : ''} onClick={() => setCatType('income')}>收入</button>
           </div>
         </div>
-        {cats.map((c, i) => (
-          <div class="list-row" key={c.id}>
-            <button class="row-main" onClick={() => setSheet({ k: 'category', type: catType, existing: c })}>
-              <span>{c.icon} {c.name}</span>
-            </button>
-            <button class="icon-btn" disabled={i === 0} onClick={() => moveCat(cats, i, -1)} aria-label="上移">↑</button>
-            <button class="icon-btn" disabled={i === cats.length - 1} onClick={() => moveCat(cats, i, 1)} aria-label="下移">↓</button>
-            <button class="icon-btn danger" onClick={() => deleteCategory(c)} aria-label="刪除">🗑</button>
-          </div>
-        ))}
-        <button class="add-row" onClick={() => setSheet({ k: 'category', type: catType })}>＋ 新增{catType === 'expense' ? '支出' : '收入'}分類</button>
+        <p class="muted small">
+          {d.settings.autoSortCategories ? '自動排序開著，不能拖曳。點一下修改。' : '點一下修改，長按拖曳換位置；拖到右下角的叉叉＝刪除。'}
+        </p>
+        <Sortable
+          class="cat-grid manage"
+          ids={cats.map((c) => c.id)}
+          enabled={!d.settings.autoSortCategories}
+          onReorder={sortCategories}
+          onTrash={(id) => {
+            const c = cats.find((x) => x.id === id);
+            if (c) deleteCategory(c);
+          }}
+        >
+          {(bind, drag) => (
+            <>
+              {(d.settings.autoSortCategories ? sortedCategories(d, catType) : cats).map((c) => (
+                <button key={c.id} class={`cat${dragCls(c.id, drag)}`} {...bind(c.id)} onClick={() => setSheet({ k: 'category', type: catType, existing: c })}>
+                  <CatIcon icon={c.icon} color={c.color} />
+                  <span class="cat-name">{c.name}</span>
+                </button>
+              ))}
+              {drag ? (
+                <div class={`cat trash${drag.over === TRASH_ID ? ' over' : ''}`} data-sort={TRASH_ID}>
+                  <span class="cat-icon">✕</span>
+                  <span class="cat-name">刪除</span>
+                </div>
+              ) : (
+                <button class="cat add" onClick={() => setSheet({ k: 'category', type: catType })}>
+                  <span class="cat-icon">＋</span>
+                  <span class="cat-name">新增</span>
+                </button>
+              )}
+            </>
+          )}
+        </Sortable>
         <label class="setting-row">
           <span>自動排序<span class="muted small"> 常用的排前面（最近 90 天）</span></span>
           <input
@@ -338,7 +361,8 @@ export function SettingsPage() {
             checked={d.settings.autoSortCategories}
             onChange={(e) => {
               const on = e.currentTarget.checked;
-              updateData((x) => ({ ...x, settings: { ...x.settings, autoSortCategories: on } }));
+              e.currentTarget.checked = d.settings.autoSortCategories; // 等確認後再由資料決定
+              toggleAutoSort(on);
             }}
           />
         </label>

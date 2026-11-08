@@ -431,3 +431,12 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: #cf
 .row-icon { font-size: 18px; margin-right: 6px; vertical-align: middle; }
 .pin-check { display: flex; align-items: center; gap: 4px; font-size: 13px; white-space: nowrap; }
 .inline-add .pin-check input { flex: none; padding: 0; width: 18px; height: 18px; }
+
+/* 長按拖曳換位置（第三批第 5 項） */
+.sortable [data-sort] { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.sort-row.lifted, .cat.lifted { opacity: .6; transform: scale(1.04); box-shadow: 0 6px 16px rgba(0,0,0,.2); background: var(--card); }
+.sort-row.over { outline: 2px solid var(--accent); background: #eef3fe; }
+.cat.over { border-color: var(--accent); background: #eef3fe; }
+.cat-grid.manage { padding: 4px 0; overflow: visible; }
+.cat.trash .cat-icon { color: #fff; background: var(--expense); font-weight: 700; }
+.cat.trash.over { border-color: var(--expense); background: #fbe3e3; }
