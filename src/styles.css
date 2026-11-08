@@ -555,3 +555,9 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: #cf
 /* 首頁（第六批）：上＝只看的金額（撐滿），中＝卡片區→小帳戶球，下＝最近紀錄（拿起時換成放置區，提示字緊貼其上） */
 .home-head { height: 40px; padding-top: 6px; }
 @media (max-height: 700px) { .home-head { height: 32px; padding-top: 4px; } }
+
+/* 第六批：紀錄貼底。筆數少時整串（含日期標題）貼在底部操作列上方，由下往上長；滿版後照常捲動（純排版，不靠程式量高度，切換點不會跳） */
+.todo-list { display: flex; flex-direction: column; }
+.todo-list > .timeline, .todo-list > .empty-list { margin-top: auto; flex: none; }
+.detail > .timeline, .detail > .empty-list { margin-top: auto; }
+.detail .fab { margin-top: 0; }
