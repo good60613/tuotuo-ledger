@@ -10,6 +10,7 @@ import { allBalances } from '../data/calc';
 import { accountName, accountsOfKind, bankAccounts, categoriesOf, KIND_ICON } from '../selectors';
 import { applySettingsImport, checkSettingsImport, exportJson, readBackup, saveBackupFile, type SettingsImportMapping } from '../data/backup';
 import { sampleData, blankData } from '../data/seed';
+import { clearRecords } from '../data/reset';
 import { saveData } from '../data/storage';
 import { Sheet } from '../components/Sheet';
 import { AccountPicker } from '../components/AccountPicker';
@@ -193,19 +194,47 @@ export function SettingsPage() {
       showToast(e instanceof Error ? e.message : '匯入失敗');
     }
   };
-  const resetTo = async (which: 'blank' | 'sample') => {
-    const ok = await confirmDanger(
-      which === 'blank' ? '清空所有資料？' : '換成範例資料？',
-      which === 'blank'
-        ? '所有帳戶、紀錄都會刪除（分類與標籤恢復預設），無法復原。建議先匯出備份。'
-        : '目前資料會被範例資料取代，無法復原。建議先匯出備份。',
-      which === 'blank' ? '清空' : '取代',
-    );
-    if (!ok) return;
-    const next = which === 'blank' ? blankData() : sampleData();
-    updateData(() => next);
-    setState({ detail: { accountId: null, categoryId: null, day: null }, statsAccountId: null });
-    showToast(which === 'blank' ? '已清空' : '已載入範例資料');
+  /** 第一步確認：取消／先匯出完整備份／繼續。回傳 true＝繼續 */
+  const firstConfirm = async (title: string, body: string, okLabel: string): Promise<boolean> => {
+    const v = await ask(title, body, [
+      { label: '先匯出完整備份', value: 'export', style: 'secondary' },
+      { label: okLabel, value: 'yes', style: 'danger' },
+      { label: '取消', value: 'no', style: 'secondary' },
+    ]);
+    if (v === 'export') doExport('full');
+    return v === 'yes';
+  };
+  const applyReset = (next: (x: typeof d) => typeof d, msg: string) => {
+    updateData(next);
+    setState({ ...resetFilters });
+    showToast(msg);
+  };
+  const loadSample = async () => {
+    if (!(await firstConfirm(
+      '載入範例資料？',
+      '目前的帳戶和設定都會被蓋掉，紀錄也會全部換成範例資料，無法復原。\n建議先匯出完整備份。',
+      '繼續',
+    ))) return;
+    if (!(await confirmDanger('再確認一次', '帳戶和設定都會被蓋掉，整個換成範例資料。確定嗎？', '換成範例'))) return;
+    applyReset(() => sampleData(), '已載入範例資料');
+  };
+  const clearRecordsOnly = async () => {
+    const n = getState().data.transactions.length;
+    if (!(await firstConfirm(
+      '清空紀錄？',
+      `會刪除全部 ${n} 筆記帳紀錄（含校正、報帳、轉帳），無法復原。\n帳戶、小帳戶、分類、備註標籤、結算日等設定都會保留，帳戶金額回到初始餘額。\n建議先匯出完整備份。`,
+      '清空紀錄',
+    ))) return;
+    applyReset((x) => clearRecords(x), '已清空紀錄，設定保留');
+  };
+  const clearAll = async () => {
+    if (!(await firstConfirm(
+      '清空所有資料？',
+      '所有帳戶、紀錄、設定都會刪除（分類與標籤恢復預設），無法復原。\n建議先匯出完整備份。',
+      '繼續',
+    ))) return;
+    if (!(await confirmDanger('再確認一次', '帳戶、紀錄、設定全部清除，無法復原。確定嗎？', '全部清除'))) return;
+    applyReset(() => blankData(), '已清空所有資料');
   };
 
   const banks = bankAccounts(d);
@@ -256,7 +285,7 @@ export function SettingsPage() {
       ) : (
         <div class="sub-head">
           <button class="icon-btn" onClick={() => setView('menu')} aria-label="返回設定">‹</button>
-          <h1 class="page-title">{{ accounts: '帳戶管理', small: '小帳戶管理', categories: '分類管理', backup: '資料備份', demo: '試玩資料' }[view]}</h1>
+          <h1 class="page-title">{{ accounts: '帳戶管理', small: '小帳戶管理', categories: '分類管理', backup: '資料備份', demo: '清空或範例' }[view]}</h1>
         </div>
       )}
 
@@ -341,11 +370,13 @@ export function SettingsPage() {
       </section>}
 
       {(view === 'demo' || view === 'menu') && <section class="panel">
-        <h3>清空或換範例</h3>
-        <div class="btn-row">
-          <button class="btn danger" onClick={() => resetTo('blank')}>清空所有資料</button>
-          <button class="btn secondary" onClick={() => resetTo('sample')}>載入範例資料</button>
+        <h3>清空或範例</h3>
+        <div class="btn-row three">
+          <button class="btn secondary" onClick={loadSample}>載入範例</button>
+          <button class="btn warn" onClick={clearRecordsOnly}>清空紀錄</button>
+          <button class="btn danger" onClick={clearAll}>清空所有資料</button>
         </div>
+        <p class="muted small">由左到右越來越危險。清空紀錄只刪記帳紀錄，帳戶與設定保留。</p>
       </section>}
 
       {sheet?.k === 'account' && <AccountForm kind={sheet.kind} existing={sheet.existing} onClose={() => setSheet(null)} />}
