@@ -278,6 +278,13 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: #cf
 .badge.pending { background: var(--reimb); color: #fff; }
 .badge.done { background: #e9edf2; color: var(--muted); }
 .badge.calib { background: #e9edf2; color: var(--muted); margin-left: 4px; }
+/* 報帳／預算標示：外框＋小字（選取中時以選取外框為主） */
+.tx-card.tag-reimb:not(.selected) { border-color: var(--reimb); }
+.tx-card.tag-budget:not(.selected) { border-color: var(--budget); }
+.tx-flag { font-size: 11px; font-weight: 700; line-height: 1; padding: 2px 5px; border-radius: 5px; }
+.tx-flag.reimb { background: var(--reimb); color: #fff; }
+.tx-flag.budget { background: var(--budget); color: #fff; }
+.tx-flag.done { color: #a3a9b4; font-weight: 400; padding-left: 0; }
 
 /* 浮動按鈕：黏在捲動頁面的右下角（不用 fixed，避免跟著換頁容器跑掉） */
 .fab { position: sticky; bottom: 16px; margin: 0 0 0 auto; display: flex; align-items: center; justify-content: center; width: 58px; height: 58px; border-radius: 50%; border: 0; background: var(--accent); color: #fff; font-size: 30px; box-shadow: 0 6px 16px rgba(47,111,222,.4); z-index: 5; }

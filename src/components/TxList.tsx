@@ -154,8 +154,24 @@ export function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { 
     amt = (t.type === 'expense' ? '-' : '+') + money(t.amount);
     cls = t.type;
   }
+  // 報帳／預算標示：未結案＝彩色外框＋「報」「預」；結案＝拿掉外框，留淺色「已報」「已付」。色弱靠小字辨識
+  let flag: { cls: string; text: string } | null = null;
+  let frame = '';
+  if (t.reimbursable) {
+    if (t.reimburseStatus === 'done') flag = { cls: 'done', text: '已報' };
+    else {
+      flag = { cls: 'reimb', text: '報' };
+      frame = ' tag-reimb';
+    }
+  } else if (t.budget) {
+    if (t.budgetStatus === 'paid') flag = { cls: 'done', text: '已付' };
+    else {
+      flag = { cls: 'budget', text: '預' };
+      frame = ' tag-budget';
+    }
+  }
   return (
-    <button class={`tx-card${selected ? ' selected' : ''}`} onClick={() => onTap(t)} {...longPressHandlers(t, onLongPress)}>
+    <button class={`tx-card${frame}${selected ? ' selected' : ''}`} onClick={() => onTap(t)} {...longPressHandlers(t, onLongPress)}>
       {selectable && <span class={`check${selected ? ' on' : ''}`}>{selected ? '✓' : ''}</span>}
       <span class={`tx-icon ${cls}`} style={bg ? { background: bg } : undefined}>{icon}</span>
       <span class="tx-mid">
@@ -167,11 +183,7 @@ export function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { 
           {hm(d)}
           {t.type !== 'transfer' && acc && <> · {KIND_ICON[acc.kind]} {acc.name}</>}
           {t.type === 'adjust' && <span class="badge calib">不計收支</span>}
-          {t.reimbursable && (
-            <span class={`badge ${t.reimburseStatus === 'done' ? 'done' : 'pending'}`}>
-              {t.reimburseStatus === 'done' ? '已報帳' : '待報帳'}
-            </span>
-          )}
+          {flag && <span class={`tx-flag ${flag.cls}`}>{flag.text}</span>}
         </span>
       </span>
       <span class={`tx-amt ${cls}`}>{amt}</span>
