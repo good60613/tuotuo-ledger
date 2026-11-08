@@ -3,6 +3,7 @@ import { catBg } from '../components/CatIcon';
 import { useState } from 'preact/hooks';
 import { useAppState, setState, goPage, PAGES } from '../store';
 import { PeriodBar } from '../components/PeriodBar';
+import { BottomBar } from '../components/BottomBar';
 import { totals, periodKey, categoryBreakdown, dailySeries, dayKey, periodDays, type CategorySum } from '../data/calc';
 import { categoryDisplay } from '../selectors';
 import { budgetPeriodSummary } from '../data/budget';
@@ -36,13 +37,12 @@ export function StatsPage() {
   };
 
   return (
-    <div class="page-pad stats">
+    <div class="page-pad stats has-bar">
       <div class="stats-head">
         <span class="page-title">
           {MONTH_ZH[Number(month.split('-')[1]) - 1]}月統計
           <span class="today-note">今天 {now.getMonth() + 1}/{now.getDate()}</span>
         </span>
-        <button class="pill-btn small" disabled={month === current} onClick={() => setState({ statsPeriod: null })}>本月</button>
       </div>
 
       <div class="month-sum">
@@ -60,13 +60,6 @@ export function StatsPage() {
           本期預算：已付 <b>{money(bud.paid)}</b>／還剩 <b>{money(bud.remaining)}</b>
         </div>
       )}
-
-      <PeriodBar
-        accountId={acc}
-        onAccount={(id) => setState({ statsAccountId: id })}
-        period={month}
-        onPeriod={(p) => setState({ statsPeriod: p })}
-      />
 
       <CategorySection title="支出分類" data={d} list={categoryBreakdown(d, 'expense', month, acc)} total={m.expense} onPick={(id) => jump({ categoryId: id })} />
       <CategorySection title="收入分類" data={d} list={categoryBreakdown(d, 'income', month, acc)} total={m.income} onPick={(id) => jump({ categoryId: id })} />
@@ -105,6 +98,15 @@ export function StatsPage() {
         <BarChart labels={days.map((k) => String(Number(k.slice(8))))} values={series.map((x) => x[barShow])} color={barShow === 'expense' ? '#d64545' : '#1f9d6b'} />
       </section>
 
+      <BottomBar>
+        <PeriodBar
+          accountId={acc}
+          onAccount={(id) => setState({ statsAccountId: id })}
+          period={month}
+          onPeriod={(p) => setState({ statsPeriod: p })}
+        />
+        <button class="pill-btn small" disabled={month === current} onClick={() => setState({ statsPeriod: null })}>本月</button>
+      </BottomBar>
     </div>
   );
 }
