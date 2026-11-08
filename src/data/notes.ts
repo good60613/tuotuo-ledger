@@ -93,6 +93,24 @@ export function togglePin(d: AppData, text: string): AppData {
   return { ...d, noteTags: [...d.noteTags, { id: uid('n'), text, order: maxOrder + 1, pinned: true }] };
 }
 
+/**
+ * 設定裡手動新增標籤（第三批第 6 項）。pin＝直接釘選（記帳時就會出現在最前面）。
+ * 已經在清單裡的：取消「已刪除」狀態，pin 時順便釘選（不會重複）。
+ */
+export function addNoteTag(d: AppData, rawText: string, pin: boolean): AppData {
+  const text = rawText.trim();
+  if (!text) return d;
+  const maxOrder = Math.max(-1, ...d.noteTags.filter((t) => t.pinned).map((t) => t.order));
+  const tag = d.noteTags.find((t) => t.text === text);
+  if (tag) {
+    const { hiddenAt: _h, ...rest } = tag;
+    const pinned = tag.pinned || pin;
+    const order = pin && !tag.pinned ? maxOrder + 1 : tag.order;
+    return { ...d, noteTags: d.noteTags.map((t) => (t === tag ? { ...rest, pinned, order } : t)) };
+  }
+  return { ...d, noteTags: [...d.noteTags, { id: uid('n'), text, order: pin ? maxOrder + 1 : 0, pinned: pin }] };
+}
+
 /** 從清單刪除備註（不改動任何紀錄）。之後若又用到，會重新出現 */
 export function hideNote(d: AppData, text: string, now: Date = new Date()): AppData {
   const hiddenAt = now.toISOString();

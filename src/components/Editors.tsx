@@ -2,7 +2,7 @@ import { useState } from 'preact/hooks';
 import { Sheet } from './Sheet';
 import { useAppState, updateData } from '../store';
 import { uid, upsertCategory } from '../data/ops';
-import { allNotes, hideNote, togglePin } from '../data/notes';
+import { addNoteTag, allNotes, hideNote, togglePin } from '../data/notes';
 import type { Category, CategoryType } from '../data/types';
 import { CATEGORY_COLORS, DEFAULT_COLOR, DEFAULT_NEW_ICON, ICON_GROUPS, type CategoryColorKey } from '../categoryStyle';
 import { CatIcon, catBg } from './CatIcon';
@@ -65,9 +65,22 @@ export function CategoryForm({
 export function TagManager({ onClose }: { onClose: () => void }) {
   const d = useAppState().data;
   const notes = allNotes(d);
+  const [newText, setNewText] = useState('');
+  const [pinNew, setPinNew] = useState(true);
   return (
     <Sheet title="備註標籤" onClose={onClose}>
       <p class="muted small">輸入頁會自動顯示最近用過的備註。加星星＝釘選，所有分類都會顯示在最前面。</p>
+      <div class="inline-add">
+        <input value={newText} maxLength={20} placeholder="新增標籤，例如：午餐便當" onInput={(e) => setNewText(e.currentTarget.value)} />
+        <label class="pin-check">
+          <input type="checkbox" checked={pinNew} onChange={(e) => setPinNew(e.currentTarget.checked)} />
+          釘選
+        </label>
+        <button class="btn" disabled={!newText.trim()} onClick={() => {
+          updateData((x) => addNoteTag(x, newText, pinNew));
+          setNewText('');
+        }}>新增</button>
+      </div>
       {notes.length === 0 && <div class="empty-list small">還沒有用過的備註</div>}
       {notes.map((n) => (
         <div class="list-row" key={n.text}>

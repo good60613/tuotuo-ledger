@@ -429,3 +429,5 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: #cf
 .icon-cell.on { border-color: var(--text); background: var(--bg); }
 .bar-icon.cat-bg, .pick-icon.cat-bg, .row-icon { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; }
 .row-icon { font-size: 18px; margin-right: 6px; vertical-align: middle; }
+.pin-check { display: flex; align-items: center; gap: 4px; font-size: 13px; white-space: nowrap; }
+.inline-add .pin-check input { flex: none; padding: 0; width: 18px; height: 18px; }
