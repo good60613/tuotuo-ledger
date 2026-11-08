@@ -7,7 +7,7 @@ import { OverlayHost } from './pages/OverlayHost';
 import { DialogHost } from './components/DialogHost';
 import { DetailPage } from './pages/Detail';
 import { StatsPage } from './pages/Stats';
-import { ReimbursePage } from './pages/Reimburse';
+import { TodoPage } from './pages/Todo';
 import { SettingsPage } from './pages/Settings';
 
 const NAV_ICON = ['🧾', '📊', '🏠', '📋', '⚙️'];
@@ -32,7 +32,7 @@ export function App() {
 
   if (!s.ready) return <div class="loading">讀取中…</div>;
 
-  const pages = [<ReimbursePage />, <StatsPage />, <HomePage />, <DetailPage />, <SettingsPage />];
+  const pages = [<TodoPage />, <StatsPage />, <HomePage />, <DetailPage />, <SettingsPage />];
 
   return (
     <div class={`app${s.fade ? ' fading' : ''}`}>

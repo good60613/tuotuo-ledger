@@ -6,6 +6,8 @@ import { attachCardDrag, type DropTarget } from '../gestures/cardDrag';
 interface Props {
   account: Account;
   balance: number;
+  /** 這個帳戶未付的預算合計（0＝不顯示） */
+  budget?: number;
   onTap: (acc: Account) => void;
   onLift: (acc: Account) => void;
   onHover: (t: DropTarget | null) => void;
@@ -34,6 +36,7 @@ export function AccountCard(p: Props) {
     <div class="card" ref={ref} data-drop={`account:${p.account.id}`} role="button" aria-label={p.account.name}>
       <div class="card-name">{p.account.name}</div>
       <div class={`card-balance${p.balance < 0 ? ' neg' : ''}`}>{money(p.balance)}</div>
+      {!!p.budget && <div class="card-budget">預算 {money(p.budget)}</div>}
     </div>
   );
 }

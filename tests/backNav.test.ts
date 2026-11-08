@@ -17,7 +17,7 @@ describe('返回鍵', () => {
   });
 
   it('其他主頁（報帳、統計、明細、設定）：回首頁，不離開', () => {
-    for (const name of ['報帳', '統計', '明細', '設定'] as const) {
+    for (const name of ['待辦', '統計', '明細', '設定'] as const) {
       setState({ page: PAGES.indexOf(name) });
       expect(handleBack()).toBe('home');
       expect(getState().page).toBe(HOME_PAGE);

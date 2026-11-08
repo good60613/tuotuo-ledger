@@ -58,7 +58,7 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
 
   const onKey = (k: CalcKey) => {
     if (locked) {
-      showToast('這筆已報帳，要改金額請先在報帳頁退回待報帳');
+      showToast('這筆已報帳，要改金額請先在待辦頁退回待報帳');
       return;
     }
     setExpr((e) => pressKey(e, k));
@@ -107,7 +107,7 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
   const onDelete = async () => {
     if (!editing) return;
     if (locked) {
-      showToast('這筆已報帳，請先在報帳頁退回待報帳再刪除');
+      showToast('這筆已報帳，請先在待辦頁退回待報帳再刪除');
       return;
     }
     if (!(await confirmDanger('刪除這筆紀錄？', '刪除後無法復原。'))) return;
@@ -131,7 +131,7 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
         {editing && <button class="icon-btn danger" onClick={onDelete} aria-label="刪除">🗑</button>}
       </div>
 
-      {locked && <div class="notice">這筆已報帳，只能改分類、備註、日期。要改金額或帳戶請先在報帳頁退回。</div>}
+      {locked && <div class="notice">這筆已報帳，只能改分類、備註、日期。要改金額或帳戶請先在待辦頁退回。</div>}
 
       {isTransfer ? (
         <div class="transfer-box">

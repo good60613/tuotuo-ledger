@@ -95,3 +95,13 @@ export const HOME = {
   /** 最近紀錄最多幾筆 */
   recentMax: 5,
 } as const;
+
+/**
+ * 報帳、預算的標示色（第四批，PK 定案：報帳維持橘色、預算用藍色）。
+ * 記帳頁的預算／報帳格、待辦頁、時間軸外框都用這兩個顏色。
+ * 色弱：一定同時有文字（「報」「預」「已報」「已付」），不能只靠顏色。
+ */
+export const TAG_COLOR = {
+  reimb: '#d98a00',
+  budget: '#1a8fd6',
+} as const;

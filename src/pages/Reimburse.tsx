@@ -1,4 +1,4 @@
-// 報帳頁（左二）：追蹤公司還欠多少錢。
+// 待辦頁的「報帳」分頁：追蹤公司還欠多少錢。（第四批起從報帳頁搬進待辦頁，規則不變）
 import { useState } from 'preact/hooks';
 import { useAppState, getState, updateData, showToast, PAGES } from '../store';
 import { useBackLayer } from '../backNav';
@@ -11,14 +11,14 @@ import { AccountPicker } from '../components/AccountPicker';
 import { askRevertBatch, openTx } from '../actions';
 import { money, hm } from '../format';
 
-export function ReimbursePage() {
+export function ReimburseTab() {
   const s = useAppState();
   const d = s.data;
   const [tab, setTab] = useState<'pending' | 'done'>('pending');
   const [multi, setMulti] = useState(false);
   const [sel, setSel] = useState<string[]>([]);
   // 多選模式中按返回：結束多選
-  useBackLayer(s.page === PAGES.indexOf('報帳') && multi, () => {
+  useBackLayer(s.page === PAGES.indexOf('待辦') && s.todoTab === 'reimb' && multi, () => {
     setMulti(false);
     setSel([]);
   });
@@ -48,7 +48,7 @@ export function ReimbursePage() {
   };
 
   return (
-    <div class="page-pad reimb">
+    <div class="todo-tab reimb">
       <div class="reimb-head">
         <div class="seg">
           <button class={tab === 'pending' ? 'on reimb' : ''} onClick={() => switchTab('pending')}>待報帳</button>

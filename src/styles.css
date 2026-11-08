@@ -9,7 +9,8 @@
   --expense: #d64545;
   --income: #1f9d6b;
   --transfer: #6b5bd6;
-  --reimb: #d98a00;
+  --reimb: #d98a00; /* 實際顏色以 config.ts 的 TAG_COLOR 為準 */
+  --budget: #1a8fd6;
   --radius: 14px;
   --nav-h: 58px;
   font-family: system-ui, -apple-system, 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
@@ -451,3 +452,30 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: #cf
 .home-recent { flex: 1 1 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
 .home-recent-list { display: flex; flex-direction: column; }
 .home-recent .tx-card { height: 54px; flex: none; padding-top: 6px; padding-bottom: 6px; }
+
+/* ---------- 待辦頁（第四批）：報帳／預算分頁 ---------- */
+.todo { display: flex; flex-direction: column; }
+.todo-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+.todo-tabs button { flex: 1; border: 0; background: var(--card); padding: 10px; border-radius: 12px; font-size: 16px; font-weight: 700; color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 6px; }
+.todo-tabs button.on.reimb { background: var(--reimb); color: #fff; }
+.todo-tabs button.on.budget { background: var(--budget); color: #fff; }
+.todo-count { min-width: 20px; padding: 0 6px; border-radius: 10px; background: rgba(0,0,0,.12); font-size: 12px; line-height: 20px; }
+.todo-tab { display: flex; flex-direction: column; flex: 1; }
+.seg button.on.budget { background: var(--budget); color: #fff; }
+.budget-color { color: var(--budget); }
+.btn.budget-btn { background: var(--budget); color: #fff; }
+.pill-btn.budget.on { background: var(--budget); border-color: var(--budget); }
+.todo-tab.budget .tx-card.selected { border-color: var(--budget); background: #eef6fd; }
+.todo-tab.budget .check.on { background: var(--budget); border-color: var(--budget); }
+.pay-list { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; max-height: 40vh; overflow-y: auto; }
+.pay-row { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.pay-row .small { font-size: 12px; }
+.pay-input { width: 96px; flex: none; border: 1px solid var(--line); border-radius: 10px; padding: 8px; font-size: 16px; text-align: right; font-variant-numeric: tabular-nums; }
+/* 首頁：帳戶卡片的預算、剩餘可用下方的已圈預算 */
+.card-budget { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.amt-budget { border: 0; background: none; padding: 2px 0 0; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.amt-budget b { color: var(--budget); font-weight: 700; }
+.amt-budget .overdue { color: var(--expense); font-weight: 700; }
+/* 統計頁：本期預算 */
+.stats-budget { font-size: 13px; color: var(--muted); margin-top: 4px; font-variant-numeric: tabular-nums; }
+.stats-budget b { color: var(--budget); }

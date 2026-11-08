@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'preact/hooks';
-import { useAppState, setState, openOverlay, showToast } from '../store';
-import { allBalances, spendableTotal, totals, periodKey, dayKey } from '../data/calc';
+import { useAppState, setState, openOverlay, showToast, goPage, TODO_PAGE } from '../store';
+import { allBalances, spendableTotal, totals, periodKey, dayKey, pendingBudgetByAccount, pendingBudgetTotal } from '../data/calc';
+import { overdueCount } from '../data/budget';
 import { bankAccounts, accountName } from '../selectors';
 import { ballDropTarget } from '../data/ops';
 import { KIND_LABEL, type Account, type AccountKind } from '../data/types';
@@ -21,6 +22,9 @@ export function HomePage() {
   const s = useAppState();
   const d = s.data;
   const bal = allBalances(d);
+  const budgetBy = pendingBudgetByAccount(d);
+  const budgetSum = pendingBudgetTotal(d);
+  const overdue = overdueCount(d);
   const now = new Date();
   const m = totals(d, { period: periodKey(now, d.settings.settleDay) });
   const t = totals(d, { day: dayKey(now) });
@@ -117,6 +121,7 @@ export function HomePage() {
             key={a.id}
             account={a}
             balance={bal.get(a.id) ?? 0}
+            budget={budgetBy.get(a.id) ?? 0}
             onTap={onTap}
             onLift={(acc) => {
               setLifted(acc);
@@ -152,6 +157,18 @@ export function HomePage() {
         <div class="amt-l1">
           <div class="amt-label">剩餘可用</div>
           <div class="amt-big">{money(spendableTotal(d))}</div>
+          {budgetSum > 0 && (
+            <button
+              class="amt-budget"
+              onClick={() => {
+                setState({ todoTab: 'budget' });
+                goPage(TODO_PAGE);
+              }}
+            >
+              已圈預算 <b>{money(budgetSum)}</b>
+              {overdue > 0 && <span class="overdue">（{overdue} 筆逾期）</span>}
+            </button>
+          )}
         </div>
         <div class="amt-l2">
           <div>

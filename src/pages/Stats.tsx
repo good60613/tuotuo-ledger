@@ -5,6 +5,7 @@ import { useAppState, setState, goPage, PAGES } from '../store';
 import { PeriodBar } from '../components/PeriodBar';
 import { totals, periodKey, categoryBreakdown, dailySeries, dayKey, periodDays, type CategorySum } from '../data/calc';
 import { categoryDisplay } from '../selectors';
+import { budgetPeriodSummary } from '../data/budget';
 import type { AppData } from '../data/types';
 import { Donut, LineChart, BarChart, PALETTE } from '../components/Charts';
 import { money } from '../format';
@@ -25,6 +26,7 @@ export function StatsPage() {
   const todayIdx = days.indexOf(dayKey(now)); // 不在這一期＝-1
   const m = totals(d, { period: month, accountId: acc });
   const series = dailySeries(d, month, acc);
+  const bud = budgetPeriodSummary(d, month, acc);
   const [lineShow, setLineShow] = useState<'both' | 'expense' | 'income'>('both');
   const [barShow, setBarShow] = useState<'expense' | 'income'>('expense');
 
@@ -53,6 +55,11 @@ export function StatsPage() {
           <div class="amt-mid income">{money(m.income)}</div>
         </div>
       </div>
+      {bud.count > 0 && (
+        <div class="stats-budget">
+          本期預算：已付 <b>{money(bud.paid)}</b>／還剩 <b>{money(bud.remaining)}</b>
+        </div>
+      )}
 
       <PeriodBar
         accountId={acc}
