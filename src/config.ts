@@ -145,6 +145,14 @@ export const ENTRY_ROW = {
  * 底部操作列與導覽列的尺寸（第五批，單手操作版面）。
  * 矮螢幕覺得擠就調這兩個（heightPx 與 navHeightPx）。
  */
+/** 時間軸：左邊豎線在最後一筆下面再往下延伸多長（只畫線，不佔排版高度） */
+export const TIMELINE = {
+  /** 待辦頁（報帳、預算）：延伸到清單底（清單外框會切掉多的部分，不可大於最後一天的下間距 10px，否則會多出捲動空間） */
+  tailTodoPx: 10,
+  /** 明細頁：穿過「＋」那一列的空白，停在底部操作列上方 */
+  tailDetailPx: 74,
+} as const;
+
 export const BOTTOM_BAR = {
   /** 底部操作列高度（統計、明細、待辦頁固定在導覽列正上方） */
   heightPx: 48,

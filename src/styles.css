@@ -561,3 +561,9 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: #cf
 .todo-list > .timeline, .todo-list > .empty-list { margin-top: auto; flex: none; }
 .detail > .timeline, .detail > .empty-list { margin-top: auto; }
 .detail .fab { margin-top: 0; }
+/* 第七批 A 段：時間軸豎線在最後一筆下面往下延伸（偽元素，不佔排版高度）；長度在 config TIMELINE */
+.timeline > .day:last-child > .tl-row:last-child > .tl-axis::after {
+  content: ''; position: absolute; left: 36px; top: 100%; width: 2px; background: var(--line);
+  height: var(--tl-tail-todo, 10px);
+}
+.detail > .timeline > .day:last-child > .tl-row:last-child > .tl-axis::after { height: var(--tl-tail-detail, 74px); }
