@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 桌面小工具的顏色（深色底） -->
+<resources>
+    <color name="widget_bg">#E61E2128</color>
+    <color name="widget_hint_bg">#33FFFFFF</color>
+    <color name="widget_text">#FFFFFF</color>
+    <color name="widget_muted">#A3A9B4</color>
+    <color name="widget_expense">#FF8A80</color>
+    <color name="widget_negative">#FF6B6B</color>
+</resources>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 桌面小工具的大小與字級（PK 可微調；改完要重新打包） -->
+<resources>
+    <!-- 外框 -->
+    <dimen name="widget_padding">12dp</dimen>
+    <dimen name="widget_radius">20dp</dimen>
+    <!-- 上半與下半之間 -->
+    <dimen name="widget_gap">8dp</dimen>
+    <!-- 條碼白底：圓角、內距（左右內距也是條碼兩側的一部分留白） -->
+    <dimen name="widget_code_radius">10dp</dimen>
+    <dimen name="widget_code_box_padding">6dp</dimen>
+    <!-- 條碼高度、條碼下方號碼字級 -->
+    <dimen name="widget_code_height">44dp</dimen>
+    <dimen name="widget_code_text">11sp</dimen>
+    <!-- 一條細條最寬多少（0 = 不限制，盡量撐滿寬度） -->
+    <dimen name="widget_code_max_narrow">0dp</dimen>
+    <!-- 剩餘可用（最大）、小標籤、今日／本月支出 -->
+    <dimen name="widget_left">28sp</dimen>
+    <dimen name="widget_label">11sp</dimen>
+    <dimen name="widget_small">12sp</dimen>
+    <!-- 角落 App 圖示 -->
+    <dimen name="widget_icon">22dp</dimen>
+    <dimen name="widget_icon_gap">2dp</dimen>
+    <!-- 讀不到小工具寬度時，當作幾 dp 寬 -->
+    <integer name="widget_fallback_width_dp">250</integer>
+</resources>

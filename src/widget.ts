@@ -23,6 +23,10 @@ export interface WidgetSnapshot {
   todayExpense: string;
   /** 本期支出（已格式化） */
   monthExpense: string;
+  /** 0 元的寫法（過期時今日支出顯示這個，格式和首頁一樣） */
+  zero: string;
+  /** 條碼左右要留的空白（幾條細條寬） */
+  quiet: number;
   /** 這份數字是哪一天算的（YYYY-MM-DD）；小工具的「今天」不是這天 → 今日支出顯示 0 */
   day: string;
   /** 下一期第一天（YYYY-MM-DD）；小工具的「今天」到了這天 → 本月顯示「—」 */
@@ -45,6 +49,8 @@ export function widgetSnapshot(d: AppData, now: Date = new Date()): WidgetSnapsh
     leftNeg: left < 0,
     todayExpense: money(totals(d, { day: dayKey(now) }).expense),
     monthExpense: money(totals(d, { period: pk }).expense),
+    zero: money(0),
+    quiet: CARRIER.quietModules,
     day: dayKey(now),
     periodEnd: dayKey(periodRange(pk, sd).end),
     carrier,

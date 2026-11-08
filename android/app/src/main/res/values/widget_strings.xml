@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_description">載具條碼與剩餘可用</string>
+    <string name="widget_code_desc">手機條碼載具</string>
+    <string name="widget_no_carrier">到設定輸入載具號碼</string>
+    <string name="widget_no_data">打開 App 一次即可顯示</string>
+    <string name="widget_left_label">剩餘可用</string>
+    <string name="widget_today_label">今日支出 </string>
+    <string name="widget_month_label">本月支出 </string>
+    <string name="widget_stale">點開更新</string>
+</resources>
