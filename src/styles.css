@@ -487,3 +487,21 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: #cf
 /* 統計頁：本期預算 */
 .stats-budget { font-size: 13px; color: var(--muted); margin-top: 4px; font-variant-numeric: tabular-nums; }
 .stats-budget b { color: var(--budget); }
+
+/* ---------- 第四批第 6 段：質感打磨（只動回饋與細節，不改顏色與流程） ---------- */
+/* 按下去的回饋：縮一點點＋變淡 */
+.tx-card, .btn, .icon-btn, .tag, .cat, .amt-budget { transition: transform .08s, opacity .08s, background .12s; }
+.tx-card:active, .btn:active, .icon-btn:active, .tag:active, .cat:active, .amt-budget:active { transform: scale(.97); opacity: .85; }
+/* 拖曳時放置區的高亮手感：放置區出現的動畫與高亮過渡 */
+.drop-zone { transition: transform .1s, background .1s, color .1s; }
+.home-zones .drop-zone { animation: zone-fade .15s ease-out; }
+@keyframes zone-fade { from { opacity: 0; transform: scale(.96); } }
+/* 提示條滑入 */
+.toast { animation: toast-in .18s ease-out; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
+/* 空狀態：字小一點、行距鬆一點 */
+.empty-list, .empty { line-height: 1.6; font-size: 14px; }
+/* 使用者設定減少動態時，關掉這些小動畫 */
+@media (prefers-reduced-motion: reduce) {
+  .toast, .home-zones .drop-zone, .drop-zone { animation: none; transition: none; }
+}
