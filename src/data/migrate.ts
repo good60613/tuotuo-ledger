@@ -1,8 +1,9 @@
 // 舊資料升級：讀取手機資料、匯入備份時都會經過這裡，舊版資料自動補成新格式。
-// 一版一版往上升：v1 → v2 → v3。
-import type { Account, AppData, Category } from './types';
+// 一版一版往上升：v1 → v2 → v3 → v4。
+import type { Account, AppData, Category, Transaction } from './types';
 import { DATA_VERSION } from './types';
 import { SETTLE } from '../config';
+import { normalizeBudgets } from './budget';
 import { DEFAULT_COLOR, MISSING_ICON, isColorKey } from '../categoryStyle';
 
 type AnyData = Omit<AppData, 'version'> & { version: number };
@@ -40,6 +41,31 @@ function v2to3(d: AnyData): AnyData {
   return { ...d, version: 3, categories: d.categories.map(fixCategory) };
 }
 
+/** v3 → v4（第四批）：加入預算欄位。舊紀錄沒有欄位＝不是預算，不用補 */
+function v3to4(d: AnyData): AnyData {
+  return { ...d, version: 4 };
+}
+
+/** 預算欄位缺漏或矛盾時修正（v4 資料也會檢查，防手動改過的備份檔） */
+function fixBudget(t: Transaction): Transaction {
+  if (!t.budget) {
+    if (t.budgetStatus || t.budgetPaidTxId) return { ...t, budget: undefined, budgetStatus: undefined, budgetPaidTxId: undefined };
+    return t;
+  }
+  if (t.type !== 'expense') return { ...t, budget: undefined, budgetStatus: undefined, budgetPaidTxId: undefined };
+  const status = t.budgetStatus === 'paid' && t.budgetPaidTxId ? 'paid' : 'pending';
+  // 預算和報帳不能同時存在：以預算為準
+  if (status === t.budgetStatus && !t.reimbursable && (status === 'paid' || !t.budgetPaidTxId)) return t;
+  return {
+    ...t,
+    budgetStatus: status,
+    budgetPaidTxId: status === 'paid' ? t.budgetPaidTxId : undefined,
+    reimbursable: false,
+    reimburseStatus: undefined,
+    reimburseBatchId: undefined,
+  };
+}
+
 /** 分類的圖示、顏色缺漏時補預設值（v3 資料也會檢查，防手動改過的備份檔） */
 function fixCategory(c: Category): Category {
   const icon = typeof c.icon === 'string' && c.icon.trim() ? c.icon : MISSING_ICON;
@@ -54,6 +80,8 @@ export function migrate(raw: unknown): AppData {
   }
   if (d.version === 1) d = v1to2(d);
   if (d.version === 2) d = v2to3(d);
+  if (d.version === 3) d = v3to4(d);
   const categories = d.categories.map(fixCategory);
-  return { ...d, version: DATA_VERSION, categories } as AppData;
+  const transactions = Array.isArray(d.transactions) ? d.transactions.map(fixBudget) : d.transactions;
+  return normalizeBudgets({ ...d, version: DATA_VERSION, categories, transactions } as AppData);
 }

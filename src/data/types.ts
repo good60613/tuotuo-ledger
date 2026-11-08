@@ -58,6 +58,17 @@ export interface Transaction {
   reimbursable: boolean;
   reimburseStatus?: 'pending' | 'done';
   reimburseBatchId?: string;
+  /**
+   * 預算（第四批，v4）：只有一般帳戶的支出可以是預算。
+   * 預算紀錄本身不扣帳戶、不算當月支出，但「剩餘可用」要扣掉未付的預算。
+   * 按「已支付」時另外新增一筆真正的支出（budgetOfId 指回預算），預算改成 paid。
+   */
+  budget?: boolean;
+  budgetStatus?: 'pending' | 'paid';
+  /** 預算紀錄：付款時新增的那筆真正支出 */
+  budgetPaidTxId?: string;
+  /** 真正支出：是哪一筆預算付的款 */
+  budgetOfId?: string;
   /** 調整紀錄的方向：up＝實際比帳上多，down＝實際比帳上少 */
   adjustDir?: 'up' | 'down';
   /**
@@ -109,7 +120,7 @@ export interface Settings {
 }
 
 export interface AppData {
-  version: 3;
+  version: 4;
   accounts: Account[];
   transactions: Transaction[];
   categories: Category[];
@@ -117,7 +128,7 @@ export interface AppData {
   settings: Settings;
 }
 
-export const DATA_VERSION = 3;
+export const DATA_VERSION = 4;
 
 /** 不需要分類的紀錄來源（投資配息、費用、儲蓄利息） */
 export const TX_SOURCE_NO_CATEGORY = ['invest-dividend', 'invest-fee', 'saving-interest'];

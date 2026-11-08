@@ -10,6 +10,7 @@ import { emptyData, sampleData } from '../src/data/seed';
 import { migrate } from '../src/data/migrate';
 import { exportJson, parseBackup } from '../src/data/backup';
 import type { AppData } from '../src/data/types';
+import { DATA_VERSION } from '../src/data/types';
 
 const NOW = new Date(2026, 10, 7, 12, 0);
 const at = (m0: number, d: number, h = 10) => new Date(2026, m0, d, h).toISOString();
@@ -224,11 +225,11 @@ describe('舊資料升級', () => {
       settings: { defaultReimburseAccountId: null, lastUsedAccountId: null },
     };
     const d = migrate(v1);
-    expect(d.version).toBe(3); // 第三批起升到 v3
+    expect(d.version).toBe(DATA_VERSION); // 一路升到最新版
     expect(d.settings).toMatchObject({ settleDay: 1, autoSortCategories: false });
     expect(d.noteTags[0].pinned).toBe(false);
     expect(d.accounts[0].subtype).toBe('cash');
-    expect(parseBackup(JSON.stringify({ data: v1 })).version).toBe(3);
+    expect(parseBackup(JSON.stringify({ data: v1 })).version).toBe(DATA_VERSION);
   });
   it('範例資料可匯出再匯入；範例投資有損益', () => {
     const d = sampleData(NOW);

@@ -2,6 +2,7 @@
 import type { Account, AppData, Category, Transaction, TxType } from './types';
 import { TX_SOURCE_NO_CATEGORY } from './types';
 import { allBalances } from './calc';
+import { normalizeBudgets } from './budget';
 
 export function uid(prefix = ''): string {
   const r = Math.random().toString(36).slice(2, 8);
@@ -17,6 +18,8 @@ export interface TxInput {
   note?: string;
   occurredAt: string;
   reimbursable?: boolean;
+  /** 預算（只限一般帳戶的支出，和報帳互斥） */
+  budget?: boolean;
   /** 來源畫面標記（投資、儲蓄的記一筆），見 Transaction.source */
   source?: string;
 }
@@ -31,10 +34,16 @@ function validate(data: AppData, input: TxInput) {
       throw new OpError('找不到目的帳戶');
     if (input.toAccountId === input.accountId) throw new OpError('來源和目的不能相同');
   } else if (!input.categoryId && !TX_SOURCE_NO_CATEGORY.includes(input.source ?? '')) throw new OpError('請選分類');
+  if (input.budget) {
+    if (input.type !== 'expense') throw new OpError('只有支出可以設成預算');
+    if (input.reimbursable) throw new OpError('預算和報帳只能選一個');
+    if (data.accounts.find((a) => a.id === input.accountId)?.kind !== 'bank') throw new OpError('預算只能掛在一般帳戶');
+  }
 }
 
 function build(input: TxInput, id: string, createdAt: string): Transaction {
-  const isReimb = input.type === 'expense' && !!input.reimbursable;
+  const isBudget = input.type === 'expense' && !!input.budget;
+  const isReimb = input.type === 'expense' && !!input.reimbursable && !isBudget;
   return {
     id,
     type: input.type,
@@ -46,6 +55,8 @@ function build(input: TxInput, id: string, createdAt: string): Transaction {
     occurredAt: input.occurredAt,
     reimbursable: isReimb,
     reimburseStatus: isReimb ? 'pending' : undefined,
+    budget: isBudget || undefined,
+    budgetStatus: isBudget ? 'pending' : undefined,
     source: input.source,
     createdAt,
   };
@@ -64,9 +75,14 @@ export function addTransaction(data: AppData, input: TxInput, id = uid('t')): { 
   };
 }
 
-/** 已報帳（done）的紀錄，金額、帳戶、類型、報帳開關不能改，要先退回待報帳 */
+/** 已報帳（done）、已付（paid）預算的紀錄，金額、帳戶、類型、報帳／預算不能改，要先在待辦頁退回 */
 export function isLocked(t: Transaction): boolean {
-  return t.reimburseStatus === 'done';
+  return t.reimburseStatus === 'done' || (!!t.budget && t.budgetStatus === 'paid');
+}
+
+/** 預算付款時新增的那筆支出 */
+export function isBudgetPayment(t: Transaction): boolean {
+  return !!t.budgetOfId;
 }
 
 export function updateTransaction(data: AppData, id: string, input: TxInput): AppData {
@@ -77,14 +93,24 @@ export function updateTransaction(data: AppData, id: string, input: TxInput): Ap
   validate(data, input);
   let next: Transaction;
   if (isLocked(old)) {
+    const paidBudget = !!old.budget;
     if (
       input.amount !== old.amount ||
       input.accountId !== old.accountId ||
       input.type !== old.type ||
-      input.reimbursable === false
+      (paidBudget ? input.budget === false || !!input.reimbursable : input.reimbursable === false || !!input.budget)
     )
-      throw new OpError('這筆已報帳，要改金額或帳戶，請先在報帳頁退回待報帳');
+      throw new OpError(
+        paidBudget
+          ? '這筆預算已付款，要改金額或帳戶，請先在待辦頁退回未付'
+          : '這筆已報帳，要改金額或帳戶，請先在待辦頁退回待報帳',
+      );
     next = { ...old, categoryId: input.categoryId, note: input.note ?? '', occurredAt: input.occurredAt };
+  } else if (isBudgetPayment(old)) {
+    // 預算付款那筆：可以改金額、分類、備註、日期、帳戶，但要維持是一般支出
+    if (input.type !== 'expense' || input.reimbursable || input.budget)
+      throw new OpError('這筆是預算付款，要改類型請先在待辦頁退回未付');
+    next = { ...build(input, old.id, old.createdAt), budgetOfId: old.budgetOfId };
   } else {
     next = build(input, old.id, old.createdAt);
   }
@@ -94,7 +120,9 @@ export function updateTransaction(data: AppData, id: string, input: TxInput): Ap
 export function deleteTransaction(data: AppData, id: string): AppData {
   const old = data.transactions.find((t) => t.id === id);
   if (!old) return data;
-  if (isLocked(old)) throw new OpError('這筆已報帳，請先在報帳頁退回待報帳再刪除');
+  if (isLocked(old))
+    throw new OpError(old.budget ? '這筆預算已付款，請先在待辦頁退回未付再刪除' : '這筆已報帳，請先在待辦頁退回待報帳再刪除');
+  if (isBudgetPayment(old)) throw new OpError('這筆是預算付款，請先在待辦頁退回未付再刪除');
   if (old.type === 'reimburse_in') throw new OpError('報帳入帳請用「退回待報帳」處理');
   return { ...data, transactions: data.transactions.filter((t) => t.id !== id) };
 }
@@ -228,12 +256,12 @@ export function removeAccount(data: AppData, accountId: string, how: RemoveMode)
   const settings = { ...data.settings };
   if (settings.defaultReimburseAccountId === accountId) settings.defaultReimburseAccountId = null;
   if (settings.lastUsedAccountId === accountId) settings.lastUsedAccountId = null;
-  return normalizeBatches({
+  return normalizeBudgets(normalizeBatches({
     ...data,
     settings,
     accounts: data.accounts.filter((a) => a.id !== accountId),
     transactions: txs,
-  });
+  }));
 }
 
 export function upsertAccount(data: AppData, acc: Account): AppData {
@@ -260,11 +288,11 @@ export function removeCategory(data: AppData, categoryId: string, how: RemoveMod
     if (!dst || dst.id === categoryId || dst.type !== src?.type) throw new OpError('請選同類型的另一個分類');
     txs = txs.map((t) => (t.categoryId === categoryId ? { ...t, categoryId: dst.id } : t));
   }
-  return normalizeBatches({
+  return normalizeBudgets(normalizeBatches({
     ...data,
     categories: data.categories.filter((c) => c.id !== categoryId),
     transactions: txs,
-  });
+  }));
 }
 
 export function upsertCategory(data: AppData, cat: Category): AppData {

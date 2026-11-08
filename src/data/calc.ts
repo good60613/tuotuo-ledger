@@ -6,6 +6,9 @@
 // - 轉入投資、儲蓄＝轉帳，不算支出。
 // - 調整、市值、配息、費用、利息、損益都不算主帳收支。
 // - 本月收支、統計、日曆、曲線依「結算期」計算；當日收支照日曆日。
+//
+// 第四批（PK 定案）：預算。預算紀錄不扣帳戶、不算當月支出；剩餘可用扣掉「未付」的預算。
+// 真的付錢時另外新增一筆一般支出（扣帳戶、算當月支出），預算同時改成已付（見 budget.ts）。
 import type { Account, AccountKind, AppData, Transaction } from './types';
 
 /** 算進「剩餘可用金額」的帳戶類型：只有一般帳戶 */
@@ -25,6 +28,8 @@ function balanceDeltas(t: Transaction): [string | undefined, number][] {
     case 'income':
       return [[t.accountId, t.amount]];
     case 'expense':
+      // 預算只是把錢圈起來，不扣帳戶；真正扣款的是付款時新增的那筆支出
+      if (t.budget) return [];
       // 報帳支出也會扣款（先扣款，之後報帳入帳再加回）
       return [[t.accountId, -t.amount]];
     case 'transfer':
@@ -58,11 +63,33 @@ export function allBalances(data: Pick<AppData, 'accounts' | 'transactions'>): M
   return m;
 }
 
+/** 是否為「未付」的預算 */
+export function isPendingBudget(t: Transaction): boolean {
+  return t.type === 'expense' && !!t.budget && t.budgetStatus !== 'paid';
+}
+
+/** 各帳戶未付預算合計（帳戶卡片的「預算 1,000」） */
+export function pendingBudgetByAccount(data: Pick<AppData, 'transactions'>): Map<string, number> {
+  const m = new Map<string, number>();
+  for (const t of data.transactions) if (isPendingBudget(t)) m.set(t.accountId, (m.get(t.accountId) ?? 0) + t.amount);
+  return m;
+}
+
+/** 一般帳戶上未付預算合計（首頁「已圈預算」） */
+export function pendingBudgetTotal(data: Pick<AppData, 'accounts' | 'transactions'>): number {
+  const kindOf = kindLookup(data.accounts);
+  return data.transactions
+    .filter((t) => isPendingBudget(t) && SPENDABLE_KINDS.includes(kindOf(t.accountId) as AccountKind))
+    .reduce((s, t) => s + t.amount, 0);
+}
+
+/** 剩餘可用＝一般帳戶餘額合計－未付預算 */
 export function spendableTotal(data: Pick<AppData, 'accounts' | 'transactions'>): number {
   const bal = allBalances(data);
-  return data.accounts
+  const sum = data.accounts
     .filter((a) => SPENDABLE_KINDS.includes(a.kind))
     .reduce((s, a) => s + (bal.get(a.id) ?? 0), 0);
+  return sum - pendingBudgetTotal(data);
 }
 
 // ---------------- 投資 ----------------
@@ -162,7 +189,7 @@ export interface StatEffect {
 
 /**
  * 一筆紀錄在主帳收支裡算什麼。null＝不算。
- * - 一般帳戶的收入、支出（報帳支出除外）。
+ * - 一般帳戶的收入、支出（報帳支出、預算除外；預算付款時新增的那筆一般支出照算）。
  * - 一般帳戶轉入悠遊卡、電子錢包＝支出（儲值）。
  * - 其他一律不算：轉帳、報帳入帳、調整、市值、小帳戶內的收支（含配息、費用、利息）。
  */
@@ -171,7 +198,7 @@ export function statEffect(t: Transaction, kindOf: KindOf): StatEffect | null {
   if (k !== 'bank') return null;
   if (t.type === 'income') return { type: 'income', amount: t.amount, accountId: t.accountId, categoryId: t.categoryId ?? '' };
   if (t.type === 'expense')
-    return t.reimbursable ? null : { type: 'expense', amount: t.amount, accountId: t.accountId, categoryId: t.categoryId ?? '' };
+    return t.reimbursable || t.budget ? null : { type: 'expense', amount: t.amount, accountId: t.accountId, categoryId: t.categoryId ?? '' };
   if (t.type === 'transfer') {
     const to = kindOf(t.toAccountId);
     if (to && TOPUP_KINDS.includes(to))
