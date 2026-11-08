@@ -529,3 +529,15 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: #cf
 .detail .fab { margin-bottom: 8px; }
 /* 提示條浮在操作列上方（--bottom-bar-h 由 app.tsx 依目前頁面設定） */
 .toast { bottom: calc(var(--nav-h) + 14px + var(--bottom-bar-h, 0px) + env(safe-area-inset-bottom)); }
+
+/* 待辦頁（第五批）：總額在最上、清單在中間可捲動、控制項由下往上＝切換列→未付／已付→多選列 */
+.page-pad.todo { height: 100%; padding-bottom: 0; overflow: hidden; }
+.todo-tab.reimb, .todo-tab.budget { flex: 1 1 0; min-height: 0; padding-bottom: 0; }
+.todo-total { flex: none; }
+.todo-list { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin-top: 8px; }
+.todo-tab .reimb-tools { flex: none; margin-top: 8px; }
+.todo-sub { flex: none; margin-top: 8px; background: var(--card); border-radius: 12px; padding: 3px; }
+.todo-sub button { flex: 1; padding: 8px 0; }
+.bottom-bar.todo-tabs { margin-bottom: 0; }
+.todo-tabs button { height: 100%; padding-top: 0; padding-bottom: 0; }
+.bottom-bar > .action-bar { position: static; margin: 0; flex: 1; box-shadow: none; padding-top: 0; padding-bottom: 0; }

@@ -1,17 +1,19 @@
 // 待辦頁的「報帳」分頁：追蹤公司還欠多少錢。（第四批起從報帳頁搬進待辦頁，規則不變）
-import { useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { useAppState, getState, updateData, showToast, PAGES } from '../store';
 import { useBackLayer } from '../backNav';
 import { markReimbursed, defaultReimburseAccount, OpError } from '../data/ops';
 import type { Transaction } from '../data/types';
 import { accountName, categoryOf } from '../selectors';
 import { TxList } from '../components/TxList';
+import { BottomBar } from '../components/BottomBar';
 import { Sheet } from '../components/Sheet';
 import { AccountPicker } from '../components/AccountPicker';
 import { askRevertBatch, openTx } from '../actions';
 import { money, hm } from '../format';
 
-export function ReimburseTab() {
+/** onBar：多選且有選取時，通知待辦頁把底部切換列換成批次操作列 */
+export function ReimburseTab({ onBar }: { onBar?: (on: boolean) => void }) {
   const s = useAppState();
   const d = s.data;
   const [tab, setTab] = useState<'pending' | 'done'>('pending');
@@ -41,6 +43,12 @@ export function ReimburseTab() {
   };
   const sumOf = (ids: string[]) => d.transactions.filter((t) => ids.includes(t.id)).reduce((a, t) => a + t.amount, 0);
 
+  const showBar = tab === 'pending' && multi && selected.length > 0;
+  useEffect(() => {
+    onBar?.(showBar);
+    return () => onBar?.(false);
+  }, [showBar]);
+
   const switchTab = (t: 'pending' | 'done') => {
     setTab(t);
     setSel([]);
@@ -49,31 +57,14 @@ export function ReimburseTab() {
 
   return (
     <div class="todo-tab reimb">
-      <div class="reimb-head">
-        <div class="seg">
-          <button class={tab === 'pending' ? 'on reimb' : ''} onClick={() => switchTab('pending')}>待報帳</button>
-          <button class={tab === 'done' ? 'on reimb' : ''} onClick={() => switchTab('done')}>已報帳</button>
-        </div>
-        <div class="reimb-total">
-          <div class="amt-label">{tab === 'pending' ? '待報帳總額' : '已收回總額'}</div>
-          <div class="amt-mid reimb-color">{money(tab === 'pending' ? pendingTotal : doneTotal)}</div>
-        </div>
+      <div class="todo-total">
+        <div class="amt-label">{tab === 'pending' ? '待報帳總額' : '已收回總額'}</div>
+        <div class="amt-mid reimb-color">{money(tab === 'pending' ? pendingTotal : doneTotal)}</div>
       </div>
 
       {tab === 'pending' ? (
         <>
-          <div class="reimb-tools">
-            <span class="muted">{multi ? '點選要報帳的紀錄（可多筆）' : '點一筆看詳細；長按可多選'}</span>
-            <button
-              class={`pill-btn small${multi ? ' on' : ''}`}
-              onClick={() => {
-                setMulti((m) => !m);
-                setSel([]);
-              }}
-            >
-              {multi ? '結束多選' : '多選'}
-            </button>
-          </div>
+          <div class="todo-list">
           <TxList
             data={d}
             txs={pending}
@@ -86,21 +77,41 @@ export function ReimburseTab() {
               setSel((x) => (multi ? (x.includes(t.id) ? x : [...x, t.id]) : [t.id]));
             }}
           />
+          </div>
+          <div class="reimb-tools">
+            <span class="muted">{multi ? '點選要報帳的紀錄（可多筆）' : '點一筆看詳細；長按可多選'}</span>
+            <button
+              class={`pill-btn small${multi ? ' on' : ''}`}
+              onClick={() => {
+                setMulti((m) => !m);
+                setSel([]);
+              }}
+            >
+              {multi ? '結束多選' : '多選'}
+            </button>
+          </div>
         </>
       ) : (
         <>
+          <div class="todo-list"><TxList data={d} txs={done} onTap={setDetail} empty="還沒有已報帳的紀錄" /></div>
           <div class="reimb-tools"><span class="muted">按錯了？點一筆可整批退回待報帳</span></div>
-          <TxList data={d} txs={done} onTap={setDetail} empty="還沒有已報帳的紀錄" />
         </>
       )}
 
-      {tab === 'pending' && multi && selected.length > 0 && (
-        <div class="action-bar">
-          <span>
-            已選 {selected.length} 筆 <b class="reimb-color">{money(selTotal)}</b>
-          </span>
-          <button class="btn reimb-btn" onClick={() => setConfirmIds(selected)}>已報帳</button>
-        </div>
+      <div class="seg todo-sub">
+        <button class={tab === 'pending' ? 'on reimb' : ''} onClick={() => switchTab('pending')}>待報帳</button>
+        <button class={tab === 'done' ? 'on reimb' : ''} onClick={() => switchTab('done')}>已報帳</button>
+      </div>
+
+      {showBar && (
+        <BottomBar>
+          <div class="action-bar">
+            <span>
+              已選 {selected.length} 筆 <b class="reimb-color">{money(selTotal)}</b>
+            </span>
+            <button class="btn reimb-btn" onClick={() => setConfirmIds(selected)}>已報帳</button>
+          </div>
+        </BottomBar>
       )}
 
       {detail && (

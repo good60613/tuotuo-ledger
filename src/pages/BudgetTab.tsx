@@ -1,17 +1,19 @@
 // 待辦頁的「預算」分頁（第四批第 3、4 段）：操作比照報帳分頁——可多選、整批按「已支付」。
 // 已支付：當天新增一筆真正的支出（金額可改成實際付款金額），帳戶扣款、預算消掉。
-import { useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { useAppState, getState, updateData, showToast, ask, PAGES } from '../store';
 import { useBackLayer } from '../backNav';
 import { markBudgetPaid, revertBudgetPaid, isOverdueBudget, pendingBudgets, paidBudgets, BudgetError } from '../data/budget';
 import type { Transaction } from '../data/types';
 import { accountName, categoryOf } from '../selectors';
 import { TxList } from '../components/TxList';
+import { BottomBar } from '../components/BottomBar';
 import { Sheet } from '../components/Sheet';
 import { openTx } from '../actions';
 import { money, hm } from '../format';
 
-export function BudgetTab() {
+/** onBar：多選且有選取時，通知待辦頁把底部切換列換成批次操作列 */
+export function BudgetTab({ onBar }: { onBar?: (on: boolean) => void }) {
   const s = useAppState();
   const d = s.data;
   const [tab, setTab] = useState<'pending' | 'paid'>('pending');
@@ -37,6 +39,12 @@ export function BudgetTab() {
     if (multi) setSel((x) => (x.includes(t.id) ? x.filter((i) => i !== t.id) : [...x, t.id]));
     else setDetail(t);
   };
+  const showBar = tab === 'pending' && multi && selected.length > 0;
+  useEffect(() => {
+    onBar?.(showBar);
+    return () => onBar?.(false);
+  }, [showBar]);
+
   const switchTab = (t: 'pending' | 'paid') => {
     setTab(t);
     setSel([]);
@@ -45,20 +53,27 @@ export function BudgetTab() {
 
   return (
     <div class="todo-tab budget">
-      <div class="reimb-head">
-        <div class="seg">
-          <button class={tab === 'pending' ? 'on budget' : ''} onClick={() => switchTab('pending')}>未付</button>
-          <button class={tab === 'paid' ? 'on budget' : ''} onClick={() => switchTab('paid')}>已付</button>
-        </div>
-        <div class="reimb-total">
-          <div class="amt-label">{tab === 'pending' ? '未付預算總額' : '已付總額'}</div>
-          <div class="amt-mid budget-color">{money(tab === 'pending' ? pendingTotal : paidTotal)}</div>
-        </div>
+      <div class="todo-total">
+        <div class="amt-label">{tab === 'pending' ? '未付預算總額' : '已付總額'}</div>
+        <div class="amt-mid budget-color">{money(tab === 'pending' ? pendingTotal : paidTotal)}</div>
       </div>
 
       {tab === 'pending' ? (
         <>
           {overdue > 0 && <div class="notice">有 {overdue} 筆預算已過結算期還沒付，請確認是否已付款。</div>}
+          <div class="todo-list">
+          <TxList
+            data={d}
+            txs={pending}
+            onTap={onTapPending}
+            selected={multi ? new Set(selected) : undefined}
+            empty="沒有未付的預算 🎉"
+            onLongPress={(t) => {
+              setMulti(true);
+              setSel((x) => (multi ? (x.includes(t.id) ? x : [...x, t.id]) : [t.id]));
+            }}
+          />
+          </div>
           <div class="reimb-tools">
             <span class="muted">{multi ? '點選要付款的預算（可多筆）' : '點一筆看詳細；長按可多選'}</span>
             <button
@@ -71,32 +86,28 @@ export function BudgetTab() {
               {multi ? '結束多選' : '多選'}
             </button>
           </div>
-          <TxList
-            data={d}
-            txs={pending}
-            onTap={onTapPending}
-            selected={multi ? new Set(selected) : undefined}
-            empty="沒有未付的預算 🎉"
-            onLongPress={(t) => {
-              setMulti(true);
-              setSel((x) => (multi ? (x.includes(t.id) ? x : [...x, t.id]) : [t.id]));
-            }}
-          />
         </>
       ) : (
         <>
+          <div class="todo-list"><TxList data={d} txs={paid} onTap={setDetail} empty="還沒有已付的預算" /></div>
           <div class="reimb-tools"><span class="muted">按錯了？點一筆可退回未付</span></div>
-          <TxList data={d} txs={paid} onTap={setDetail} empty="還沒有已付的預算" />
         </>
       )}
 
-      {tab === 'pending' && multi && selected.length > 0 && (
-        <div class="action-bar">
-          <span>
-            已選 {selected.length} 筆 <b class="budget-color">{money(selTotal)}</b>
-          </span>
-          <button class="btn budget-btn" onClick={() => setConfirmIds(selected)}>已支付</button>
-        </div>
+      <div class="seg todo-sub">
+        <button class={tab === 'pending' ? 'on budget' : ''} onClick={() => switchTab('pending')}>未付</button>
+        <button class={tab === 'paid' ? 'on budget' : ''} onClick={() => switchTab('paid')}>已付</button>
+      </div>
+
+      {showBar && (
+        <BottomBar>
+          <div class="action-bar">
+            <span>
+              已選 {selected.length} 筆 <b class="budget-color">{money(selTotal)}</b>
+            </span>
+            <button class="btn budget-btn" onClick={() => setConfirmIds(selected)}>已支付</button>
+          </div>
+        </BottomBar>
       )}
 
       {detail && (
