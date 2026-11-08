@@ -94,6 +94,8 @@ export const HOME = {
   recentRowPx: 62,
   /** 最近紀錄最多幾筆 */
   recentMax: 5,
+  /** 拿起卡片時，中間「支出／收入」放置區的最小高度（螢幕太小或沒有最近紀錄時仍要出現） */
+  dropZoneMinPx: 96,
 } as const;
 
 /**

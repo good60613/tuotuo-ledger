@@ -451,6 +451,7 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: #cf
 .cards.scrollable .card { touch-action: pan-y; }
 .home-recent { flex: 1 1 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
 .home-recent-list { display: flex; flex-direction: column; }
+.home-zones { display: flex; gap: 10px; align-items: stretch; flex: 1; min-height: inherit; padding: 6px 0; }
 .home-recent .tx-card { height: 54px; flex: none; padding-top: 6px; padding-bottom: 6px; }
 
 /* ---------- 待辦頁（第四批）：報帳／預算分頁 ---------- */

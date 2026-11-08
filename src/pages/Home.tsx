@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'preact/hooks';
-import { useAppState, setState, openOverlay, showToast, goPage, TODO_PAGE } from '../store';
+import { useAppState, setState, openOverlay, showToast, goPage, TODO_PAGE, PAGES } from '../store';
 import { allBalances, spendableTotal, totals, periodKey, dayKey, pendingBudgetByAccount, pendingBudgetTotal } from '../data/calc';
 import { overdueCount } from '../data/budget';
 import { bankAccounts, accountName } from '../selectors';
@@ -37,6 +37,8 @@ export function HomePage() {
   // ---- 版面：卡片區最多 3 排，超過在卡片區內捲動；最近紀錄依剩餘空間決定筆數 ----
   const cardsRef = useRef<HTMLDivElement>(null);
   const recentRef = useRef<HTMLDivElement>(null);
+  const liftedRef = useRef(false);
+  liftedRef.current = !!lifted;
   const [cardsMax, setCardsMax] = useState<number | null>(null);
   const [recentN, setRecentN] = useState(0);
   const scrollable = banks.length > HOME.maxCardRows * 2;
@@ -45,7 +47,8 @@ export function HomePage() {
       const first = cardsRef.current?.querySelector('.card') as HTMLElement | null;
       setCardsMax(scrollable && first ? first.offsetHeight * HOME.maxCardRows + HOME.cardGapPx * (HOME.maxCardRows - 1) : null);
       const box = recentRef.current;
-      if (box) setRecentN(Math.max(0, Math.min(HOME.recentMax, Math.floor(box.clientHeight / HOME.recentRowPx))));
+      // 拿起時中間區換成放置區，高度會變，這時不重算最近紀錄筆數
+      if (box && !liftedRef.current) setRecentN(Math.max(0, Math.min(HOME.recentMax, Math.floor(box.clientHeight / HOME.recentRowPx))));
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -72,7 +75,11 @@ export function HomePage() {
     }
   })();
 
-  const onTap = (acc: Account) => openOverlay({ kind: 'entry', mode: 'expense', accountId: acc.id });
+  // 點一下卡片：進明細頁並切到該帳戶
+  const onTap = (acc: Account) => {
+    setState({ detail: { accountId: acc.id, categoryId: null, day: null, period: null } });
+    goPage(PAGES.indexOf('明細'));
+  };
 
   const onDrop = (acc: Account, target: DropTarget) => {
     if (target.kind === 'expense' || target.kind === 'income') {
@@ -92,21 +99,10 @@ export function HomePage() {
   return (
     <div class={`home${lifted ? ' lifting' : ''}`}>
       <header class="home-head">
-        {lifted ? (
-          <>
-            <div class="drop-zone zone-expense" data-drop="expense">
-              <span class="zone-icon">－</span>支出
-            </div>
-            <div class="drop-zone zone-income" data-drop="income">
-              <span class="zone-icon">＋</span>收入
-            </div>
-          </>
-        ) : (
-          <div class="home-title">
-            <span>{mdLabel(now)}</span>
-            <span class="muted">{weekday(now)}</span>
-          </div>
-        )}
+        <div class="home-title">
+          <span>{mdLabel(now)}</span>
+          <span class="muted">{weekday(now)}</span>
+        </div>
       </header>
 
       <div class={`drag-hint${lifted ? ' show' : ''}`}>{hint || ' '}</div>
@@ -142,14 +138,25 @@ export function HomePage() {
 
       <Balls data={d} droppable />
 
-      {/* 最近紀錄：這一格吃掉剩下的高度，放得下幾筆就顯示幾筆，一筆都放不下就不顯示 */}
-      <div class="home-recent" ref={recentRef}>
-        {recent.length > 0 && (
-          <div class="home-recent-list">
-            {recent.map((t) => (
-              <TxCard key={t.id} data={d} t={t} onTap={openTx} selectable={false} />
-            ))}
+      {/* 最近紀錄：這一格吃掉剩下的高度；拿起卡片時換成「支出／收入」兩個放置區 */}
+      <div class="home-recent" ref={recentRef} style={lifted ? { minHeight: `${HOME.dropZoneMinPx}px` } : undefined}>
+        {lifted ? (
+          <div class="home-zones">
+            <div class="drop-zone zone-expense" data-drop="expense">
+              <span class="zone-icon">－</span>支出
+            </div>
+            <div class="drop-zone zone-income" data-drop="income">
+              <span class="zone-icon">＋</span>收入
+            </div>
           </div>
+        ) : (
+          recent.length > 0 && (
+            <div class="home-recent-list">
+              {recent.map((t) => (
+                <TxCard key={t.id} data={d} t={t} onTap={openTx} selectable={false} />
+              ))}
+            </div>
+          )
         )}
       </div>
 
