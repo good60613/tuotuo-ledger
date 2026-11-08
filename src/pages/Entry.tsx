@@ -18,8 +18,8 @@ import { toLocalInput, fromLocalInput } from '../format';
 function whenLabel(v: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2})/.exec(v);
   if (!m) return v;
-  const thisYear = String(new Date().getFullYear());
-  return (m[1] === thisYear ? `${m[2]}/${m[3]}` : `${m[1].slice(2)}/${m[2]}/${m[3]}`) + ` ${m[4]}`;
+  // PK 指定：一律顯示完整年份（2026/11/08 10:00）
+  return m[1] + "/" + m[2] + "/" + m[3] + " " + m[4];
 }
 
 type Mode = 'expense' | 'income' | 'transfer';

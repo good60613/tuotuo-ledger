@@ -110,9 +110,10 @@ export const TAG_COLOR = {
 
 /** 記帳頁計算機上方那一排的各格寬度比例（flex-grow；數字越大越寬） */
 export const ENTRY_ROW = {
-  date: 2.2,
+  /** 日期格（含年份 2026/11/08 10:00），PK 要求加長 */
+  date: 3.2,
   /** 帳戶格要夠寬，「郵局(薪轉)」這種名稱才不會被截太多 */
-  account: 3,
-  budget: 1.3,
-  reimb: 1.3,
+  account: 2.6,
+  budget: 1.1,
+  reimb: 1.1,
 } as const;
