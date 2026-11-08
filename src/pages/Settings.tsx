@@ -3,7 +3,7 @@ import { useRef, useState } from 'preact/hooks';
 import { useAppState, getState, updateData, showToast, ask, confirmDanger, setState } from '../store';
 import {
   byOrder, reorder, uid, upsertAccount, removeAccount, countAccountRecords,
-  removeCategory, countCategoryRecords, OpError,
+  removeCategory, countCategoryRecords, OpError, editAccount,
 } from '../data/ops';
 import { SMALL_KINDS, KIND_LABEL, type Account, type AccountKind, type Category, type CategoryType } from '../data/types';
 import { allBalances } from '../data/calc';
@@ -215,7 +215,7 @@ export function SettingsPage() {
     <div class="list-row" key={a.id}>
       <button class="row-main" onClick={() => setSheet({ k: 'account', kind: a.kind, existing: a })}>
         <span>{a.name}</span>
-        <span class="muted small">初始 {money(a.initialBalance)} · 目前 {money(bal.get(a.id) ?? 0)}</span>
+        <span class="muted small">目前 {money(bal.get(a.id) ?? 0)}</span>
       </button>
       {list.length > 1 && (
         <>
@@ -413,14 +413,33 @@ export function SettingsPage() {
 function AccountForm({ kind, existing, onClose }: { kind: AccountKind; existing?: Account; onClose: () => void }) {
   const d = useAppState().data;
   const [name, setName] = useState(existing?.name ?? (kind === 'bank' ? '' : KIND_LABEL[kind]));
-  const [init, setInit] = useState(existing ? String(existing.initialBalance) : '0');
+  // 投資標的的金額走「更新市值」，這裡不給改
+  const isHolding = kind === 'invest' && (existing ? existing.subtype === 'holding' : true);
+  const curBal = existing ? allBalances(d).get(existing.id) ?? 0 : 0;
+  // 新增：填初始餘額；修改：填目前金額（從紀錄推算）
+  const [init, setInit] = useState(existing ? String(curBal) : '0');
   const [target, setTarget] = useState(existing?.target ? String(existing.target) : '');
   const parsed = Number(init.replace(/,/g, ''));
-  const ok = name.trim() !== '' && init.trim() !== '' && Number.isFinite(parsed);
+  const showAmount = !(existing && isHolding);
+  const ok = name.trim() !== '' && (!showAmount || (init.trim() !== '' && Number.isFinite(parsed)));
   const save = () => {
     if (!ok) return;
+    if (existing) {
+      const acc: Account = { ...existing, name: name.trim() };
+      if (kind === 'saving') acc.target = Math.round(Number(target.replace(/,/g, ''))) || 0;
+      const newCur = showAmount ? Math.round(parsed) : null;
+      try {
+        updateData((x) => editAccount(x, acc, newCur));
+      } catch (e) {
+        showToast(e instanceof OpError ? e.message : '儲存失敗');
+        return;
+      }
+      showToast(newCur !== null && newCur !== curBal ? `已更新，並產生一筆校正（${newCur > curBal ? '+' : '-'}${money(Math.abs(newCur - curBal))}）` : '已更新帳戶');
+      onClose();
+      return;
+    }
     const acc: Account = existing
-      ? { ...existing, name: name.trim(), initialBalance: Math.round(parsed) }
+      ? existing
       : {
           id: uid('a'),
           name: name.trim(),
@@ -440,10 +459,16 @@ function AccountForm({ kind, existing, onClose }: { kind: AccountKind; existing?
         <span>名稱</span>
         <input value={name} maxLength={12} onInput={(e) => setName(e.currentTarget.value)} placeholder="例如：薪轉帳戶" />
       </label>
-      <label class="field">
-        <span>初始餘額（元，可以是負數）</span>
-        <input value={init} inputMode="numeric" onInput={(e) => setInit(e.currentTarget.value)} />
-      </label>
+      {showAmount && (
+        <label class="field">
+          <span>{existing ? '目前金額（元，可以是負數）' : '初始餘額（開始記帳那天帳戶裡的錢，可以是負數）'}</span>
+          <input value={init} inputMode="numeric" onInput={(e) => setInit(e.currentTarget.value)} />
+        </label>
+      )}
+      {existing && showAmount && (
+        <p class="muted small">改了目前金額，會自動產生一筆「校正」紀錄補上差額，不算當月收支。</p>
+      )}
+      {existing && !showAmount && <p class="muted small">投資標的的金額請到投資畫面用「更新市值」。</p>}
       {kind === 'saving' && (
         <label class="field">
           <span>目標金額（元）</span>

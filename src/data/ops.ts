@@ -319,6 +319,22 @@ export function calibrate(
   return { ...data, transactions: [...data.transactions, tx] };
 }
 
+/**
+ * 設定頁「修改帳戶」（第三批第 2 項）：名稱、目標等照改；初始餘額一律不動。
+ * current＝使用者填的「目前金額」（null＝不改，例如投資標的）。和帳上不同時，差額自動產生一筆「調整」。
+ * 小數四捨五入到整數元。
+ */
+export function editAccount(data: AppData, acc: Account, current: number | null, now: Date = new Date(), id = uid('t')): AppData {
+  const old = data.accounts.find((a) => a.id === acc.id);
+  if (!old) throw new OpError('找不到帳戶');
+  let next = upsertAccount(data, { ...acc, initialBalance: old.initialBalance });
+  if (current !== null) {
+    if (!Number.isFinite(current)) throw new OpError('請輸入金額');
+    next = calibrate(next, acc.id, Math.round(current), now, id);
+  }
+  return next;
+}
+
 /** 投資標的「更新市值」：記下現值，損益由 holdingStats 推算（不算主帳收支） */
 export function updateMarketValue(
   data: AppData,

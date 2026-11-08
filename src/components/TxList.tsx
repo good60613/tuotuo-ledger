@@ -131,7 +131,7 @@ function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { data: A
     cls = 'reimb-in';
   } else if (t.type === 'adjust') {
     icon = '⚖';
-    title = '調整';
+    title = '校正';
     amt = (t.adjustDir === 'down' ? '-' : '+') + money(t.amount);
     cls = 'transfer';
   } else if (t.type === 'valuation') {
@@ -163,6 +163,7 @@ function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { data: A
         <span class="tx-sub">
           {hm(d)}
           {t.type !== 'transfer' && acc && <> · {KIND_ICON[acc.kind]} {acc.name}</>}
+          {t.type === 'adjust' && <span class="badge calib">不計收支</span>}
           {t.reimbursable && (
             <span class={`badge ${t.reimburseStatus === 'done' ? 'done' : 'pending'}`}>
               {t.reimburseStatus === 'done' ? '已報帳' : '待報帳'}
