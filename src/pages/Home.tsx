@@ -48,7 +48,7 @@ export function HomePage() {
       setCardsMax(scrollable && first ? first.offsetHeight * HOME.maxCardRows + HOME.cardGapPx * (HOME.maxCardRows - 1) : null);
       const box = recentRef.current;
       // 拿起時中間區換成放置區，高度會變，這時不重算最近紀錄筆數
-      if (box && !liftedRef.current) setRecentN(Math.max(0, Math.min(HOME.recentMax, Math.floor(box.clientHeight / HOME.recentRowPx))));
+      if (box && !liftedRef.current) setRecentN(Math.max(0, Math.min(HOME.recentCount, Math.floor((box.clientHeight + HOME.recentGapPx) / HOME.recentRowPx))));
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -96,6 +96,20 @@ export function HomePage() {
     }
   };
 
+  const A = HOME.amount;
+  const amtVars = {
+    '--amt-today': `${A.todayPx}px`,
+    '--amt-month': `${A.monthPx}px`,
+    '--amt-left': `${A.leftPx}px`,
+    '--amt-label': `${A.labelPx}px`,
+    '--amt-budget': `${A.budgetPx}px`,
+    '--amt-colgap': `${A.colGapPx}px`,
+    '--amt-rowgap': `${A.rowGapMinPx}px`,
+    '--amt-short': String(A.shortScale),
+  } as Record<string, string>;
+  // 最近紀錄區高度固定（拿起卡片換成放置區時也不變），卡片才不會在手指下移動
+  const recentH = Math.max(HOME.recentCount * HOME.recentRowPx - HOME.recentGapPx, HOME.dropZoneMinPx);
+
   return (
     <div class={`home${lifted ? ' lifting' : ''}`}>
       <header class="home-head">
@@ -105,8 +119,29 @@ export function HomePage() {
         </div>
       </header>
 
-      <div class="amounts">
-        <div class="amt-l1">
+      {/* 金額區：倒三角，由上往下 今日 → 本月 → 剩餘可用（最大，最靠近卡片） */}
+      <div class="amounts" style={amtVars}>
+        <div class="amt-row amt-today">
+          <div>
+            <div class="amt-label">今日收入</div>
+            <div class="amt-num income">{money(t.income)}</div>
+          </div>
+          <div>
+            <div class="amt-label">今日支出</div>
+            <div class="amt-num expense">{money(t.expense)}</div>
+          </div>
+        </div>
+        <div class="amt-row amt-month">
+          <div>
+            <div class="amt-label">本月收入</div>
+            <div class="amt-num income">{money(m.income)}</div>
+          </div>
+          <div>
+            <div class="amt-label">本月支出</div>
+            <div class="amt-num expense">{money(m.expense)}</div>
+          </div>
+        </div>
+        <div class="amt-left">
           <div class="amt-label">剩餘可用</div>
           <div class="amt-big">{money(spendableTotal(d))}</div>
           {budgetSum > 0 && (
@@ -122,44 +157,6 @@ export function HomePage() {
             </button>
           )}
         </div>
-        <div class="amt-l2">
-          <div>
-            <div class="amt-label">本月收入</div>
-            <div class="amt-mid income">{money(m.income)}</div>
-          </div>
-          <div>
-            <div class="amt-label">本月支出</div>
-            <div class="amt-mid expense">{money(m.expense)}</div>
-          </div>
-        </div>
-        <div class="amt-l3">
-          <span>今日收入 <b class="income">{money(t.income)}</b></span>
-          <span>今日支出 <b class="expense">{money(t.expense)}</b></span>
-        </div>
-      </div>
-
-      <div class={`drag-hint${lifted ? ' show' : ''}`}>{hint || ' '}</div>
-
-      {/* 最近紀錄：這一格吃掉剩下的高度；拿起卡片時換成「支出／收入」兩個放置區 */}
-      <div class="home-recent" ref={recentRef} style={lifted ? { minHeight: `${HOME.dropZoneMinPx}px` } : undefined}>
-        {lifted ? (
-          <div class="home-zones">
-            <div class="drop-zone zone-expense" data-drop="expense">
-              <span class="zone-icon">－</span>支出
-            </div>
-            <div class="drop-zone zone-income" data-drop="income">
-              <span class="zone-icon">＋</span>收入
-            </div>
-          </div>
-        ) : (
-          recent.length > 0 && (
-            <div class="home-recent-list">
-              {recent.map((t) => (
-                <TxCard key={t.id} data={d} t={t} onTap={openTx} selectable={false} />
-              ))}
-            </div>
-          )
-        )}
       </div>
 
       <div
@@ -192,6 +189,31 @@ export function HomePage() {
       </div>
 
       <Balls data={d} droppable />
+
+      {/* 最近紀錄：貼在最下面、緊靠導覽列；拿起卡片時換成「支出／收入」兩個放置區（往下拖一小段就到） */}
+      <div class="home-recent" ref={recentRef} style={{ height: `${recentH}px`, minHeight: `${HOME.dropZoneMinPx + HOME.dragHintPx}px` }}>
+        {lifted ? (
+          <>
+          <div class="drag-hint show" style={{ height: `${HOME.dragHintPx}px`, lineHeight: `${HOME.dragHintPx}px` }}>{hint}</div>
+          <div class="home-zones">
+            <div class="drop-zone zone-expense" data-drop="expense">
+              <span class="zone-icon">－</span>支出
+            </div>
+            <div class="drop-zone zone-income" data-drop="income">
+              <span class="zone-icon">＋</span>收入
+            </div>
+          </div>
+          </>
+        ) : (
+          recent.length > 0 && (
+            <div class="home-recent-list" style={{ gap: `${HOME.recentGapPx}px` }}>
+              {recent.map((t) => (
+                <TxCard key={t.id} data={d} t={t} onTap={openTx} selectable={false} />
+              ))}
+            </div>
+          )
+        )}
+      </div>
     </div>
   );
 }

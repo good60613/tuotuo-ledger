@@ -120,12 +120,22 @@ button { font: inherit; color: inherit; }
 body.is-dragging .ball[data-drop] .ball-dot { outline: 2px dashed #b9b2ec; outline-offset: 2px; }
 body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: #cfc9f3; }
 
-.amounts { flex: none; padding-top: 6px; text-align: center; }
+/* 金額區（第六批）：吃掉剩下的高度，三行平均分配上下空間；字級來自 config HOME.amount */
+.amounts {
+  --amt-k: 1;
+  flex: 1 1 0; min-height: min-content; text-align: center;
+  display: flex; flex-direction: column; justify-content: space-evenly; gap: var(--amt-rowgap); padding: 2px 0 8px;
+}
 .amt-label { font-size: 12px; color: var(--muted); }
-.amt-big { font-size: 38px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.15; }
-.amt-l2 { display: flex; justify-content: space-around; margin: 8px 0 6px; }
 .amt-mid { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.amt-l3 { display: flex; justify-content: center; gap: 18px; font-size: 12px; color: var(--muted); }
+.amounts .amt-label { font-size: calc(var(--amt-label) * var(--amt-k)); }
+.amounts .amt-budget { font-size: calc(var(--amt-budget) * var(--amt-k)); }
+.amt-row { display: flex; justify-content: center; gap: var(--amt-colgap); }
+.amt-row > div { min-width: 0; }
+.amt-num { font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.2; white-space: nowrap; }
+.amt-today .amt-num { font-size: calc(var(--amt-today) * var(--amt-k)); }
+.amt-month .amt-num { font-size: calc(var(--amt-month) * var(--amt-k)); }
+.amt-big { font-size: calc(var(--amt-left) * var(--amt-k)); font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.12; white-space: nowrap; }
 
 /* ---------- 疊層、提示 ---------- */
 .overlay { position: absolute; inset: 0; background: var(--bg); z-index: 50; display: flex; flex-direction: column; animation: ov-in .16s ease-out; }
@@ -363,8 +373,7 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: #cf
   .cards { gap: 8px; }
   .home .balls { margin: 10px 0 4px; }
   .ball-dot { width: 42px; height: 42px; font-size: 19px; }
-  .amt-big { font-size: 32px; }
-  .amt-l2 { margin: 4px 0; }
+  .amounts { --amt-k: var(--amt-short); }
   .amt-mid { font-size: 18px; }
   .calc { grid-auto-rows: var(--calc-row-short, 46px); }
 }
@@ -454,16 +463,17 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: #cf
 .cat.trash.over { border-color: var(--expense); background: #fbe3e3; }
 
 /* 首頁版面（第三批第 3 項）：卡片 → 球 → 最近紀錄 → 金額（底部固定） */
-.home > .home-head, .home > .drag-hint, .home > .cards, .home > .balls { flex: none; }
+.home > .home-head, .home .drag-hint, .home > .cards, .home > .balls { flex: none; }
 /* 超過 3 排：卡片區內上下捲動。卡片改成允許瀏覽器直向捲動，
    還沒到長按時間就移動＝瀏覽器接手捲動（卡片長按自動取消）；長按到了才拿起、擋住捲動 */
 .cards.scrollable { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
 .cards.scrollable::-webkit-scrollbar { display: none; }
 .cards.scrollable .card { touch-action: pan-y; }
-.home-recent { flex: 1 1 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
+/* 最近紀錄：高度固定（config HOME.recentCount 筆），螢幕太矮時可縮；紀錄貼底緊靠導覽列 */
+.home-recent { flex: 0 1 auto; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; }
 .home-recent-list { display: flex; flex-direction: column; }
-.home-zones { display: flex; gap: 10px; align-items: stretch; flex: 1; min-height: inherit; padding: 6px 0; }
-.home-recent .tx-card { height: 54px; flex: none; padding-top: 6px; padding-bottom: 6px; }
+.home-zones { display: flex; gap: 10px; align-items: stretch; flex: 1; min-height: 0; padding: 0 0 6px; }
+.home-recent .tx-card { height: 54px; flex: none; margin: 0; padding-top: 6px; padding-bottom: 6px; }
 
 /* ---------- 待辦頁（第四批）：報帳／預算分頁 ---------- */
 .todo { display: flex; flex-direction: column; }
@@ -542,8 +552,6 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: #cf
 .todo-tabs button { height: 100%; padding-top: 0; padding-bottom: 0; }
 .bottom-bar > .action-bar { position: static; margin: 0; flex: 1; box-shadow: none; padding-top: 0; padding-bottom: 0; }
 
-/* 首頁（第五批）：上＝只看的金額，中＝最近紀錄（拿起時換成放置區，提示字緊貼其上），下＝卡片區→小帳戶球 */
+/* 首頁（第六批）：上＝只看的金額（撐滿），中＝卡片區→小帳戶球，下＝最近紀錄（拿起時換成放置區，提示字緊貼其上） */
 .home-head { height: 40px; padding-top: 6px; }
-.amounts { padding-bottom: 4px; }
-.home > .amounts { flex: none; }
 @media (max-height: 700px) { .home-head { height: 32px; padding-top: 4px; } }
