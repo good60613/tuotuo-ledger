@@ -83,3 +83,15 @@ export const SETTLE = {
 
 /** 「已記一筆」提示停留多久（可按復原） */
 export const TOAST_MS = 4000;
+
+/** 首頁版面（第三批第 3 項） */
+export const HOME = {
+  /** 卡片區最多顯示幾排（每排 2 張）；超過就在卡片區內上下捲動 */
+  maxCardRows: 3,
+  /** 卡片之間的間距 */
+  cardGapPx: 10,
+  /** 最近紀錄每一筆的高度（含上下間距） */
+  recentRowPx: 62,
+  /** 最近紀錄最多幾筆 */
+  recentMax: 5,
+} as const;

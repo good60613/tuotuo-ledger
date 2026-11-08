@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks';
+import { useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { useAppState, setState, openOverlay, showToast } from '../store';
 import { allBalances, spendableTotal, totals, periodKey, dayKey } from '../data/calc';
 import { bankAccounts, accountName } from '../selectors';
@@ -8,6 +8,14 @@ import { AccountCard } from '../components/AccountCard';
 import { Balls } from '../components/Balls';
 import type { DropTarget } from '../gestures/cardDrag';
 import { money, mdLabel, weekday } from '../format';
+import { TxCard } from '../components/TxList';
+import { openTx } from '../actions';
+import { HOME } from '../config';
+import type { Transaction } from '../data/types';
+
+/** 最近紀錄：依發生時間由新到舊 */
+const recentTxs = (txs: Transaction[], n: number) =>
+  [...txs].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt) || b.createdAt.localeCompare(a.createdAt)).slice(0, n);
 
 export function HomePage() {
   const s = useAppState();
@@ -20,6 +28,28 @@ export function HomePage() {
   const [hover, setHover] = useState<DropTarget | null>(null);
 
   const ballFirst = (kind: string) => ballDropTarget(d, kind as AccountKind);
+  const banks = bankAccounts(d);
+
+  // ---- 版面：卡片區最多 3 排，超過在卡片區內捲動；最近紀錄依剩餘空間決定筆數 ----
+  const cardsRef = useRef<HTMLDivElement>(null);
+  const recentRef = useRef<HTMLDivElement>(null);
+  const [cardsMax, setCardsMax] = useState<number | null>(null);
+  const [recentN, setRecentN] = useState(0);
+  const scrollable = banks.length > HOME.maxCardRows * 2;
+  useLayoutEffect(() => {
+    const measure = () => {
+      const first = cardsRef.current?.querySelector('.card') as HTMLElement | null;
+      setCardsMax(scrollable && first ? first.offsetHeight * HOME.maxCardRows + HOME.cardGapPx * (HOME.maxCardRows - 1) : null);
+      const box = recentRef.current;
+      if (box) setRecentN(Math.max(0, Math.min(HOME.recentMax, Math.floor(box.clientHeight / HOME.recentRowPx))));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (recentRef.current) ro.observe(recentRef.current);
+    if (cardsRef.current) ro.observe(cardsRef.current);
+    return () => ro.disconnect();
+  }, [banks.length, scrollable]);
+  const recent = recentTxs(d.transactions, recentN);
 
   const hint = (() => {
     if (!lifted) return '';
@@ -77,8 +107,12 @@ export function HomePage() {
 
       <div class={`drag-hint${lifted ? ' show' : ''}`}>{hint || ' '}</div>
 
-      <div class="cards">
-        {bankAccounts(d).map((a) => (
+      <div
+        ref={cardsRef}
+        class={`cards${scrollable ? ' scrollable' : ''}`}
+        style={cardsMax ? { maxHeight: `${cardsMax}px` } : undefined}
+      >
+        {banks.map((a) => (
           <AccountCard
             key={a.id}
             account={a}
@@ -98,10 +132,21 @@ export function HomePage() {
             }}
           />
         ))}
-        {bankAccounts(d).length === 0 && <div class="empty">還沒有一般帳戶，請到「設定」新增</div>}
+        {banks.length === 0 && <div class="empty">還沒有一般帳戶，請到「設定」新增</div>}
       </div>
 
       <Balls data={d} droppable />
+
+      {/* 最近紀錄：這一格吃掉剩下的高度，放得下幾筆就顯示幾筆，一筆都放不下就不顯示 */}
+      <div class="home-recent" ref={recentRef}>
+        {recent.length > 0 && (
+          <div class="home-recent-list">
+            {recent.map((t) => (
+              <TxCard key={t.id} data={d} t={t} onTap={openTx} selectable={false} />
+            ))}
+          </div>
+        )}
+      </div>
 
       <div class="amounts">
         <div class="amt-l1">

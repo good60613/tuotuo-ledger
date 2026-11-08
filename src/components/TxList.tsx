@@ -116,7 +116,7 @@ const SOURCE_LABEL: Record<string, [string, string]> = {
   'saving-interest': ['🪙', '利息'],
 };
 
-function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { data: AppData; t: Transaction; onTap: (t: Transaction) => void; selected?: boolean; selectable: boolean; onLongPress?: (t: Transaction) => void }) {
+export function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { data: AppData; t: Transaction; onTap: (t: Transaction) => void; selected?: boolean; selectable: boolean; onLongPress?: (t: Transaction) => void }) {
   const d = new Date(t.occurredAt);
   const acc = data.accounts.find((a) => a.id === (t.type === 'reimburse_in' ? t.toAccountId : t.accountId));
   let icon = '？', title = '', amt = '', cls = '';

@@ -50,6 +50,6 @@ describe('分類自動排序：關掉後回到手動排序', () => {
     const n = nextCategoryOrder(d, 'expense');
     expect(d.categories.filter((c) => c.type === 'expense').every((c) => c.order < n)).toBe(true);
     d = upsertCategory(d, { id: 'z', type: 'expense', name: 'z', icon: '❓', color: 'other', order: n });
-    expect(ids(d).at(-1)).toBe('z');
+    expect(ids(d)[ids(d).length - 1]).toBe('z');
   });
 });
