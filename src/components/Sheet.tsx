@@ -1,11 +1,14 @@
 import type { ComponentChildren } from 'preact';
 import { createPortal } from 'preact/compat';
+import { useBackLayer } from '../backNav';
 
 /**
  * 從底部升起的選單；點背景關閉。
  * 一律畫在 App 最外層（不跟著頁面滑動），避免在換頁容器裡位置跑掉。
  */
 export function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: ComponentChildren }) {
+  // 按返回鍵先關掉這個選單
+  useBackLayer(true, onClose);
   const host = document.querySelector('.app') ?? document.body;
   return createPortal(
     <div class="sheet-backdrop" data-no-swipe onClick={(e) => e.target === e.currentTarget && onClose()}>

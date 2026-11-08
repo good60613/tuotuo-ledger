@@ -1,6 +1,7 @@
 // 報帳頁（左二）：追蹤公司還欠多少錢。
 import { useState } from 'preact/hooks';
-import { useAppState, getState, updateData, showToast } from '../store';
+import { useAppState, getState, updateData, showToast, PAGES } from '../store';
+import { useBackLayer } from '../backNav';
 import { markReimbursed, defaultReimburseAccount, OpError } from '../data/ops';
 import type { Transaction } from '../data/types';
 import { accountName, categoryOf } from '../selectors';
@@ -16,6 +17,11 @@ export function ReimbursePage() {
   const [tab, setTab] = useState<'pending' | 'done'>('pending');
   const [multi, setMulti] = useState(false);
   const [sel, setSel] = useState<string[]>([]);
+  // 多選模式中按返回：結束多選
+  useBackLayer(s.page === PAGES.indexOf('報帳') && multi, () => {
+    setMulti(false);
+    setSel([]);
+  });
   /** 要報帳確認的紀錄（null＝沒開確認視窗） */
   const [confirmIds, setConfirmIds] = useState<string[] | null>(null);
   /** 點一筆時跳出的詳細卡片 */

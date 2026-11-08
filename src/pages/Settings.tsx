@@ -1,5 +1,7 @@
 // 設定（右二）：只放讓其他功能能運作的項目。
 import { useRef, useState } from 'preact/hooks';
+import { useBackLayer } from '../backNav';
+import { PAGES } from '../store';
 import { useAppState, getState, updateData, showToast, ask, confirmDanger, setState } from '../store';
 import {
   byOrder, reorder, uid, upsertAccount, removeAccount, countAccountRecords,
@@ -48,6 +50,8 @@ export function SettingsPage() {
   const bal = allBalances(d);
   const [sheet, setSheet] = useState<SheetState>(null);
   const [view, setView] = useState<View>('menu');
+  // 在設定的二級頁按返回：回到設定目錄
+  useBackLayer(s.page === PAGES.indexOf('設定') && view !== 'menu', () => setView('menu'));
   const [catType, setCatType] = useState<CategoryType>('expense');
   const fileRef = useRef<HTMLInputElement>(null);
 

@@ -153,7 +153,7 @@ export function openOverlay(o: Overlay) {
 }
 export function closeOverlay() {
   if (state.overlays.length === 0) return;
-  if (history.state && typeof history.state.overlay === 'number') history.back();
+  if (typeof history !== 'undefined' && history.state && typeof history.state.overlay === 'number') history.back();
   else setState((s) => ({ overlays: s.overlays.slice(0, -1) }));
 }
 if (typeof window !== 'undefined') {
