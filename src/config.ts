@@ -48,10 +48,10 @@ export const TRANSITION = {
 
 /** 記帳頁計算機鍵盤（五欄布局）。手機上太擠就調這裡 */
 export const CALC = {
-  /** 每排高度 */
-  rowHeightPx: 52,
+  /** 每排高度（4 排 × 65 ＝ 原本 5 排 × 52 的總高度，鍵盤整體高度不變） */
+  rowHeightPx: 65,
   /** 矮螢幕時的每排高度 */
-  shortRowHeightPx: 46,
+  shortRowHeightPx: 57.5,
   /** 按鍵之間的間距 */
   gapPx: 1,
 } as const;
