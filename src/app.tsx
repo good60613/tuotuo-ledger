@@ -33,7 +33,8 @@ export function App() {
   if (!s.ready) return <div class="loading">讀取中…</div>;
 
   // 目前這頁有沒有底部操作列（統計、明細、待辦）：提示條要再往上抬
-  const hasBar = ['待辦', '統計', '明細'].includes(PAGES[s.page]);
+  // 有疊層（記帳頁、小帳戶畫面）開著時，畫面上看不到底部操作列，提示條不用再往上抬
+  const hasBar = s.overlays.length === 0 && ['待辦', '統計', '明細'].includes(PAGES[s.page]);
   const pages = [<TodoPage />, <StatsPage />, <HomePage />, <DetailPage />, <SettingsPage />];
 
   return (
