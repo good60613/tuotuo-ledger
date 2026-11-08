@@ -7,10 +7,10 @@ cd /d "%~dp0"
 call npm run build || goto :fail
 call npx cap sync android || goto :fail
 cd android
-call gradlew.bat assembleRelease || goto :fail
+call .\gradlew.bat assembleRelease || goto :fail
 cd /d "%~dp0"
 rem 複製一份到專案資料夾裡的 APK 資料夾，檔名帶版本號，比較好找
-for /f "tokens=2 delims=^"" %%v in ('findstr /c:"versionName" android\app\build.gradle') do set "VER=%%v"
+for /f "tokens=2" %%v in ('findstr /c:"versionName" android\app\build.gradle') do set "VER=%%~v"
 if not exist APK mkdir APK
 copy /y "android\app\build\outputs\apk\release\app-release.apk" "APK\拖拖記帳-%VER%.apk" >nul
 echo.
