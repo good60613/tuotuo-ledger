@@ -105,61 +105,6 @@ export function HomePage() {
         </div>
       </header>
 
-      <div class={`drag-hint${lifted ? ' show' : ''}`}>{hint || ' '}</div>
-
-      <div
-        ref={cardsRef}
-        class={`cards${scrollable ? ' scrollable' : ''}`}
-        style={cardsMax ? { maxHeight: `${cardsMax}px` } : undefined}
-      >
-        {banks.map((a) => (
-          <AccountCard
-            key={a.id}
-            account={a}
-            balance={bal.get(a.id) ?? 0}
-            budget={budgetBy.get(a.id) ?? 0}
-            onTap={onTap}
-            onLift={(acc) => {
-              setLifted(acc);
-              setHover(null);
-              setState({ dragging: true });
-            }}
-            onHover={setHover}
-            onDrop={onDrop}
-            onEnd={() => {
-              setLifted(null);
-              setHover(null);
-              setState({ dragging: false });
-            }}
-          />
-        ))}
-        {banks.length === 0 && <div class="empty">還沒有一般帳戶，請到「設定」新增</div>}
-      </div>
-
-      <Balls data={d} droppable />
-
-      {/* 最近紀錄：這一格吃掉剩下的高度；拿起卡片時換成「支出／收入」兩個放置區 */}
-      <div class="home-recent" ref={recentRef} style={lifted ? { minHeight: `${HOME.dropZoneMinPx}px` } : undefined}>
-        {lifted ? (
-          <div class="home-zones">
-            <div class="drop-zone zone-expense" data-drop="expense">
-              <span class="zone-icon">－</span>支出
-            </div>
-            <div class="drop-zone zone-income" data-drop="income">
-              <span class="zone-icon">＋</span>收入
-            </div>
-          </div>
-        ) : (
-          recent.length > 0 && (
-            <div class="home-recent-list">
-              {recent.map((t) => (
-                <TxCard key={t.id} data={d} t={t} onTap={openTx} selectable={false} />
-              ))}
-            </div>
-          )
-        )}
-      </div>
-
       <div class="amounts">
         <div class="amt-l1">
           <div class="amt-label">剩餘可用</div>
@@ -192,6 +137,61 @@ export function HomePage() {
           <span>今日支出 <b class="expense">{money(t.expense)}</b></span>
         </div>
       </div>
+
+      <div class={`drag-hint${lifted ? ' show' : ''}`}>{hint || ' '}</div>
+
+      {/* 最近紀錄：這一格吃掉剩下的高度；拿起卡片時換成「支出／收入」兩個放置區 */}
+      <div class="home-recent" ref={recentRef} style={lifted ? { minHeight: `${HOME.dropZoneMinPx}px` } : undefined}>
+        {lifted ? (
+          <div class="home-zones">
+            <div class="drop-zone zone-expense" data-drop="expense">
+              <span class="zone-icon">－</span>支出
+            </div>
+            <div class="drop-zone zone-income" data-drop="income">
+              <span class="zone-icon">＋</span>收入
+            </div>
+          </div>
+        ) : (
+          recent.length > 0 && (
+            <div class="home-recent-list">
+              {recent.map((t) => (
+                <TxCard key={t.id} data={d} t={t} onTap={openTx} selectable={false} />
+              ))}
+            </div>
+          )
+        )}
+      </div>
+
+      <div
+        ref={cardsRef}
+        class={`cards${scrollable ? ' scrollable' : ''}`}
+        style={cardsMax ? { maxHeight: `${cardsMax}px` } : undefined}
+      >
+        {banks.map((a) => (
+          <AccountCard
+            key={a.id}
+            account={a}
+            balance={bal.get(a.id) ?? 0}
+            budget={budgetBy.get(a.id) ?? 0}
+            onTap={onTap}
+            onLift={(acc) => {
+              setLifted(acc);
+              setHover(null);
+              setState({ dragging: true });
+            }}
+            onHover={setHover}
+            onDrop={onDrop}
+            onEnd={() => {
+              setLifted(null);
+              setHover(null);
+              setState({ dragging: false });
+            }}
+          />
+        ))}
+        {banks.length === 0 && <div class="empty">還沒有一般帳戶，請到「設定」新增</div>}
+      </div>
+
+      <Balls data={d} droppable />
     </div>
   );
 }

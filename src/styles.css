@@ -541,3 +541,9 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: #cf
 .bottom-bar.todo-tabs { margin-bottom: 0; }
 .todo-tabs button { height: 100%; padding-top: 0; padding-bottom: 0; }
 .bottom-bar > .action-bar { position: static; margin: 0; flex: 1; box-shadow: none; padding-top: 0; padding-bottom: 0; }
+
+/* 首頁（第五批）：上＝只看的金額，中＝最近紀錄（拿起時換成放置區，提示字緊貼其上），下＝卡片區→小帳戶球 */
+.home-head { height: 40px; padding-top: 6px; }
+.amounts { padding-bottom: 4px; }
+.home > .amounts { flex: none; }
+@media (max-height: 700px) { .home-head { height: 32px; padding-top: 4px; } }
