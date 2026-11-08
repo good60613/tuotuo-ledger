@@ -1,8 +1,9 @@
 import { render } from 'preact';
 import { App } from './app';
-import { initStore } from './store';
+import { initStore, getState, subscribeState } from './store';
 import { installClickGuard } from './gestures/guard';
-import { installNativeBackButton } from './backNav';
+import { installNativeBackButton, goHomeFromWidget } from './backNav';
+import { installWidgetSync } from './widget';
 import './styles.css';
 import { TAG_COLOR, BOTTOM_BAR, TIMELINE } from './config';
 
@@ -20,4 +21,10 @@ document.documentElement.style.setProperty('--tl-tail-detail', TIMELINE.tailDeta
 installClickGuard();
 initStore();
 void installNativeBackButton();
+// 桌面小工具：資料一變就把數字送過去；點小工具回首頁
+void installWidgetSync(
+  () => (getState().ready ? getState().data : null),
+  subscribeState,
+  () => void goHomeFromWidget(),
+);
 render(<App />, document.getElementById('app')!);

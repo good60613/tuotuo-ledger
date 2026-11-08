@@ -157,6 +157,12 @@ export const CARRIER = {
   quietModules: 10,
 } as const;
 
+/** 桌面小工具（網頁端；外觀數值在 android/app/src/main/res/values/widget_dimens.xml） */
+export const WIDGET = {
+  /** 資料連續變動時，等多久沒有新變動才送給小工具（毫秒） */
+  debounceMs: 300,
+} as const;
+
 /** 時間軸：左邊豎線在最後一筆下面再往下延伸多長（只畫線，不佔排版高度） */
 export const TIMELINE = {
   /** 待辦頁（報帳、預算）：延伸到清單底（清單外框會切掉多的部分，不可大於最後一天的下間距 10px，否則會多出捲動空間） */

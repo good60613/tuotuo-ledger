@@ -88,6 +88,10 @@ let state: State = {
 
 const listeners = new Set<() => void>();
 export const getState = () => state;
+/** 畫面以外的程式（例如桌面小工具同步）監聽狀態變化 */
+export const subscribeState = (fn: () => void) => {
+  listeners.add(fn);
+};
 
 export function setState(patch: Partial<State> | ((s: State) => Partial<State>)) {
   const p = typeof patch === 'function' ? patch(state) : patch;

@@ -64,6 +64,24 @@ export function handleBack(): BackResult {
   return 'exit';
 }
 
+/**
+ * 點了桌面小工具：回首頁。PK 決定（第七批）：記帳頁若開著（可能打到一半），那層保留不清掉；
+ * 其他確認視窗、選單、疊層畫面都關掉。疊層用瀏覽紀錄關，是非同步的，所以每關一層等一下再看。
+ */
+export async function goHomeFromWidget(wait = (ms: number) => new Promise((r) => setTimeout(r, ms))) {
+  for (let i = 0; i < 20; i++) {
+    const s = getState();
+    const top = s.overlays[s.overlays.length - 1];
+    const layerAbove = layers.some((l) => l.depth >= s.overlays.length);
+    if (top?.kind === 'entry' && !s.dialog && !layerAbove) break;
+    const r = handleBack();
+    if (r === 'home' || r === 'exit') return;
+    if (r === 'overlay') await wait(60);
+  }
+  // 記帳頁保留時，底下的頁面也先切回首頁（存完或關掉記帳頁就看到首頁）
+  if (getState().page !== HOME_PAGE) goPage(HOME_PAGE);
+}
+
 /** 測試用：清掉所有登記 */
 export function _resetBackLayers() {
   layers.length = 0;
