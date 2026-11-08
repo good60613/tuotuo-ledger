@@ -117,3 +117,16 @@ export const ENTRY_ROW = {
   budget: 1.1,
   reimb: 1.1,
 } as const;
+
+/**
+ * 底部操作列與導覽列的尺寸（第五批，單手操作版面）。
+ * 矮螢幕覺得擠就調這兩個（heightPx 與 navHeightPx）。
+ */
+export const BOTTOM_BAR = {
+  /** 底部操作列高度（統計、明細、待辦頁固定在導覽列正上方） */
+  heightPx: 48,
+  /** 操作列與內容、浮動「＋」、提示條之間的間距 */
+  gapPx: 10,
+  /** 底部導覽列高度（原本寫在 styles.css 的 --nav-h） */
+  navHeightPx: 58,
+} as const;

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { PAGES, getState, goPage, useAppState, hideToast } from './store';
 import { attachPager } from './gestures/pager';
-import { PAGER } from './config';
+import { PAGER, BOTTOM_BAR } from './config';
 import { HomePage } from './pages/Home';
 import { OverlayHost } from './pages/OverlayHost';
 import { DialogHost } from './components/DialogHost';
@@ -32,10 +32,12 @@ export function App() {
 
   if (!s.ready) return <div class="loading">讀取中…</div>;
 
+  // 目前這頁有沒有底部操作列（統計、明細、待辦）：提示條要再往上抬
+  const hasBar = ['待辦', '統計', '明細'].includes(PAGES[s.page]);
   const pages = [<TodoPage />, <StatsPage />, <HomePage />, <DetailPage />, <SettingsPage />];
 
   return (
-    <div class={`app${s.fade ? ' fading' : ''}`}>
+    <div class={`app${s.fade ? ' fading' : ''}`} style={{ '--bottom-bar-h': `${hasBar ? BOTTOM_BAR.heightPx + BOTTOM_BAR.gapPx * 2 : 0}px` }}>
       <div class="pager" ref={pagerRef}>
         <div
           class="track"

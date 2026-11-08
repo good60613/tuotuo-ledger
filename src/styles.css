@@ -509,3 +509,23 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: #cf
 @media (prefers-reduced-motion: reduce) {
   .toast, .home-zones .drop-zone, .drop-zone { animation: none; transition: none; }
 }
+
+/* ---------- 第五批：單手操作版面（只看的在上、要按的在下） ---------- */
+/* 共用底部操作列：黏在各頁捲動區的最底端（sticky），屬於自己那一頁，換頁時不會殘留 */
+.page-pad.has-bar { padding-bottom: 0; min-height: 100%; display: flex; flex-direction: column; }
+.bottom-bar {
+  position: sticky; bottom: 0; z-index: 6; flex: none; margin: auto -16px 0;
+  height: var(--bar-h); box-sizing: content-box; padding: var(--bar-gap) 16px;
+  background: var(--bg); display: flex; gap: 8px; align-items: stretch;
+}
+.bottom-bar .acct-period { margin: 0; flex: 1 1 0; min-width: 0; align-items: stretch; }
+.bottom-bar .pill-btn { padding-top: 0; padding-bottom: 0; }
+.bottom-bar .pill-btn.small { font-size: 14px; padding: 0 14px; }
+.bottom-bar .period-switch button { padding-top: 0; padding-bottom: 0; }
+.stats .panel:last-of-type { margin-bottom: 12px; }
+.detail .bottom-bar { margin-top: 0; }
+/* 「＋」浮在操作列上方：黏在操作列頂端再往上留一點 */
+.detail .fab { bottom: calc(var(--bar-h) + var(--bar-gap) * 2 + 8px); }
+.detail .fab { margin-bottom: 8px; }
+/* 提示條浮在操作列上方（--bottom-bar-h 由 app.tsx 依目前頁面設定） */
+.toast { bottom: calc(var(--nav-h) + 14px + var(--bottom-bar-h, 0px) + env(safe-area-inset-bottom)); }
