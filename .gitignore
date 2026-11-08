@@ -9,3 +9,7 @@ test-results/
 keystore.properties
 key.properties
 android/local.properties
+
+# 打包好的 APK（方便找，不進 git）
+APK/
+*.apk
