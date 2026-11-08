@@ -108,6 +108,13 @@ export function TxList({ data, txs, onTap, selected, empty, onLongPress }: Props
   );
 }
 
+/** 沒有分類的小帳戶紀錄（配息、費用、利息）的顯示 */
+const SOURCE_LABEL: Record<string, [string, string]> = {
+  'invest-dividend': ['💵', '配息'],
+  'invest-fee': ['🧾', '費用'],
+  'saving-interest': ['🪙', '利息'],
+};
+
 function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { data: AppData; t: Transaction; onTap: (t: Transaction) => void; selected?: boolean; selectable: boolean; onLongPress?: (t: Transaction) => void }) {
   const d = new Date(t.occurredAt);
   const acc = data.accounts.find((a) => a.id === (t.type === 'reimburse_in' ? t.toAccountId : t.accountId));
@@ -132,6 +139,11 @@ function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { data: A
     title = '更新市值';
     amt = money(t.amount);
     cls = 'transfer';
+  } else if (!t.categoryId && t.source && SOURCE_LABEL[t.source]) {
+    icon = SOURCE_LABEL[t.source][0];
+    title = SOURCE_LABEL[t.source][1];
+    amt = (t.type === 'expense' ? '-' : '+') + money(t.amount);
+    cls = t.type;
   } else {
     const c = categoryOf(data, t.categoryId);
     icon = c?.icon ?? '？';

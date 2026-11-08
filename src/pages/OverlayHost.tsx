@@ -1,5 +1,6 @@
 import { useAppState, closeOverlay, type Overlay } from '../store';
 import { EntryPage } from './Entry';
+import { SubPage } from './Sub';
 
 /** 疊在主頁上的畫面（記帳頁、轉帳輸入…） */
 export function OverlayHost() {
@@ -24,5 +25,6 @@ function renderOverlay(o: Overlay) {
       </div>
     );
   }
+  if (o.kind === 'sub') return <SubPage o={o} />;
   return <EntryPage o={o} />;
 }

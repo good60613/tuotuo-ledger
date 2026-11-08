@@ -12,15 +12,17 @@ export function periodLabel(key: string): string {
 }
 
 interface Props {
-  accountId: string | null;
-  onAccount: (id: string | null) => void;
+  accountId?: string | null;
+  onAccount?: (id: string | null) => void;
+  /** 小帳戶子畫面不需要帳戶按鈕 */
+  hideAccount?: boolean;
   /** 目前顯示的期別（已解析，不是 null） */
   period: string;
   /** null＝回到目前這一期 */
   onPeriod: (p: string | null) => void;
 }
 
-export function PeriodBar({ accountId, onAccount, period, onPeriod }: Props) {
+export function PeriodBar({ accountId = null, onAccount, hideAccount, period, onPeriod }: Props) {
   const d = useAppState().data;
   const [pickAcc, setPickAcc] = useState(false);
   const [pickPeriod, setPickPeriod] = useState(false);
@@ -35,9 +37,11 @@ export function PeriodBar({ accountId, onAccount, period, onPeriod }: Props) {
 
   return (
     <div class="acct-period">
-      <button class="pill-btn" onClick={() => setPickAcc(true)}>
-        {accountId ? accountName(d, accountId) : '全部帳戶'} ▾
-      </button>
+      {!hideAccount && (
+        <button class="pill-btn" onClick={() => setPickAcc(true)}>
+          {accountId ? accountName(d, accountId) : '全部帳戶'} ▾
+        </button>
+      )}
       <div class="period-switch">
         <button class="arrow" onClick={() => go(shiftPeriod(period, -1))} aria-label="上一期">‹</button>
         <button class="label" onClick={() => setPickPeriod(true)}>{periodLabel(period)}</button>
@@ -45,7 +49,7 @@ export function PeriodBar({ accountId, onAccount, period, onPeriod }: Props) {
       </div>
 
       {pickAcc && (
-        <AccountPicker title="切換帳戶" allowAll mainOnly value={accountId} onPick={onAccount} onClose={() => setPickAcc(false)} />
+        <AccountPicker title="切換帳戶" allowAll mainOnly value={accountId} onPick={(id) => onAccount?.(id)} onClose={() => setPickAcc(false)} />
       )}
       {pickPeriod && (
         <Sheet title="選擇月份" onClose={() => setPickPeriod(false)}>

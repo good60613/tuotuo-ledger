@@ -2,6 +2,7 @@ import type { AppData } from '../data/types';
 import { ballTotal } from '../data/calc';
 import { balls, KIND_ICON } from '../selectors';
 import { money } from '../format';
+import { openSub } from '../actions';
 
 /** 五顆小帳戶球。首頁上同時是拖曳目標（data-drop） */
 export function Balls({ data, droppable, onTap }: { data: AppData; droppable?: boolean; onTap?: (kind: string) => void }) {
@@ -14,7 +15,7 @@ export function Balls({ data, droppable, onTap }: { data: AppData; droppable?: b
             key={b.kind}
             class="ball"
             data-drop={droppable ? `ball:${b.kind}` : undefined}
-            onClick={onTap ? () => onTap(b.kind) : undefined}
+            onClick={() => (onTap ? onTap(b.kind) : openSub(b.kind))}
           >
             <div class="ball-dot">{KIND_ICON[b.kind]}</div>
             <div class="ball-label">{b.label}</div>

@@ -19,6 +19,8 @@ export type Overlay =
       /** 編輯既有紀錄 */
       txId?: string;
     }
+  /** 小帳戶子畫面（悠遊卡、電子錢包、投資、儲蓄） */
+  | { kind: 'sub'; ball: 'easycard' | 'ewallet' | 'invest' | 'saving' }
   | { kind: 'placeholder'; title: string; lines: string[] };
 
 export interface DetailFilter {

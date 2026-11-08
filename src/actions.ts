@@ -1,7 +1,7 @@
 // 跨頁面共用的操作
 import type { Transaction } from './data/types';
-import { getState, openOverlay, updateData, showToast, ask } from './store';
-import { batchItems, revertBatch } from './data/ops';
+import { getState, openOverlay, updateData, showToast, ask, confirmDanger } from './store';
+import { batchItems, revertBatch, deleteTransaction } from './data/ops';
 import { accountName } from './selectors';
 import { money } from './format';
 import { bankAccounts } from './selectors';
@@ -12,8 +12,11 @@ export function openTx(t: Transaction) {
     if (t.reimburseBatchId) askRevertBatch(t.reimburseBatchId);
     return;
   }
-  // 調整、市值紀錄在小帳戶子畫面處理（第 4、5 段）
-  if (t.type === 'adjust' || t.type === 'valuation') return;
+  // 調整、市值、投資與儲蓄的記一筆：不走記帳頁，只能刪除（要改就刪掉重記）
+  if (t.type === 'adjust' || t.type === 'valuation' || t.source) {
+    void askDeleteSpecial(t);
+    return;
+  }
   openOverlay({ kind: 'entry', mode: t.type, accountId: t.accountId, toAccountId: t.toAccountId ?? null, txId: t.id });
 }
 
@@ -45,4 +48,20 @@ export function quickEntry(accountId: string | null) {
       ? d.settings.lastUsedAccountId
       : bankAccounts(d)[0]?.id ?? d.accounts[0]?.id ?? null;
   openOverlay({ kind: 'entry', mode: 'expense', accountId: acc });
+}
+
+/** 點小帳戶球：進入子畫面。「其他」球這批不做 */
+export function openSub(kind: string) {
+  if (kind === 'easycard' || kind === 'ewallet' || kind === 'invest' || kind === 'saving') {
+    openOverlay({ kind: 'sub', ball: kind });
+  } else {
+    showToast('「其他」之後再做');
+  }
+}
+
+async function askDeleteSpecial(t: Transaction) {
+  const what = t.type === 'adjust' ? '這筆調整' : t.type === 'valuation' ? '這筆市值更新' : '這筆紀錄';
+  if (!(await confirmDanger(`刪除${what}？`, '這類紀錄不能直接修改，刪除後可以重新記一筆或重新校正。', '刪除'))) return;
+  updateData((x) => deleteTransaction(x, t.id));
+  showToast('已刪除');
 }
