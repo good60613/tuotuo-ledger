@@ -36,11 +36,11 @@ export const KIND_ICON: Record<AccountKind, string> = {
 };
 
 /** 統計用的分類顯示：儲值（轉入悠遊卡、電子錢包）是系統分類，不在分類設定裡 */
-export function categoryDisplay(d: AppData, id: string | undefined): { icon: string; name: string } {
+export function categoryDisplay(d: AppData, id: string | undefined): { icon: string; name: string; color?: string } {
   if (id?.startsWith(TOPUP_CAT_PREFIX)) {
     const kind = id.slice(TOPUP_CAT_PREFIX.length) as AccountKind;
     return { icon: KIND_ICON[kind] ?? '💳', name: `${KIND_LABEL[kind] ?? ''}儲值` };
   }
   const c = categoryOf(d, id);
-  return { icon: c?.icon ?? '？', name: c?.name ?? '（已刪除）' };
+  return { icon: c?.icon ?? '？', name: c?.name ?? '（已刪除）', color: c?.color };
 }

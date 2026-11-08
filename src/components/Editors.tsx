@@ -4,42 +4,55 @@ import { useAppState, updateData } from '../store';
 import { uid, upsertCategory } from '../data/ops';
 import { allNotes, hideNote, togglePin } from '../data/notes';
 import type { Category, CategoryType } from '../data/types';
-import { DEFAULT_COLOR } from '../categoryStyle';
+import { CATEGORY_COLORS, DEFAULT_COLOR, DEFAULT_NEW_ICON, ICON_GROUPS, type CategoryColorKey } from '../categoryStyle';
+import { CatIcon, catBg } from './CatIcon';
 
-/** 新增或改名分類 */
+/**
+ * 新增或修改分類（第三批第 4 項）：最上面名稱欄（左邊顯示目前圖示）→ 顏色標籤 → 圖示選單。
+ * 圖示只能從選單點，不能自己輸入；新增時預設選第一個圖示。
+ */
 export function CategoryForm({
   type, existing, onClose, onSaved,
 }: { type: CategoryType; existing?: Category; onClose: () => void; onSaved?: (id: string) => void }) {
   const d = useAppState().data;
   const [name, setName] = useState(existing?.name ?? '');
-  const [icon, setIcon] = useState(existing?.icon ?? '');
+  const [icon, setIcon] = useState(existing?.icon || DEFAULT_NEW_ICON);
+  const [color, setColor] = useState<CategoryColorKey>(existing?.color ?? DEFAULT_COLOR);
   const save = () => {
     const n = name.trim();
     if (!n) return;
     const cat: Category = existing
-      ? { ...existing, name: n, icon: icon.trim() || n.slice(0, 1) }
-      : {
-          id: uid('c'),
-          type,
-          name: n,
-          icon: icon.trim() || n.slice(0, 1),
-          color: DEFAULT_COLOR,
-          order: d.categories.filter((c) => c.type === type).length,
-        };
+      ? { ...existing, name: n, icon, color }
+      : { id: uid('c'), type, name: n, icon, color, order: d.categories.filter((c) => c.type === type).length };
     updateData((x) => upsertCategory(x, cat));
     onSaved?.(cat.id);
     onClose();
   };
   return (
     <Sheet title={existing ? '修改分類' : `新增${type === 'expense' ? '支出' : '收入'}分類`} onClose={onClose}>
-      <label class="field">
-        <span>名稱</span>
-        <input value={name} maxLength={8} onInput={(e) => setName(e.currentTarget.value)} placeholder="例如：午餐" />
-      </label>
-      <label class="field">
-        <span>圖示（一個表情符號或字，可留空）</span>
-        <input value={icon} maxLength={4} onInput={(e) => setIcon(e.currentTarget.value)} placeholder="🍱" />
-      </label>
+      <div class="catform-top">
+        <CatIcon icon={icon} color={color} />
+        <input value={name} maxLength={8} onInput={(e) => setName(e.currentTarget.value)} placeholder="分類名稱，例如：午餐" aria-label="名稱" />
+      </div>
+      <div class="color-tags">
+        {CATEGORY_COLORS.map((c) => (
+          <button key={c.key} class={`color-tag${c.key === color ? ' on' : ''}`}style={{ background: catBg(c.key) }} onClick={() => setColor(c.key)}>
+            {c.label}
+          </button>
+        ))}
+      </div>
+      <div class="icon-picker" data-no-swipe>
+        {ICON_GROUPS.map((g) => (
+          <div key={g.title}>
+            <div class="icon-group-title">{g.title}</div>
+            <div class="icon-grid">
+              {g.icons.map((ic) => (
+                <button key={ic} class={`icon-cell${ic === icon ? ' on' : ''}`}onClick={() => setIcon(ic)}>{ic}</button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
       <button class="btn block" disabled={!name.trim()} onClick={save}>儲存</button>
     </Sheet>
   );

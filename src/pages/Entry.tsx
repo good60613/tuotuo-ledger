@@ -1,4 +1,5 @@
 // 記帳頁（支出／收入）與轉帳輸入，共用同一個畫面。
+import { CatIcon } from '../components/CatIcon';
 import { useRef, useState } from 'preact/hooks';
 import { getState, updateData, closeOverlay, showToast, confirmDanger, type Overlay } from '../store';
 import { addTransaction, updateTransaction, deleteTransaction, isLocked, OpError, type TxInput } from '../data/ops';
@@ -158,7 +159,7 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
         <div class="cat-grid" data-no-swipe>
           {cats.map((c) => (
             <button key={c.id} class={`cat${c.id === catId ? ' on ' + mode : ''}`} onClick={() => setCatId(c.id)}>
-              <span class="cat-icon">{c.icon}</span>
+              <CatIcon icon={c.icon} color={c.color} />
               <span class="cat-name">{c.name}</span>
             </button>
           ))}

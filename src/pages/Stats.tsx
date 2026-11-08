@@ -1,4 +1,5 @@
 // 統計頁（左一）：看全貌。點分類或日期 → 跳到明細頁並篩選好。
+import { catBg } from '../components/CatIcon';
 import { useState } from 'preact/hooks';
 import { useAppState, setState, goPage, PAGES } from '../store';
 import { PeriodBar } from '../components/PeriodBar';
@@ -136,7 +137,7 @@ function CategorySection({ title, data, list, total, onPick }: { title: string; 
             const c = categoryDisplay(data, x.categoryId);
             return (
               <button key={x.categoryId} class="bar-row" onClick={() => onPick(x.categoryId)}>
-                <span class="bar-icon">{c.icon}</span>
+                <span class="bar-icon cat-bg" style={c.color ? { background: catBg(c.color) } : undefined}>{c.icon}</span>
                 <span class="bar-main">
                   <span class="bar-top">
                     <span>{c.name}</span>

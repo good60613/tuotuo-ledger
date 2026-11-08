@@ -1,4 +1,5 @@
 // 時間軸明細列表：明細頁、報帳頁共用。
+import { catBg } from './CatIcon';
 import type { AppData, Transaction } from '../data/types';
 import { statEffect, kindLookup, dayKey } from '../data/calc';
 import { accountName, categoryOf, KIND_ICON } from '../selectors';
@@ -119,6 +120,7 @@ function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { data: A
   const d = new Date(t.occurredAt);
   const acc = data.accounts.find((a) => a.id === (t.type === 'reimburse_in' ? t.toAccountId : t.accountId));
   let icon = '？', title = '', amt = '', cls = '';
+  let bg: string | undefined;
   if (t.type === 'transfer') {
     icon = '⇄';
     title = `${accountName(data, t.accountId)} ⇄ ${accountName(data, t.toAccountId)}`;
@@ -147,6 +149,7 @@ function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { data: A
   } else {
     const c = categoryOf(data, t.categoryId);
     icon = c?.icon ?? '？';
+    if (c) bg = catBg(c.color);
     title = c?.name ?? '（已刪除分類）';
     amt = (t.type === 'expense' ? '-' : '+') + money(t.amount);
     cls = t.type;
@@ -154,7 +157,7 @@ function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { data: A
   return (
     <button class={`tx-card${selected ? ' selected' : ''}`} onClick={() => onTap(t)} {...longPressHandlers(t, onLongPress)}>
       {selectable && <span class={`check${selected ? ' on' : ''}`}>{selected ? '✓' : ''}</span>}
-      <span class={`tx-icon ${cls}`}>{icon}</span>
+      <span class={`tx-icon ${cls}`} style={bg ? { background: bg } : undefined}>{icon}</span>
       <span class="tx-mid">
         <span class="tx-title">
           {title}

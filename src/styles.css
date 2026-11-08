@@ -195,9 +195,7 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: #cf
 .cat-icon { font-size: 24px; width: 44px; height: 44px; border-radius: 50%; background: var(--bg); display: flex; align-items: center; justify-content: center; }
 .cat-name { font-size: 12px; }
 .cat.on.expense { border-color: var(--expense); }
-.cat.on.expense .cat-icon { background: #fbe3e3; }
 .cat.on.income { border-color: var(--income); }
-.cat.on.income .cat-icon { background: #dcf3e8; }
 .cat.add .cat-icon { color: var(--muted); border: 1px dashed var(--muted); background: none; }
 
 .transfer-box { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 12px; flex-wrap: wrap; align-content: center; }
@@ -416,3 +414,18 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: #cf
 
 /* 小帳戶子畫面的「＋」：離右邊和底部多留一些空間（數值在 config.ts 的 SUB_FAB） */
 .sub-screen > .fab { position: absolute; right: var(--sub-fab-right, 28px); bottom: var(--sub-fab-bottom, 36px); margin: 0; }
+
+/* 分類編輯（第三批第 4 項） */
+.catform-top { display: flex; align-items: center; gap: 10px; margin: 6px 0 10px; }
+.catform-top .cat-icon { flex: none; width: 52px; height: 52px; font-size: 28px; }
+.catform-top input { flex: 1; min-width: 0; font-size: 16px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; color: var(--text); background: #fff; }
+.color-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.color-tag { border: 2px solid transparent; border-radius: 999px; padding: 4px 10px; font-size: 13px; color: var(--text); }
+.color-tag.on { border-color: var(--text); font-weight: 700; }
+.icon-picker { max-height: 42vh; overflow-y: auto; border-top: 1px solid var(--line); padding-top: 4px; margin-bottom: 10px; }
+.icon-group-title { font-size: 12px; color: var(--muted); margin: 8px 0 4px; }
+.icon-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.icon-cell { font-size: 26px; height: 48px; border-radius: 12px; border: 2px solid transparent; background: none; }
+.icon-cell.on { border-color: var(--text); background: var(--bg); }
+.bar-icon.cat-bg, .pick-icon.cat-bg, .row-icon { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; }
+.row-icon { font-size: 18px; margin-right: 6px; vertical-align: middle; }
