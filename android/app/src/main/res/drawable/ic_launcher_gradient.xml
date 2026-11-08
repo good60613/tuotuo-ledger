@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 自適應圖示背景：和 icon.png 邊緣相近的淺橘到粉色漸層 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient android:angle="315" android:startColor="#FDCDB2" android:endColor="#FAB8BB" />
+</shape>
