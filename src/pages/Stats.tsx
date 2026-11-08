@@ -119,8 +119,8 @@ function CategorySection({ title, data, list, total, onPick }: { title: string; 
                 <div key={x.categoryId} class="legend-row">
                   <span class="dot" style={{ background: PALETTE[i] }} />
                   <span class="grow">{categoryDisplay(data, x.categoryId).name}</span>
-                  <span class="pct">{Math.round(x.ratio * 100)}%</span>
                   <span class="amt-light">{money(x.amount)}</span>
+                  <span class="pct">{Math.round(x.ratio * 100)}%</span>
                 </div>
               ))}
               {rest > 0 && (
@@ -140,7 +140,7 @@ function CategorySection({ title, data, list, total, onPick }: { title: string; 
                 <span class="bar-main">
                   <span class="bar-top">
                     <span>{c.name}</span>
-                    <span><span class="pct">{Math.round(x.ratio * 100)}%</span> <span class="amt-light">{money(x.amount)}</span></span>
+                    <span><span class="amt-light">{money(x.amount)}</span> <span class="pct">{Math.round(x.ratio * 100)}%</span></span>
                   </span>
                   <span class="bar-track"><span class="bar-fill" style={{ width: `${Math.max(2, x.ratio * 100)}%` }} /></span>
                 </span>
