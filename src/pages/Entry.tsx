@@ -251,14 +251,6 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
             type="datetime-local"
             value={when}
             onInput={(e) => e.currentTarget.value && setWhen(e.currentTarget.value)}
-            onClick={(e) => {
-              // 部分 WebView 點透明 input 不會自己開選單，補呼叫 showPicker
-              try {
-                (e.currentTarget as HTMLInputElement).showPicker?.();
-              } catch {
-                /* 已經開著或不支援，忽略 */
-              }
-            }}
           />
         </label>
         {!isTransfer && (
