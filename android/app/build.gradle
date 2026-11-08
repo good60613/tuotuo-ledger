@@ -1,4 +1,4 @@
-﻿apply plugin: 'com.android.application'
+apply plugin: 'com.android.application'
 
 // 正式簽章：金鑰與密碼放在專案外的「記帳APP-金鑰」資料夾，不進 git
 def keystorePropsFile = rootProject.file('../../記帳APP-金鑰/keystore.properties')
