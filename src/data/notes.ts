@@ -1,5 +1,5 @@
 // 備註記憶模式與分類自動排序（第二批第五節、PK 確認事項 G、H）。
-import type { AppData, Category, CategoryType, NoteTag } from './types';
+import type { AppData, Category, CategoryType, NoteTag, Transaction } from './types';
 import { uid, byOrder } from './ops';
 import { NOTES, CATEGORY_SORT } from '../config';
 
@@ -10,10 +10,14 @@ export interface NoteItem {
   lastUsedAt: string | null;
 }
 
+/** 備註是系統自動產生的紀錄類型（報帳入帳「報帳入帳（1 筆）」等）：不列入備註清單與統計 */
+const SYSTEM_NOTE_TYPES: Transaction['type'][] = ['reimburse_in', 'adjust', 'valuation'];
+
 /** 每個備註最後一次使用的時間；categoryId 給了就只看該分類 */
 function lastUse(d: AppData, categoryId: string | null): Map<string, string> {
   const m = new Map<string, string>();
   for (const t of d.transactions) {
+    if (SYSTEM_NOTE_TYPES.includes(t.type)) continue; // 系統自動產生的備註不算
     const text = t.note.trim();
     if (!text) continue;
     if (categoryId && t.categoryId !== categoryId) continue;

@@ -4,7 +4,7 @@ import {
   allBalances, ballTotal, categoryBreakdown, dailySeries, holdingStats, inMainLedger, investSummary,
   kindLookup, periodDays, periodKey, periodRange, shiftPeriod, spendableTotal, totals, dayKey, TOPUP_CAT_PREFIX,
 } from '../src/data/calc';
-import { addTransaction, ballDropTarget, calibrate, updateMarketValue, OpError } from '../src/data/ops';
+import { addTransaction, ballDropTarget, calibrate, markReimbursed, updateMarketValue, OpError } from '../src/data/ops';
 import { allNotes, hideNote, pinnedCount, sortedCategories, suggestedNotes, togglePin } from '../src/data/notes';
 import { emptyData, sampleData } from '../src/data/seed';
 import { migrate } from '../src/data/migrate';
@@ -234,5 +234,17 @@ describe('舊資料升級', () => {
     const d = sampleData(NOW);
     expect(parseBackup(exportJson(d))).toEqual(d);
     expect(investSummary(d).profit).toBe(42500 - 40000);
+  });
+});
+
+describe('系統備註不進備註標籤', () => {
+  it('報帳入帳、調整等系統備註不出現在 5 格，也不在設定清單', () => {
+    let d = base();
+    d.noteTags = [];
+    d = add(d, { type: 'expense', amount: 100, accountId: 'A', categoryId: 'c-e0', note: '午餐', occurredAt: at(10, 1), reimbursable: true });
+    d = markReimbursed(d, [d.transactions[0].id], 'A', new Date(2026, 10, 5));
+    expect(d.transactions.some((t) => t.note.startsWith('報帳入帳'))).toBe(true);
+    expect(suggestedNotes(d, null)).toEqual(['午餐']);
+    expect(allNotes(d).map((x) => x.text)).toEqual(['午餐']);
   });
 });
