@@ -16,7 +16,7 @@ import { toLocalInput, fromLocalInput } from '../format';
 
 /** 日期格顯示：今年 11/08 07:42；非今年 25/12/31 07:42 */
 function whenLabel(v: string): string {
-  const m = /^(d{4})-(d{2})-(d{2})T(d{2}:d{2})/.exec(v);
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2})/.exec(v);
   if (!m) return v;
   const thisYear = String(new Date().getFullYear());
   return (m[1] === thisYear ? `${m[2]}/${m[3]}` : `${m[1].slice(2)}/${m[2]}/${m[3]}`) + ` ${m[4]}`;
@@ -174,7 +174,11 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
           <button class={mode === 'income' ? 'on income' : ''} onClick={() => switchMode('income')} disabled={locked}>收入</button>
           <button class={mode === 'transfer' ? 'on transfer' : ''} onClick={() => switchMode('transfer')} disabled={locked}>轉帳</button>
         </div>
-        {editing && <button class="icon-btn danger" onClick={onDelete} aria-label="刪除">🗑</button>}
+        {editing ? (
+          <button class="icon-btn danger" onClick={onDelete} aria-label="刪除">🗑</button>
+        ) : (
+          <span class="icon-btn entry-top-spacer" aria-hidden="true" />
+        )}
       </div>
 
       {locked && (

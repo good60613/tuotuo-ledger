@@ -182,8 +182,11 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: #cf
 
 /* ---------- 記帳頁 ---------- */
 .entry { display: flex; flex-direction: column; height: 100%; background: var(--card); }
-.entry-top { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-bottom: 1px solid var(--line); }
-.seg { flex: 1; display: flex; justify-content: center; gap: 4px; }
+.entry-top { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.entry-top > .icon-btn:first-child { justify-self: start; }
+.entry-top > .icon-btn:last-child { justify-self: end; }
+.entry-top-spacer { visibility: hidden; pointer-events: none; }
+.seg { display: flex; justify-content: center; gap: 4px; }
 .seg button { border: 0; background: var(--bg); padding: 9px 16px; border-radius: 10px; font-size: 16px; font-weight: 700; color: var(--muted); }
 .seg button.on.expense { background: var(--expense); color: #fff; }
 .seg button.on.income { background: var(--income); color: #fff; }
@@ -222,12 +225,13 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: #cf
 .date-row > * { flex-basis: 0; min-width: 0; border: 0; border-right: 1px solid var(--line); background: none; font-size: 13px; }
 .date-row > *:last-child { border-right: 0; }
 .date-cell { position: relative; display: flex; align-items: center; justify-content: center; padding: 0 4px; }
-.date-text { font-size: 13px; color: var(--text); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.date-text { font-size: 13px; color: var(--text); white-space: nowrap; text-align: center; font-variant-numeric: tabular-nums; }
 /* 原生 input 透明疊在文字上，點下去開手機的日期時間選單 */
-.date-cell input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; border: 0; padding: 0; }
+.date-cell input { position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: 2; width: 100%; height: 100%; margin: 0; opacity: 0; color: transparent; background: transparent; -webkit-appearance: none; appearance: none; border: 0; padding: 0; overflow: hidden; }
+.date-cell input::-webkit-datetime-edit, .date-cell input::-webkit-date-and-time-value { color: transparent; }
 .acc-cell { font-weight: 700; color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 6px; }
 .acc-cell:disabled { opacity: .6; }
-.tag-cell { display: flex; align-items: center; justify-content: center; color: var(--muted); font-weight: 600; transition: background .12s, color .12s; }
+.tag-cell { display: flex; align-items: center; justify-content: center; align-self: stretch; height: 100%; box-sizing: border-box; margin: 0; padding: 0; line-height: 1; text-align: center; color: var(--muted); font-weight: 600; transition: background .12s, color .12s; }
 .tag-cell:active { opacity: .7; }
 .tag-cell.budget.on { background: var(--budget); color: #fff; font-weight: 700; }
 .tag-cell.reimb.on { background: var(--reimb); color: #fff; font-weight: 700; }
