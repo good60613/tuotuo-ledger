@@ -15,6 +15,10 @@ interface Props {
   exclude?: string;
   /** 額外的「不設定」選項 */
   noneLabel?: string;
+  /** 只列這些帳戶（例如刪帳戶時只能移到同種類、還朋友錢不能用儲蓄投資）；不給＝全部 */
+  only?: string[];
+  /** 列表最下面的說明（例如為什麼有些帳戶沒列出來） */
+  footnote?: string;
   onPick: (id: string | null) => void;
   onClose: () => void;
 }
@@ -23,7 +27,8 @@ interface Props {
 export function AccountPicker(p: Props) {
   const d = useAppState().data;
   const bal = allBalances(d);
-  const row = (id: string, name: string, icon: string) => id === p.exclude ? null : (
+  const shown = (id: string) => id !== p.exclude && (!p.only || p.only.includes(id));
+  const row = (id: string, name: string, icon: string) => !shown(id) ? null : (
     <button
       key={id}
       class={`pick-row${p.value === id ? ' selected' : ''}`}
@@ -63,16 +68,17 @@ export function AccountPicker(p: Props) {
           <span class="pick-name">全部</span>
         </button>
       )}
-      <div class="pick-group">一般帳戶</div>
+      {bankAccounts(d).some((a) => shown(a.id)) && <div class="pick-group">一般帳戶</div>}
       {bankAccounts(d).map((a) => row(a.id, a.name, KIND_ICON.bank))}
       {!p.mainOnly && balls(d).map((b) =>
-        b.accounts.length === 0 ? null : (
+        !b.accounts.some((a) => shown(a.id)) ? null : (
           <div key={b.kind}>
             <div class="pick-group">{b.label}</div>
             {b.accounts.map((a) => row(a.id, a.name, KIND_ICON[b.kind]))}
           </div>
         ),
       )}
+      {p.footnote && <p class="muted small">{p.footnote}</p>}
     </Sheet>
   );
 }

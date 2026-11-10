@@ -302,6 +302,21 @@ export function countAccountRecords(data: AppData, accountId: string): number {
 
 export type RemoveMode = { mode: 'move'; targetId: string } | { mode: 'deleteRecords' };
 
+/**
+ * 刪帳戶時，紀錄可以移過去的帳戶（2.0 修正批 PK 定案）：只能是同種類。
+ * 一般帳戶只能移到一般帳戶；悠遊卡、電子錢包、儲蓄、其他各自同種類；
+ * 投資的「待投入」和「標的」也分開（標的的錢不算餘額，混過去數字會變）。
+ * 跨種類移動會讓本月支出、剩餘可用莫名改變，所以不允許。
+ */
+export function moveTargets(data: AppData, accountId: string): Account[] {
+  const src = data.accounts.find((a) => a.id === accountId);
+  if (!src) return [];
+  const sub = (a: Account) => (a.kind === 'invest' ? (a.subtype === 'holding' ? 'holding' : 'cash') : '');
+  return data.accounts
+    .filter((a) => a.id !== accountId && a.kind === src.kind && sub(a) === sub(src))
+    .sort(byOrder);
+}
+
 export function removeAccount(data: AppData, accountId: string, how: RemoveMode): AppData {
   let txs = data.transactions;
   if (how.mode === 'deleteRecords') {
@@ -309,6 +324,7 @@ export function removeAccount(data: AppData, accountId: string, how: RemoveMode)
   } else {
     const to = how.targetId;
     if (to === accountId || !data.accounts.some((a) => a.id === to)) throw new OpError('請選另一個帳戶');
+    if (!moveTargets(data, accountId).some((a) => a.id === to)) throw new OpError('紀錄只能移到同種類的帳戶');
     txs = txs
       .map((t) => ({
         ...t,

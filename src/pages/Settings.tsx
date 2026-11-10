@@ -7,7 +7,7 @@ import { PAGES } from '../store';
 import { useAppState, getState, updateData, showToast, ask, confirmDanger, setState, replaceData } from '../store';
 import {
   byOrder, reorder, uid, upsertAccount, removeAccount, countAccountRecords,
-  removeCategory, countCategoryRecords, OpError, editAccount,
+  removeCategory, countCategoryRecords, OpError, editAccount, moveTargets,
 } from '../data/ops';
 import { SMALL_KINDS, KIND_LABEL, type Account, type AccountKind, type Category, type CategoryType } from '../data/types';
 import { allBalances } from '../data/calc';
@@ -80,11 +80,20 @@ export function SettingsPage() {
       }
       return;
     }
-    const v = await ask(`「${a.name}」底下有 ${n} 筆紀錄`, '要怎麼處理這些紀錄？', [
-      { label: '紀錄移到另一個帳戶', value: 'move', style: 'primary' },
-      { label: '連同紀錄一起刪除', value: 'del', style: 'danger' },
-      { label: '取消', value: 'no', style: 'secondary' },
-    ]);
+    // 紀錄只能移到同種類帳戶；沒有同種類的就不提供「移過去」
+    const canMove = moveTargets(d, a.id).length > 0;
+    const kindName = a.kind === 'invest' ? (a.subtype === 'holding' ? '投資標的' : '待投入') : KIND_LABEL[a.kind];
+    const v = await ask(
+      `「${a.name}」底下有 ${n} 筆紀錄`,
+      canMove
+        ? `要怎麼處理這些紀錄？\n紀錄只能移到同種類（${kindName}）的帳戶。`
+        : `要怎麼處理這些紀錄？\n沒有其他${kindName}帳戶可以移過去（紀錄只能移到同種類，避免本月支出、剩餘可用跟著變）。`,
+      [
+        ...(canMove ? [{ label: '紀錄移到另一個帳戶', value: 'move', style: 'primary' as const }] : []),
+        { label: '連同紀錄一起刪除', value: 'del', style: 'danger' },
+        { label: '取消', value: 'no', style: 'secondary' },
+      ],
+    );
     if (v === 'move') setSheet({ k: 'moveAccount', from: a });
     else if (v === 'del') {
       // 第二次確認
@@ -490,6 +499,7 @@ export function SettingsPage() {
         <AccountPicker
           title={`「${sheet.from.name}」的紀錄要移到哪裡？`}
           exclude={sheet.from.id}
+          only={moveTargets(d, sheet.from.id).map((a) => a.id)}
           value={null}
           onPick={async (id) => {
             if (!id) return;
