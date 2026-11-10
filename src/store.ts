@@ -8,7 +8,7 @@ import { TOAST_MS, TRANSITION } from './config';
 export const PAGES = ['待辦', '統計', '首頁', '明細', '設定'] as const;
 export const TODO_PAGE = 0;
 /** 待辦頁的分頁 */
-export type TodoTab = 'reimb' | 'budget';
+export type TodoTab = 'reimb' | 'advance' | 'owed' | 'budget';
 export const HOME_PAGE = 2;
 
 /** 疊在主頁面上的畫面 */

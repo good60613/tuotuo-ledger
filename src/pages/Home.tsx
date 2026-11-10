@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { useAppState, setState, openOverlay, showToast, goPage, TODO_PAGE, PAGES } from '../store';
-import { allBalances, spendableTotal, totals, periodKey, dayKey, pendingBudgetByAccount, pendingBudgetTotal } from '../data/calc';
+import { allBalances, spendableTotal, totals, periodKey, dayKey, pendingBudgetByAccount, pendingBudgetTotal, pendingOwedTotal } from '../data/calc';
 import { overdueCount } from '../data/budget';
 import { bankAccounts, accountName } from '../selectors';
 import { ballDropTarget } from '../data/ops';
@@ -26,6 +26,7 @@ export function HomePage() {
   const budgetBy = pendingBudgetByAccount(d);
   const budgetSum = pendingBudgetTotal(d);
   const overdue = overdueCount(d);
+  const owedSum = pendingOwedTotal(d);
   const now = new Date();
   const m = totals(d, { period: periodKey(now, d.settings.settleDay) });
   const t = totals(d, { day: dayKey(now) });
@@ -97,7 +98,7 @@ export function HomePage() {
     }
   };
 
-  // 剩餘可用右側小字欄；之後要加「借我 600」就在這裡多 push 一列
+  // 剩餘可用右側小字欄：預算、借我（同樣式、同位置；開關關掉時未還的借我仍顯示）
   const sideItems: SideNote[] = [];
   if (budgetSum > 0) {
     sideItems.push({
@@ -109,6 +110,18 @@ export function HomePage() {
       extraWarn: true,
       onClick: () => {
         setState({ todoTab: 'budget' });
+        goPage(TODO_PAGE);
+      },
+    });
+  }
+  if (owedSum > 0) {
+    sideItems.push({
+      key: 'owed',
+      label: '借我',
+      amount: owedSum,
+      tone: 'owed',
+      onClick: () => {
+        setState({ todoTab: 'owed' });
         goPage(TODO_PAGE);
       },
     });

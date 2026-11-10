@@ -30,17 +30,18 @@ export async function askRevertBatch(batchId: string) {
   const d = getState().data;
   const { items, inTx } = batchItems(d, batchId);
   if (!inTx) return;
+  const st = inTx.reimburseKind === 'advance' ? '待收回' : '待報帳';
   const body =
     `這一批共 ${items.length} 筆，合計 ${money(inTx.amount)}。\n` +
     `退回後，${accountName(d, inTx.toAccountId)} 會扣回 ${money(inTx.amount)}，` +
-    `這 ${items.length} 筆回到「待報帳」。`;
-  const v = await ask('退回待報帳？', body, [
+    `這 ${items.length} 筆回到「${st}」。`;
+  const v = await ask(`退回${st}？`, body, [
     { label: '取消', value: 'no', style: 'secondary' },
     { label: '整批退回', value: 'yes', style: 'danger' },
   ]);
   if (v !== 'yes') return;
   updateData((x) => revertBatch(x, batchId));
-  showToast(`已退回 ${items.length} 筆到待報帳`);
+  showToast(`已退回 ${items.length} 筆到${st}`);
 }
 
 /** 快速記帳：帳戶預設為指定帳戶，否則用上次使用的帳戶，再否則第一個一般帳戶 */

@@ -7,6 +7,7 @@ import { money, mdLabel, weekday, hm } from '../format';
 import { GESTURE } from '../config';
 import { vibrate } from '../gestures/haptics';
 import { blockClicks } from '../gestures/guard';
+import { displayExpr } from '../calcExpr';
 
 interface Props {
   data: AppData;
@@ -128,9 +129,15 @@ export function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { 
     cls = 'transfer';
   } else if (t.type === 'reimburse_in') {
     icon = '↩';
-    title = `報帳入帳 → ${accountName(data, t.toAccountId)}`;
+    title = `${t.reimburseKind === 'advance' ? '代墊收回' : '報帳入帳'} → ${accountName(data, t.toAccountId)}`;
     amt = '+' + money(t.amount);
     cls = 'reimb-in';
+  } else if (t.type === 'owed_repay') {
+    // 還借我：從帳戶扣款，不算支出
+    icon = '↪';
+    title = '還借我';
+    amt = '-' + money(t.amount);
+    cls = 'transfer';
   } else if (t.type === 'adjust') {
     icon = '⚖';
     title = '校正';
@@ -151,13 +158,26 @@ export function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { 
     icon = c?.icon ?? '？';
     if (c) bg = catBg(c.color);
     title = c?.name ?? '（已刪除分類）';
-    amt = (t.type === 'expense' ? '-' : '+') + money(t.amount);
-    cls = t.type;
+    amt = (t.type === 'expense' || t.type === 'owed' ? '-' : '+') + money(t.amount);
+    cls = t.type === 'owed' ? 'expense' : t.type;
   }
   // 報帳／預算標示：未結案＝彩色外框＋「報」「預」；結案＝拿掉外框，留淺色「已報」「已付」。色弱靠小字辨識
   let flag: { cls: string; text: string } | null = null;
   let frame = '';
-  if (t.reimbursable) {
+  // 代墊、借我比照：未結案「墊」「借」＋外框；結案淺色「已收」「已還」
+  if (t.reimbursable && t.reimburseKind === 'advance') {
+    if (t.reimburseStatus === 'done') flag = { cls: 'done', text: '已收' };
+    else {
+      flag = { cls: 'advance', text: '墊' };
+      frame = ' tag-advance';
+    }
+  } else if (t.type === 'owed') {
+    if (t.owedStatus === 'paid') flag = { cls: 'done', text: '已還' };
+    else {
+      flag = { cls: 'owed', text: '借' };
+      frame = ' tag-owed';
+    }
+  } else if (t.reimbursable) {
     if (t.reimburseStatus === 'done') flag = { cls: 'done', text: '已報' };
     else {
       flag = { cls: 'reimb', text: '報' };
@@ -183,6 +203,8 @@ export function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { 
           {hm(d)}
           {t.type !== 'transfer' && acc && <> · {KIND_ICON[acc.kind]} {acc.name}</>}
           {t.type === 'adjust' && <span class="badge calib">不計收支</span>}
+          {t.type === 'owed' && <> · 別人先付</>}
+          {t.calcExpr && <span class="tx-expr"> · {displayExpr(t.calcExpr)}</span>}
           {flag && <span class={`tx-flag ${flag.cls}`}>{flag.text}</span>}
         </span>
       </span>

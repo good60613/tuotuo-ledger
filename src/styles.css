@@ -144,6 +144,7 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: var
 .amt-side-row { border: 0; background: none; padding: 0; font: inherit; color: var(--muted); font-size: calc(var(--amt-budget) * var(--amt-k)); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: left; }
 .amt-side-row b { font-weight: 700; }
 .amt-side-row b.tone-budget { color: var(--budget); }
+.amt-side-row b.tone-owed { color: var(--owed); }
 .amt-side-row b.tone-expense { color: var(--expense); }
 .amt-side-row b.tone-income { color: var(--income); }
 .amt-side-row b.tone-muted { color: var(--muted); }
@@ -231,35 +232,50 @@ button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 .swap { color: var(--transfer); font-size: 24px; }
 .error-line { width: 100%; text-align: center; color: var(--expense); font-size: 13px; }
 
-.amount-row { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-top: 1px solid var(--line); }
-.amount-left { display: flex; align-items: center; gap: 6px; flex: 1.3; min-width: 0; }
-.amount-icon { font-size: 22px; }
-.amount-cur { font-size: 11px; color: var(--muted); }
-.amount-val { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; direction: rtl; text-align: left; }
-.amount-left.expense .amount-val { color: var(--expense); }
-.amount-left.income .amount-val { color: var(--income); }
-.amount-left.transfer .amount-val { color: var(--transfer); }
-.note-input { flex: 1; min-width: 0; border: 0; border-bottom: 1px solid var(--line); padding: 8px 4px; font-size: 15px; outline: none; }
+.amount-row { display: flex; align-items: stretch; gap: 8px; padding: 8px 12px 4px; border-top: 1px solid var(--line); }
+/* 日期格：今天／11/09；透明的原生 input 疊在上面，點下去開手機的日期時間選單 */
+.when-cell { position: relative; flex: 0 0 auto; min-width: 58px; display: flex; align-items: center; justify-content: center; align-self: center; height: 40px; padding: 0 8px; border-radius: 12px; background: var(--fill-soft); }
+.when-text { font-size: 14px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.when-cell input { position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: 2; width: 100%; height: 100%; margin: 0; opacity: 0; color: transparent; background: transparent; -webkit-appearance: none; appearance: none; border: 0; padding: 0; overflow: hidden; }
+.when-cell input::-webkit-datetime-edit, .when-cell input::-webkit-date-and-time-value { color: transparent; }
+/* 算式：寬度用 flex-grow 伸縮（比例在 config.ts 的 ENTRY_ROW）；內容太長時只看得到右端 */
+.expr-cell { flex: 1 1 0; min-width: 84px; display: flex; flex-direction: column; justify-content: center; align-items: flex-end; overflow: hidden; padding-top: 14px; transition: flex-grow .18s; }
+.expr-line { display: flex; flex: none; align-items: baseline; white-space: nowrap; font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.expr-line.long { font-size: 20px; }
+.expr-cell.expense .expr-line { color: var(--expense); }
+.expr-cell.income .expr-line { color: var(--income); }
+.expr-cell.transfer .expr-line { color: var(--transfer); }
+.expr-empty { color: var(--faint); }
+.expr-line .op { padding: 0 2px; color: var(--muted); font-weight: 600; }
+.expr-sum { font-size: 12px; color: var(--muted); white-space: nowrap; display: flex; gap: 6px; align-items: center; }
+.sum-tag { padding: 0 6px; border-radius: 8px; font-weight: 700; color: var(--mk); background: var(--mk-soft); }
+.term { position: relative; display: inline-block; padding: 0 3px; border-radius: 6px; cursor: pointer; transition: transform .1s, background .1s; }
+.term.marked { color: var(--mk); background: var(--mk-soft); }
+.term.sel { outline: 2px solid var(--accent); outline-offset: 1px; }
+.term.hint:not(.hover) { outline: 1px dashed var(--accent); outline-offset: 2px; }
+.term.hover { outline: 2px solid var(--accent); outline-offset: 2px; background: var(--accent-soft); transform: scale(1.12); }
+.term-tag { position: absolute; top: -13px; left: 50%; transform: translateX(-50%); font-size: 10px; font-style: normal; font-weight: 700; line-height: 1; white-space: nowrap; color: var(--mk); }
+.note-input { flex: 1 1 0; min-width: 0; align-self: center; border: 0; border-bottom: 1px solid var(--line); padding: 8px 4px; font-size: 15px; outline: none; transition: flex-grow .18s; }
+.preview-line { padding: 0 12px 4px; font-size: 12px; color: var(--muted); }
+.preview-line.err { color: var(--expense); }
 
-.tags { display: flex; gap: 6px; overflow-x: auto; padding: 4px 12px 8px; scrollbar-width: none; touch-action: pan-x; }
+.mark-row { display: flex; gap: 6px; overflow-x: auto; padding: 4px 12px 4px; scrollbar-width: none; touch-action: pan-x; }
+.mark-chip { flex: none; display: inline-flex; align-items: center; gap: 2px; border: 1px solid var(--mk, var(--border-strong)); border-radius: 999px; padding: 5px 10px; font-size: 13px; font-weight: 700; color: var(--mk, var(--muted)); background: var(--mk-soft, var(--fill-soft)); user-select: none; -webkit-user-select: none; white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+.mark-chip.drag { touch-action: none; }
+.mark-chip.on { background: var(--mk); color: var(--on-color); }
+.mark-chip.chip-acc { --mk: var(--accent); --mk-soft: var(--accent-soft); }
+.mark-chip.chip-acc:disabled { opacity: .6; }
+.mark-chip.chip-other { border-color: var(--line); color: var(--muted); background: var(--fill-soft); }
+.mk-advance { --mk: var(--advance); --mk-soft: var(--advance-soft); }
+.mk-owed { --mk: var(--owed); --mk-soft: var(--owed-soft); }
+.mk-budget { --mk: var(--budget); --mk-soft: var(--budget-soft); }
+.mk-reimb { --mk: var(--reimb); --mk-soft: var(--reimb-soft); }
+.mark-ghost { position: fixed; z-index: 1000; transform: translate(-50%, -50%); pointer-events: none; padding: 5px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; color: var(--on-color); background: var(--mk); box-shadow: 0 4px 12px var(--shadow-md); }
+
+.tags { display: flex; gap: 6px; overflow-x: auto; padding: 4px 12px 8px; scrollbar-width: none; touch-action: pan-x; transition: opacity .12s; }
 .tag { flex: none; border: 1px solid var(--line); background: var(--bg); border-radius: 16px; padding: 6px 12px; font-size: 13px; }
 .tag.on { border-color: var(--accent); color: var(--accent); }
 .tag.more { color: var(--muted); }
-
-.date-row { display: flex; height: 42px; border-top: 1px solid var(--line); }
-.date-row > * { flex-basis: 0; min-width: 0; border: 0; border-right: 1px solid var(--line); background: none; font-size: 13px; }
-.date-row > *:last-child { border-right: 0; }
-.date-cell { position: relative; display: flex; align-items: center; justify-content: center; padding: 0 4px; }
-.date-text { font-size: 13px; color: var(--text); white-space: nowrap; text-align: center; font-variant-numeric: tabular-nums; }
-/* 原生 input 透明疊在文字上，點下去開手機的日期時間選單 */
-.date-cell input { position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: 2; width: 100%; height: 100%; margin: 0; opacity: 0; color: transparent; background: transparent; -webkit-appearance: none; appearance: none; border: 0; padding: 0; overflow: hidden; }
-.date-cell input::-webkit-datetime-edit, .date-cell input::-webkit-date-and-time-value { color: transparent; }
-.acc-cell { font-weight: 700; color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 6px; }
-.acc-cell:disabled { opacity: .6; }
-.tag-cell { display: flex; align-items: center; justify-content: center; align-self: stretch; height: 100%; box-sizing: border-box; margin: 0; padding: 0; line-height: 1; text-align: center; color: var(--muted); font-weight: 600; transition: background .12s, color .12s; }
-.tag-cell:active { opacity: .7; }
-.tag-cell.budget.on { background: var(--budget); color: var(--on-color); font-weight: 700; }
-.tag-cell.reimb.on { background: var(--reimb); color: var(--on-color); font-weight: 700; }
 
 .calc { display: grid; grid-template-columns: repeat(5, 1fr); grid-auto-rows: var(--calc-row, 52px); gap: var(--calc-gap, 1px); background: var(--line); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
 .calc-key { border: 0; background: var(--key); font-size: 22px; font-variant-numeric: tabular-nums; }
@@ -353,7 +369,7 @@ button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 .cal-v { font-size: 9.5px; font-weight: 700; font-variant-numeric: tabular-nums; max-width: 100%; overflow: hidden; }
 
 /* ---------- 報帳頁 ---------- */
-.todo-tab.reimb, .todo-tab.budget { min-height: 100%; display: flex; flex-direction: column; padding-bottom: 16px; }
+.todo-tab.reimb, .todo-tab.advance, .todo-tab.owed, .todo-tab.budget { min-height: 100%; display: flex; flex-direction: column; padding-bottom: 16px; }
 .reimb-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .reimb-head .seg { flex: none; justify-content: flex-start; }
 .reimb-head .seg button { padding: 8px 14px; font-size: 15px; }
@@ -557,7 +573,7 @@ button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 
 /* 待辦頁（第五批）：總額在最上、清單在中間可捲動、控制項由下往上＝切換列→未付／已付→多選列 */
 .page-pad.todo { height: 100%; padding-bottom: 0; overflow: hidden; }
-.todo-tab.reimb, .todo-tab.budget { flex: 1 1 0; min-height: 0; padding-bottom: 0; }
+.todo-tab.reimb, .todo-tab.advance, .todo-tab.owed, .todo-tab.budget { flex: 1 1 0; min-height: 0; padding-bottom: 0; }
 .todo-total { flex: none; }
 .todo-list { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin-top: 8px; }
 .todo-tab .reimb-tools { flex: none; margin-top: 8px; }
@@ -588,3 +604,16 @@ button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 .barcode { background: #fff; padding: 10px 0 6px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; max-width: 100%; overflow: hidden; }
 .barcode svg { display: block; max-width: 100%; }
 .barcode-text { font-size: 14px; letter-spacing: 2px; font-variant-numeric: tabular-nums; color: #000; }
+/* ---------- 2.0 代墊、借我（比照報帳、預算的標示方式） ---------- */
+.advance-color { color: var(--advance); }
+.owed-color, .tone-owed { color: var(--owed); }
+.btn.advance-btn { background: var(--advance); color: var(--on-color); }
+.btn.owed-btn { background: var(--owed); color: var(--on-color); }
+.seg button.on.advance, .todo-tabs button.on.advance { background: var(--advance); color: var(--on-color); }
+.seg button.on.owed, .todo-tabs button.on.owed { background: var(--owed); color: var(--on-color); }
+.tx-card.tag-advance:not(.selected) { border-color: var(--advance); }
+.tx-card.tag-owed:not(.selected) { border-color: var(--owed); }
+.tx-flag.advance { background: var(--advance); color: var(--on-color); }
+.tx-flag.owed { background: var(--owed); color: var(--on-color); }
+.tx-expr { font-variant-numeric: tabular-nums; }
+.todo-tabs button { min-width: 0; }

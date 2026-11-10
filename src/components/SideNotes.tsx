@@ -8,7 +8,7 @@ export interface SideNote {
   /** 有給就變成可點的按鈕 */
   onClick?: () => void;
   /** 金額顏色：預設 budget；可擴充 */
-  tone?: 'budget' | 'expense' | 'income' | 'muted';
+  tone?: 'budget' | 'owed' | 'expense' | 'income' | 'muted';
   /** 金額後面的補充（例如逾期筆數） */
   extra?: string;
   /** 補充文字用警示色 */

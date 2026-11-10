@@ -1,4 +1,12 @@
-// 待辦頁的「報帳」分頁：追蹤公司還欠多少錢。（第四批起從報帳頁搬進待辦頁，規則不變）
+// 待辦頁的「報帳」「代墊」分頁：追蹤公司／朋友還欠多少錢。（第四批起從報帳頁搬進待辦頁）
+// 2.0：代墊沿用報帳同一套（reimbursable＋reimburseKind='advance'），只有文字與顏色不同。
+
+export type ClaimKind = 'reimb' | 'advance';
+
+const TXT = {
+  reimb: { pending: '待報帳', done: '已報帳', pendingTotal: '待報帳總額', doneTotal: '已收回總額', emptyPending: '沒有待報帳的紀錄 🎉', emptyDone: '還沒有已報帳的紀錄', pickHint: '點選要報帳的紀錄（可多筆）', revertHint: '按錯了？點一筆可整批退回待報帳', act: '已報帳', revert: '退回待報帳', title: '報帳紀錄' },
+  advance: { pending: '待收回', done: '已收回', pendingTotal: '代墊待收回', doneTotal: '已收回總額', emptyPending: '沒有待收回的代墊 🎉', emptyDone: '還沒有已收回的代墊', pickHint: '點選朋友還了的代墊（可多筆）', revertHint: '按錯了？點一筆可整批退回待收回', act: '已收回', revert: '退回待收回', title: '代墊紀錄' },
+} as const;
 import { useEffect, useState } from 'preact/hooks';
 import { useAppState, getState, updateData, showToast, PAGES } from '../store';
 import { useBackLayer } from '../backNav';
@@ -11,16 +19,19 @@ import { Sheet } from '../components/Sheet';
 import { AccountPicker } from '../components/AccountPicker';
 import { askRevertBatch, openTx } from '../actions';
 import { money, hm } from '../format';
+import { displayExpr } from '../calcExpr';
 
 /** onBar：多選且有選取時，通知待辦頁把底部切換列換成批次操作列 */
-export function ReimburseTab({ onBar }: { onBar?: (on: boolean) => void }) {
+export function ReimburseTab({ onBar, kind = 'reimb' }: { onBar?: (on: boolean) => void; kind?: ClaimKind }) {
+  const T = TXT[kind];
+  const isKind = (t: Transaction) => (t.reimburseKind === 'advance') === (kind === 'advance');
   const s = useAppState();
   const d = s.data;
   const [tab, setTab] = useState<'pending' | 'done'>('pending');
   const [multi, setMulti] = useState(false);
   const [sel, setSel] = useState<string[]>([]);
   // 多選模式中按返回：結束多選
-  useBackLayer(s.page === PAGES.indexOf('待辦') && s.todoTab === 'reimb' && multi, () => {
+  useBackLayer(s.page === PAGES.indexOf('待辦') && s.todoTab === kind && multi, () => {
     setMulti(false);
     setSel([]);
   });
@@ -29,8 +40,8 @@ export function ReimburseTab({ onBar }: { onBar?: (on: boolean) => void }) {
   /** 點一筆時跳出的詳細卡片 */
   const [detail, setDetail] = useState<Transaction | null>(null);
 
-  const pending = d.transactions.filter((t) => t.reimbursable && t.reimburseStatus === 'pending');
-  const done = d.transactions.filter((t) => t.reimbursable && t.reimburseStatus === 'done');
+  const pending = d.transactions.filter((t) => t.reimbursable && isKind(t) && t.reimburseStatus === 'pending');
+  const done = d.transactions.filter((t) => t.reimbursable && isKind(t) && t.reimburseStatus === 'done');
   const pendingTotal = pending.reduce((a, t) => a + t.amount, 0);
   const doneTotal = done.reduce((a, t) => a + t.amount, 0);
   // 選取中的紀錄若已不存在（例如被刪除）就自動略過
@@ -56,10 +67,10 @@ export function ReimburseTab({ onBar }: { onBar?: (on: boolean) => void }) {
   };
 
   return (
-    <div class="todo-tab reimb">
+    <div class={`todo-tab ${kind}`}>
       <div class="todo-total">
-        <div class="amt-label">{tab === 'pending' ? '待報帳總額' : '已收回總額'}</div>
-        <div class="amt-mid reimb-color">{money(tab === 'pending' ? pendingTotal : doneTotal)}</div>
+        <div class="amt-label">{tab === 'pending' ? T.pendingTotal : T.doneTotal}</div>
+        <div class={`amt-mid ${kind}-color`}>{money(tab === 'pending' ? pendingTotal : doneTotal)}</div>
       </div>
 
       {tab === 'pending' ? (
@@ -70,7 +81,7 @@ export function ReimburseTab({ onBar }: { onBar?: (on: boolean) => void }) {
             txs={pending}
             onTap={onTapPending}
             selected={multi ? new Set(selected) : undefined}
-            empty="沒有待報帳的紀錄 🎉"
+            empty={T.emptyPending}
             onLongPress={(t) => {
               // 長按＝進入多選，並勾起這一筆
               setMulti(true);
@@ -79,7 +90,7 @@ export function ReimburseTab({ onBar }: { onBar?: (on: boolean) => void }) {
           />
           </div>
           <div class="reimb-tools">
-            <span class="muted">{multi ? '點選要報帳的紀錄（可多筆）' : '點一筆看詳細；長按可多選'}</span>
+            <span class="muted">{multi ? T.pickHint : '點一筆看詳細；長按可多選'}</span>
             <button
               class={`pill-btn small${multi ? ' on' : ''}`}
               onClick={() => {
@@ -93,29 +104,30 @@ export function ReimburseTab({ onBar }: { onBar?: (on: boolean) => void }) {
         </>
       ) : (
         <>
-          <div class="todo-list"><TxList data={d} txs={done} onTap={setDetail} empty="還沒有已報帳的紀錄" /></div>
-          <div class="reimb-tools"><span class="muted">按錯了？點一筆可整批退回待報帳</span></div>
+          <div class="todo-list"><TxList data={d} txs={done} onTap={setDetail} empty={T.emptyDone} /></div>
+          <div class="reimb-tools"><span class="muted">{T.revertHint}</span></div>
         </>
       )}
 
       <div class="seg todo-sub">
-        <button class={tab === 'pending' ? 'on reimb' : ''} onClick={() => switchTab('pending')}>待報帳</button>
-        <button class={tab === 'done' ? 'on reimb' : ''} onClick={() => switchTab('done')}>已報帳</button>
+        <button class={tab === 'pending' ? `on ${kind}` : ''} onClick={() => switchTab('pending')}>{T.pending}</button>
+        <button class={tab === 'done' ? `on ${kind}` : ''} onClick={() => switchTab('done')}>{T.done}</button>
       </div>
 
       {showBar && (
         <BottomBar>
           <div class="action-bar">
             <span>
-              已選 {selected.length} 筆 <b class="reimb-color">{money(selTotal)}</b>
+              已選 {selected.length} 筆 <b class={`${kind}-color`}>{money(selTotal)}</b>
             </span>
-            <button class="btn reimb-btn" onClick={() => setConfirmIds(selected)}>已報帳</button>
+            <button class={`btn ${kind}-btn`} onClick={() => setConfirmIds(selected)}>{T.act}</button>
           </div>
         </BottomBar>
       )}
 
       {detail && (
         <TxDetail
+          kind={kind}
           t={d.transactions.find((x) => x.id === detail.id) ?? detail}
           onClose={() => setDetail(null)}
           onReimburse={() => {
@@ -132,6 +144,7 @@ export function ReimburseTab({ onBar }: { onBar?: (on: boolean) => void }) {
 
       {confirmIds && (
         <ReimburseConfirm
+          kind={kind}
           ids={confirmIds}
           total={sumOf(confirmIds)}
           onClose={() => setConfirmIds(null)}
@@ -147,13 +160,14 @@ export function ReimburseTab({ onBar }: { onBar?: (on: boolean) => void }) {
 }
 
 /** 點一筆時跳出的詳細卡片（參考 PK 舊 App 的做法） */
-function TxDetail({ t, onClose, onReimburse, onRevert }: { t: Transaction; onClose: () => void; onReimburse: () => void; onRevert: () => void }) {
+function TxDetail({ kind, t, onClose, onReimburse, onRevert }: { kind: ClaimKind; t: Transaction; onClose: () => void; onReimburse: () => void; onRevert: () => void }) {
   const d = useAppState().data;
   const c = categoryOf(d, t.categoryId);
   const when = new Date(t.occurredAt);
   const isDone = t.reimburseStatus === 'done';
+  const T = TXT[kind];
   return (
-    <Sheet title="報帳紀錄" onClose={onClose}>
+    <Sheet title={T.title} onClose={onClose}>
       <div class="detail-head">
         <span class="tx-icon">{c?.icon ?? '？'}</span>
         <span class="grow detail-name">{c?.name ?? '（已刪除分類）'}</span>
@@ -162,7 +176,8 @@ function TxDetail({ t, onClose, onReimburse, onRevert }: { t: Transaction; onClo
       <div class="kv"><span>日期</span><span>{when.getFullYear()}/{when.getMonth() + 1}/{when.getDate()}</span></div>
       <div class="kv"><span>時間</span><span>{hm(when)}</span></div>
       <div class="kv"><span>扣款帳戶</span><span>{accountName(d, t.accountId)}</span></div>
-      <div class="kv"><span>狀態</span><span class="reimb-color">{isDone ? '已報帳' : '待報帳'}</span></div>
+      <div class="kv"><span>狀態</span><span class={`${kind}-color`}>{isDone ? T.done : T.pending}</span></div>
+      {t.calcExpr && <div class="kv"><span>算式</span><span>{displayExpr(t.calcExpr)}</span></div>}
       {t.note && <div class="kv-note">{t.note}</div>}
       <div class="dialog-btns">
         <button
@@ -175,29 +190,33 @@ function TxDetail({ t, onClose, onReimburse, onRevert }: { t: Transaction; onClo
           ✏️ 編輯
         </button>
         {isDone ? (
-          <button class="btn danger" onClick={onRevert}>退回待報帳</button>
+          <button class="btn danger" onClick={onRevert}>{T.revert}</button>
         ) : (
-          <button class="btn reimb-btn" onClick={onReimburse}>已報帳</button>
+          <button class={`btn ${kind}-btn`} onClick={onReimburse}>{T.act}</button>
         )}
       </div>
     </Sheet>
   );
 }
 
-function ReimburseConfirm({ ids, total, onClose, onDone }: { ids: string[]; total: number; onClose: () => void; onDone: () => void }) {
+function ReimburseConfirm({ kind, ids, total, onClose, onDone }: { kind: ClaimKind; ids: string[]; total: number; onClose: () => void; onDone: () => void }) {
   const d = useAppState().data;
-  const [acc, setAcc] = useState<string | null>(() => defaultReimburseAccount(getState().data, ids));
+  const [acc, setAcc] = useState<string | null>(() =>
+    kind === 'advance'
+      ? getState().data.transactions.find((t) => t.id === ids[0])?.accountId ?? null
+      : defaultReimburseAccount(getState().data, ids),
+  );
   const [picking, setPicking] = useState(false);
-  const usedDefault = !!d.settings.defaultReimburseAccountId && acc === d.settings.defaultReimburseAccountId;
+  const usedDefault = kind === 'reimb' && !!d.settings.defaultReimburseAccountId && acc === d.settings.defaultReimburseAccountId;
 
   const confirm = () => {
     if (!acc) return;
     try {
       updateData((x) => markReimbursed(x, ids, acc));
-      showToast(`已報帳 ${ids.length} 筆，${money(total)} 已存入${accountName(getState().data, acc)}`);
+      showToast(`${kind === 'advance' ? '已收回' : '已報帳'} ${ids.length} 筆，${money(total)} 已存入${accountName(getState().data, acc)}`);
       onDone();
     } catch (e) {
-      showToast(e instanceof OpError ? e.message : '報帳失敗');
+      showToast(e instanceof OpError ? e.message : '結案失敗');
     }
   };
 
@@ -206,18 +225,18 @@ function ReimburseConfirm({ ids, total, onClose, onDone }: { ids: string[]; tota
       <Sheet title="確定已收到這筆錢嗎？" onClose={onClose}>
         <div class="confirm-sum">
           <div class="muted">共 {ids.length} 筆，合計</div>
-          <div class="amt-big reimb-color">{money(total)}</div>
+          <div class={`amt-big ${kind}-color`}>{money(total)}</div>
         </div>
         <div class="field">
-          <span>錢退回哪個帳戶{usedDefault ? '（預設報帳帳戶）' : ''}</span>
+          <span>錢進了哪個帳戶{usedDefault ? '（預設報帳帳戶）' : ''}</span>
           <button class="pill-btn" onClick={() => setPicking(true)}>{acc ? accountName(d, acc) : '選擇帳戶'} ▾</button>
         </div>
         <div class="dialog-btns">
           <button class="btn secondary" onClick={onClose}>取消</button>
-          <button class="btn reimb-btn" disabled={!acc} onClick={confirm}>確認已收到</button>
+          <button class={`btn ${kind}-btn`} disabled={!acc} onClick={confirm}>確認已收到</button>
         </div>
       </Sheet>
-      {picking && <AccountPicker title="錢退回哪個帳戶" value={acc} onPick={setAcc} onClose={() => setPicking(false)} />}
+      {picking && <AccountPicker title="錢進了哪個帳戶" value={acc} onPick={setAcc} onClose={() => setPicking(false)} />}
     </>
   );
 }

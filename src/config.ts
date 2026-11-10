@@ -128,12 +128,29 @@ export const HOME = {
 
 /** 記帳頁計算機上方那一排的各格寬度比例（flex-grow；數字越大越寬） */
 export const ENTRY_ROW = {
-  /** 日期格（含年份 2026/11/08 10:00），PK 要求加長 */
-  date: 3.2,
-  /** 帳戶格要夠寬，「郵局(薪轉)」這種名稱才不會被截太多 */
-  account: 2.6,
-  budget: 1.1,
-  reimb: 1.1,
+  /** 日期格：0＝依內容寬度不伸縮 */
+  date: 0,
+  /** 只有一個數字：算式與備註約一半一半 */
+  exprSolo: 1,
+  noteSolo: 1,
+  /** 算式含運算子：算式撐開、備註縮短 */
+  exprCalc: 2.4,
+  noteCalc: 1,
+  /** 備註輸入框 focus：備註撐開（算式仍保有基本寬度） */
+  exprNoteFocus: 1,
+  noteFocus: 2.2,
+} as const;
+
+/** 拖拖計算機：把標記膠囊拖到數字上 */
+export const DRAG_MARK = {
+  /** 在膠囊上按下後移動超過這個距離才開始拖（不需長按） */
+  startMovePx: 6,
+  /** 跟著手指的小膠囊影子，相對手指的垂直偏移（負＝偏上） */
+  ghostOffsetY: -44,
+  /** 拖曳時快速標籤那排的透明度 */
+  dimOpacity: 0.3,
+  /** 命中數字時，數字的框往上下左右各加大多少 px */
+  dropPadPx: 18,
 } as const;
 
 /**

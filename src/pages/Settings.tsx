@@ -1,4 +1,5 @@
 // 設定（右二）：只放讓其他功能能運作的項目。
+import { advanceOwedOn } from '../features';
 import { useRef, useState } from 'preact/hooks';
 import { useBackLayer } from '../backNav';
 import { PAGES } from '../store';
@@ -298,6 +299,17 @@ export function SettingsPage() {
             <button class="setting-row" onClick={() => setSheet({ k: 'defaultReimb' })}>
               <span>預設報帳帳戶</span>
               <span class="muted">{d.settings.defaultReimburseAccountId ? accountName(d, d.settings.defaultReimburseAccountId) : '不設定'} ›</span>
+            </button>
+            <button
+              class="setting-row"
+              onClick={() => {
+                const on = !advanceOwedOn(d.settings);
+                updateData((x) => ({ ...x, settings: { ...x.settings, advanceOwedEnabled: on } }));
+                showToast(on ? '已開啟代墊／借我' : '已關閉代墊／借我（已記的照常顯示與計算）');
+              }}
+            >
+              <span>代墊／借我</span>
+              <span class="muted">{advanceOwedOn(d.settings) ? '開啟' : '關閉'} ›</span>
             </button>
             <button class="setting-row" onClick={() => setSheet({ k: 'settle' })}>
               <span>結算日</span>
