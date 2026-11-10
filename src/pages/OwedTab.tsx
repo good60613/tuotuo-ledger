@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { useAppState, getState, updateData, showToast, ask, PAGES } from '../store';
 import { useBackLayer } from '../backNav';
-import { markOwedPaid, revertOwedPaid, pendingOwed, paidOwed, OwedError } from '../data/owed';
+import { markOwedPaid, revertOwedPaid, pendingOwed, paidOwed, OwedError, owedRepayAccounts } from '../data/owed';
 import type { Transaction } from '../data/types';
 import { accountName, categoryOf, bankAccounts } from '../selectors';
 import { TxList } from '../components/TxList';
@@ -199,11 +199,14 @@ function OwedDetail({ t, onClose, onPay, onRevert }: { t: Transaction; onClose: 
 
 function OwedPay({ ids, total, onClose, onDone }: { ids: string[]; total: number; onClose: () => void; onDone: () => void }) {
   const d = useAppState().data;
+  // 只能用一般帳戶、悠遊卡、電子錢包還（儲蓄、投資、其他不行）
+  const allowed = owedRepayAccounts(d).map((a) => a.id);
   const [acc, setAcc] = useState<string | null>(() => {
     const x = getState().data;
+    const ok = owedRepayAccounts(x).map((a) => a.id);
     const last = x.settings.lastUsedAccountId;
-    if (last && x.accounts.some((a) => a.id === last)) return last;
-    return bankAccounts(x)[0]?.id ?? null;
+    if (last && ok.includes(last)) return last;
+    return bankAccounts(x)[0]?.id ?? ok[0] ?? null;
   });
   const [picking, setPicking] = useState(false);
   const kind = d.accounts.find((a) => a.id === acc)?.kind;
@@ -240,7 +243,16 @@ function OwedPay({ ids, total, onClose, onDone }: { ids: string[]; total: number
           <button class="btn owed-btn" disabled={!acc} onClick={confirm}>確認已還</button>
         </div>
       </Sheet>
-      {picking && <AccountPicker title="從哪個帳戶付" value={acc} onPick={setAcc} onClose={() => setPicking(false)} />}
+      {picking && (
+        <AccountPicker
+          title="從哪個帳戶付"
+          value={acc}
+          only={allowed}
+          footnote="儲蓄、投資、其他帳戶不能還款，請先轉到一般帳戶。"
+          onPick={setAcc}
+          onClose={() => setPicking(false)}
+        />
+      )}
     </>
   );
 }

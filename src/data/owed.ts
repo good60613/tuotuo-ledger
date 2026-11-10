@@ -6,7 +6,11 @@
 //   用小帳戶付時一般帳戶不用再預留這筆，剩餘可用變多是對的（PK 定案）。
 // - 退回未還：刪掉還款那筆（錢加回帳戶），朋友付回到未還。
 import type { AppData, Transaction } from './types';
-import { isPendingOwed } from './calc';
+import { isPendingOwed, OWED_REPAY_KINDS } from './calc';
+import type { Account } from './types';
+
+/** 可以用來還朋友錢的帳戶（還款畫面只列這些） */
+export const owedRepayAccounts = (data: AppData): Account[] => data.accounts.filter((a) => OWED_REPAY_KINDS.includes(a.kind));
 
 export class OwedError extends Error {}
 
@@ -22,7 +26,9 @@ export function markOwedPaid(
 ): AppData {
   if (owedIds.length === 0) throw new OwedError('請先選擇朋友付紀錄');
   if (new Set(owedIds).size !== owedIds.length) throw new OwedError('同一筆不能重複還');
-  if (!data.accounts.some((a) => a.id === accountId)) throw new OwedError('找不到付款帳戶');
+  const acc = data.accounts.find((a) => a.id === accountId);
+  if (!acc) throw new OwedError('找不到付款帳戶');
+  if (!OWED_REPAY_KINDS.includes(acc.kind)) throw new OwedError('這個帳戶不能還款，請先轉到一般帳戶');
   const nowIso = now.toISOString();
   const paid = new Map<string, string>();
   const created: Transaction[] = [];

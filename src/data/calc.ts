@@ -17,6 +17,12 @@ export const SPENDABLE_KINDS: AccountKind[] = ['bank'];
 /** 從主帳轉進來算「主帳支出」的小帳戶類型 */
 export const TOPUP_KINDS: AccountKind[] = ['easycard', 'ewallet'];
 
+/**
+ * 可以用來還朋友錢的帳戶類型（2.0 修正批 PK 定案）：一般帳戶、悠遊卡、電子錢包。
+ * 儲蓄、投資、其他轉出是轉帳、不算支出，用它們還錢會讓這筆朋友付永遠不算成支出，所以不行。
+ */
+export const OWED_REPAY_KINDS: AccountKind[] = ['bank', ...TOPUP_KINDS];
+
 /** 統計分類裡「儲值」的假分類 id（後面接小帳戶類型，例如 '__topup:easycard'） */
 export const TOPUP_CAT_PREFIX = '__topup:';
 
