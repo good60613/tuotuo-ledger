@@ -13,7 +13,7 @@ export const GESTURE = {
   /** 拖曳經過新目標時的輕震（0 = 關閉） */
   hoverVibrateMs: 8,
   /** 拿起後卡片放大倍率 */
-  liftScale: 1.08,
+  liftScale: 1.14,
   /** 拿起後開始移動時，卡片縮小成這個倍率，避免蓋住底下的目標 */
   dragScale: 0.7,
   /** 移動中卡片的透明度（1 = 不透明），讓底下目標的高亮透得出來 */
@@ -179,7 +179,7 @@ export const DRAG_MARK = {
   /** 跟著手指的小膠囊影子，相對手指的垂直偏移（負＝偏上） */
   ghostOffsetY: -44,
   /** 拖曳時快速標籤那排的透明度 */
-  dimOpacity: 0.3,
+  dimOpacity: 0.35,
   /** 命中數字時，數字的框往上下左右各加大多少 px */
   dropPadPx: 18,
 } as const;
@@ -257,4 +257,22 @@ export const GLASS = {
   navSaturatePct: 170,
   /** 背景光暈（radial-gradient）濃度，0～100 */
   glowPct: 55,
+} as const;
+
+/** 拖曳光影（2.1 F 段）：只用 transform／opacity／陰影；減少動態效果時全部關掉（styles.css） */
+export const DRAG_FX = {
+  /** 拿起時膠囊放大倍率（首頁卡片的倍率在 GESTURE.liftScale） */
+  liftScale: 1.14,
+  /** 拿起時傾斜角度（度，負＝逆時針） */
+  tiltDeg: -6,
+  /** 拿起的陰影模糊（px） */
+  shadowPx: 30,
+  /** 邊緣發光的模糊（px） */
+  glowPx: 18,
+  /** 經過目標時的光暈（px） */
+  hoverGlowPx: 14,
+  /** 放下回彈時間（毫秒） */
+  dropMs: 280,
+  /** 經過目標亮起／熄滅時間（毫秒） */
+  hoverMs: 120,
 } as const;

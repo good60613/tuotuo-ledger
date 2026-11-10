@@ -5,7 +5,7 @@ import { installClickGuard } from './gestures/guard';
 import { installNativeBackButton, goHomeFromWidget } from './backNav';
 import { installWidgetSync } from './widget';
 import './styles.css';
-import { BOTTOM_BAR, TIMELINE, GLASS, HOME } from './config';
+import { BOTTOM_BAR, TIMELINE, GLASS, HOME, DRAG_FX } from './config';
 import { applyCachedTheme } from './theme';
 
 // 第一個畫面前先套顏色（上次存的外觀，沒有就亮色），讀到設定後由 App 再套正確模式
@@ -16,6 +16,13 @@ document.documentElement.style.setProperty('--bar-h', BOTTOM_BAR.heightPx + 'px'
 document.documentElement.style.setProperty('--bar-gap', BOTTOM_BAR.gapPx + 'px');
 {
   const st = document.documentElement.style;
+  st.setProperty('--fx-lift', String(DRAG_FX.liftScale));
+  st.setProperty('--fx-tilt', DRAG_FX.tiltDeg + 'deg');
+  st.setProperty('--fx-shadow', DRAG_FX.shadowPx + 'px');
+  st.setProperty('--fx-glow', DRAG_FX.glowPx + 'px');
+  st.setProperty('--fx-hover-glow', DRAG_FX.hoverGlowPx + 'px');
+  st.setProperty('--fx-drop-ms', DRAG_FX.dropMs + 'ms');
+  st.setProperty('--fx-hover-ms', DRAG_FX.hoverMs + 'ms');
   st.setProperty('--nav-gap', BOTTOM_BAR.navInsetPx + 'px');
   st.setProperty('--home-gap', HOME.gapPx + 'px');
   st.setProperty('--home-card-h', HOME.cardHeightPx + 'px');

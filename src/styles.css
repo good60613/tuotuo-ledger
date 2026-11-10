@@ -724,3 +724,28 @@ html.no-glass .mark-chip.glass.on { background: var(--mk); }
 .calc-key.ok:disabled { box-shadow: none; }
 .calc-key .icon { display: block; margin: 0 auto; }
 .icon-btn { display: inline-flex; align-items: center; justify-content: center; }
+
+/* ---------- 2.1 F 段：拖曳光影（只用 transform／opacity／陰影） ---------- */
+/* 拿起：首頁卡片的影子（倍率由 GESTURE.liftScale 決定）傾斜、大陰影、主色發光 */
+.drag-ghost { rotate: var(--fx-tilt); box-shadow: 0 14px var(--fx-shadow) var(--shadow-lg), 0 0 var(--fx-glow) var(--glow) !important; }
+/* 拿起：膠囊影子放大、傾斜、發出自己顏色的光 */
+.mark-ghost { scale: var(--fx-lift); rotate: var(--fx-tilt); box-shadow: 0 10px var(--fx-shadow) var(--shadow-lg), 0 0 var(--fx-glow) color-mix(in srgb, var(--mk) 60%, transparent); }
+/* 經過目標：亮一圈（外框＋淡光暈），離開熄掉 */
+.term { transition: transform var(--fx-hover-ms), background var(--fx-hover-ms), box-shadow var(--fx-hover-ms); }
+.term.hover { box-shadow: 0 0 var(--fx-hover-glow) var(--glow); }
+.drop-zone { transition: transform var(--fx-hover-ms), background var(--fx-hover-ms), color var(--fx-hover-ms), box-shadow var(--fx-hover-ms); }
+.zone-expense.drop-hover { box-shadow: 0 0 var(--fx-hover-glow) color-mix(in srgb, var(--expense) 55%, transparent); }
+.zone-income.drop-hover { box-shadow: 0 0 var(--fx-hover-glow) color-mix(in srgb, var(--income) 55%, transparent); }
+.card.drop-hover, .ball.drop-hover { box-shadow: 0 0 var(--fx-hover-glow) var(--glow); }
+/* 放下：輕輕回彈（來源卡片恢復時帶一點過衝；掛上標記的數字彈一下） */
+.card { transition: border-color .1s, background .1s, transform var(--fx-drop-ms) cubic-bezier(.34, 1.56, .64, 1); }
+.card.is-source { transform: scale(.94); }
+@keyframes term-pop { 0% { transform: scale(1.18); } 60% { transform: scale(.96); } 100% { transform: scale(1); } }
+.term.marked { animation: term-pop var(--fx-drop-ms) ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .drag-ghost { transform: none !important; transition: none !important; rotate: none; }
+  .mark-ghost { scale: none; rotate: none; }
+  .term, .term.hover, .drop-zone, .card, .card.is-source, .card.drop-hover, .ball.drop-hover, .drop-zone.drop-hover { transform: none !important; transition: none; }
+  .term.marked { animation: none; }
+  .tags { transition: none; }
+}
