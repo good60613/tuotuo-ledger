@@ -215,10 +215,14 @@ export interface StatEffect {
  * - 其他一律不算：轉帳、報帳入帳、調整、市值、小帳戶內的收支（含配息、費用、利息）。
  */
 export function statEffect(t: Transaction, kindOf: KindOf): StatEffect | null {
-  // 朋友付：飯是當天吃的，算支出（不論還了沒）；沒有帳戶，所以只出現在「全部帳戶」的統計
-  if (t.type === 'owed') return { type: 'expense', amount: t.amount, accountId: '', categoryId: t.categoryId ?? '' };
-  // 還朋友錢：之前已經算過支出，還錢不再算
-  if (t.type === 'owed_repay') return null;
+  // 朋友付（補強批 PK 定案）：記帳那天不算支出（只扣剩餘可用）
+  if (t.type === 'owed') return null;
+  // 還朋友錢：還錢那天才算支出，算在付款的一般帳戶。用小帳戶還＝小帳戶內的消費，不算主帳
+  // （儲值時已經算過），所以不會重複算。舊資料不用轉換：數字一律從紀錄現算。
+  if (t.type === 'owed_repay')
+    return kindOf(t.accountId) === 'bank'
+      ? { type: 'expense', amount: t.amount, accountId: t.accountId, categoryId: t.categoryId ?? '' }
+      : null;
   const k = kindOf(t.accountId);
   if (k !== 'bank') return null;
   if (t.type === 'income') return { type: 'income', amount: t.amount, accountId: t.accountId, categoryId: t.categoryId ?? '' };

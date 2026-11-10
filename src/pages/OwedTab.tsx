@@ -230,10 +230,11 @@ function OwedPay({ ids, total, onClose, onDone }: { ids: string[]; total: number
           <span>從哪個帳戶付</span>
           <button class="pill-btn" onClick={() => setPicking(true)}>{acc ? accountName(d, acc) : '選擇帳戶'} ▾</button>
         </div>
-        {(kind === 'easycard' || kind === 'ewallet') && (
-          <div class="muted small">小提醒：儲值時已經算過一次支出，這筆飯錢在本月支出會多算一次。</div>
+        {kind && kind !== 'bank' ? (
+          <div class="muted small">用小帳戶還：只記在小帳戶自己的明細，不算進主帳支出（儲值時已經算過）。</div>
+        ) : (
+          <div class="muted small">還錢這天才算一筆支出（日期是今天）。</div>
         )}
-        <div class="muted small">還錢不算支出（記朋友付時已經算過）。</div>
         <div class="dialog-btns">
           <button class="btn secondary" onClick={onClose}>取消</button>
           <button class="btn owed-btn" disabled={!acc} onClick={confirm}>確認已還</button>

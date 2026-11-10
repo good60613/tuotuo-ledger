@@ -231,6 +231,9 @@ function ReimburseConfirm({ kind, ids, total, onClose, onDone }: { kind: ClaimKi
           <span>錢進了哪個帳戶{usedDefault ? '（預設報帳帳戶）' : ''}</span>
           <button class="pill-btn" onClick={() => setPicking(true)}>{acc ? accountName(d, acc) : '選擇帳戶'} ▾</button>
         </div>
+        {kind === 'advance' && acc && d.accounts.find((a) => a.id === acc)?.kind !== 'bank' && (
+          <div class="muted small">這筆會留在小帳戶，不會算進主帳支出</div>
+        )}
         <div class="dialog-btns">
           <button class="btn secondary" onClick={onClose}>取消</button>
           <button class={`btn ${kind}-btn`} disabled={!acc} onClick={confirm}>確認已收到</button>

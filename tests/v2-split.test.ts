@@ -57,7 +57,8 @@ describe('拆帳', () => {
     const r = addTransactions(base(), splitInputs(p, B('1100−600')));
     expect(allBalances(r.data).get('A')).toBe(9500);
     expect(spendableTotal(r.data)).toBe(8900);
-    expect(totals(r.data, { period: periodKey(NOW, 1) }).expense).toBe(1100);
+    // 補強批：朋友付那 600 還錢時才算支出，記帳當下只算一般的 500
+    expect(totals(r.data, { period: periodKey(NOW, 1) }).expense).toBe(500);
   });
 
   it('同一個標記掛兩個數字 → 兩筆', () => {

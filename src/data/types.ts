@@ -42,9 +42,9 @@ export interface Account {
  */
 export type TxType =
   | 'expense' | 'income' | 'transfer' | 'reimburse_in' | 'adjust' | 'valuation'
-  /** 朋友付（2.0）：別人先幫我付。不選帳戶（accountId＝''）、不動任何帳戶；算支出；剩餘可用扣掉未還的 */
+  /** 朋友付（2.0）：別人先幫我付。不選帳戶（accountId＝''）、不動任何帳戶；不算支出（補強批）；剩餘可用扣掉未還的 */
   | 'owed'
-  /** 還朋友錢（2.0）：從某帳戶扣款還錢。不算任何支出；owedOfId 指回朋友付那筆 */
+  /** 還朋友錢（2.0）：從某帳戶扣款還錢。用一般帳戶還＝還錢當天算支出（補強批）；owedOfId 指回朋友付那筆 */
   | 'owed_repay';
 
 export interface Transaction {

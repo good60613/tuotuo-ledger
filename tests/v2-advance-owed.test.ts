@@ -50,13 +50,13 @@ describe('工單驗算用例', () => {
 });
 
 describe('朋友付', () => {
-  it('記帳當下：帳戶都不動、算本月／今日／分類支出、剩餘可用減少', () => {
+  it('記帳當下（補強批）：帳戶都不動、本月／今日／分類支出都不算、剩餘可用減少', () => {
     const before = base();
     const { data: d, id } = owed(before);
     expect(allBalances(d)).toEqual(allBalances(before));
-    expect(expenseOf(d)).toBe(600);
-    expect(todayExp(d)).toBe(600);
-    expect(categoryBreakdown(d, 'expense', per, null)).toEqual([{ categoryId: 'c-e1', amount: 600, ratio: 1 }]);
+    expect(expenseOf(d)).toBe(0);
+    expect(todayExp(d)).toBe(0);
+    expect(categoryBreakdown(d, 'expense', per, null)).toEqual([]);
     expect(pendingOwedTotal(d)).toBe(600);
     expect(tx(d, id).accountId).toBe('');
     expect(tx(d, id).owedStatus).toBe('pending');
@@ -67,11 +67,13 @@ describe('朋友付', () => {
     expect(d.settings.lastUsedAccountId).toBe(before.settings.lastUsedAccountId);
   });
 
-  it('還錢：不再算支出、剩餘可用不變、原紀錄已還', () => {
+  it('還錢（補強批）：用一般帳戶還＝這時才算支出、算在付款帳戶與原分類、剩餘可用不變、原紀錄已還', () => {
     const o = owed(base());
     const d = markOwedPaid(o.data, [o.id], 'B', NOW);
     expect(expenseOf(d)).toBe(600);
     expect(todayExp(d)).toBe(600);
+    expect(totals(d, { period: per, accountId: 'B' }).expense).toBe(600);
+    expect(categoryBreakdown(d, 'expense', per, null)).toEqual([{ categoryId: 'c-e1', amount: 600, ratio: 1 }]);
     expect(allBalances(d).get('B')).toBe(3400);
     expect(tx(d, o.id).owedStatus).toBe('paid');
     expect(pendingOwedTotal(d)).toBe(0);
@@ -238,6 +240,7 @@ describe('開關與共存', () => {
     let d = markBudgetPaid(b.data, [{ id: b.id, amount: 1000 }], NOW);
     d = owed(d).data;
     expect(spendableTotal(d)).toBe(14004 - 1000 - 600);
-    expect(expenseOf(d)).toBe(1600);
+    // 朋友付還沒還，不算支出（補強批）
+    expect(expenseOf(d)).toBe(1000);
   });
 });

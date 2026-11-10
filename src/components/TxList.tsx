@@ -133,11 +133,11 @@ export function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { 
     amt = '+' + money(t.amount);
     cls = 'reimb-in';
   } else if (t.type === 'owed_repay') {
-    // 還朋友錢：從帳戶扣款，不算支出
+    // 還朋友錢：從帳戶扣款；用一般帳戶還算支出（補強批）
     icon = '↪';
     title = '還朋友錢';
     amt = '-' + money(t.amount);
-    cls = 'transfer';
+    cls = acc?.kind === 'bank' ? 'expense' : 'transfer';
   } else if (t.type === 'adjust') {
     icon = '⚖';
     title = '校正';
@@ -159,7 +159,8 @@ export function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { 
     if (c) bg = catBg(c.color);
     title = c?.name ?? '（已刪除分類）';
     amt = (t.type === 'expense' || t.type === 'owed' ? '-' : '+') + money(t.amount);
-    cls = t.type === 'owed' ? 'expense' : t.type;
+    // 朋友付記帳當天不算支出（還錢那天才算），用灰色
+    cls = t.type === 'owed' ? 'transfer' : t.type;
   }
   // 報帳／預算標示：未結案＝彩色外框＋「報」「預」；結案＝拿掉外框，留淺色「已報」「已付」。色弱靠小字辨識
   let flag: { cls: string; text: string } | null = null;
