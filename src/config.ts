@@ -81,6 +81,9 @@ export const SETTLE = {
   maxDay: 31,
 } as const;
 
+/** 定期扣款：App 一直開著時，每隔多久檢查一次有沒有到扣款日（打開 App、回到前景時也會檢查） */
+export const RECURRING_CHECK_MS = 30 * 60 * 1000;
+
 /** 「已記一筆」提示停留多久（可按復原） */
 export const TOAST_MS = 4000;
 

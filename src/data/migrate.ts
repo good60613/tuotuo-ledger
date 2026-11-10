@@ -1,10 +1,11 @@
 // 舊資料升級：讀取手機資料、匯入備份時都會經過這裡，舊版資料自動補成新格式。
-// 一版一版往上升：v1 → v2 → v3 → v4 → v5。
+// 一版一版往上升：v1 → v2 → v3 → v4 → v5 → v6。
 import type { Account, AppData, Category, Transaction } from './types';
 import { DATA_VERSION } from './types';
 import { SETTLE } from '../config';
 import { normalizeBudgets } from './budget';
 import { normalizeOwed } from './owed';
+import { normalizeRecurring } from './recurring';
 import { DEFAULT_COLOR, MISSING_ICON, isColorKey } from '../categoryStyle';
 
 type AnyData = Omit<AppData, 'version'> & { version: number };
@@ -55,6 +56,11 @@ function v4to5(d: AnyData): AnyData {
   return { ...d, version: 5 };
 }
 
+/** v5 → v6（2.0 補強批）：加入定期扣款清單（舊資料沒有＝空的）、定期扣款開關（缺值＝開啟） */
+function v5to6(d: AnyData): AnyData {
+  return { ...d, version: 6, recurring: Array.isArray(d.recurring) ? d.recurring : [] };
+}
+
 /** 我先付標記只能掛在報帳類紀錄上；亂填的值拿掉 */
 function fixAdvance(t: Transaction): Transaction {
   if (t.reimburseKind === undefined) return t;
@@ -98,7 +104,8 @@ export function migrate(raw: unknown): AppData {
   if (d.version === 2) d = v2to3(d);
   if (d.version === 3) d = v3to4(d);
   if (d.version === 4) d = v4to5(d);
+  if (d.version === 5) d = v5to6(d);
   const categories = d.categories.map(fixCategory);
   const transactions = Array.isArray(d.transactions) ? d.transactions.map((t) => fixAdvance(fixBudget(t))) : d.transactions;
-  return normalizeOwed(normalizeBudgets({ ...d, version: DATA_VERSION, categories, transactions } as AppData));
+  return normalizeRecurring(normalizeOwed(normalizeBudgets({ ...d, version: DATA_VERSION, categories, transactions } as AppData)));
 }

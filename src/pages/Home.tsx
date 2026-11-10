@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { useAppState, setState, openOverlay, showToast, goPage, TODO_PAGE, PAGES } from '../store';
-import { allBalances, spendableTotal, totals, periodKey, dayKey, pendingBudgetByAccount, pendingBudgetTotal, pendingOwedTotal } from '../data/calc';
+import { allBalances, spendableTotal, totals, periodKey, dayKey, pendingBudgetByAccount, pendingBudgetTotal, pendingOwedTotal, recurringReserved } from '../data/calc';
 import { overdueCount } from '../data/budget';
 import { bankAccounts, accountName } from '../selectors';
 import { ballDropTarget } from '../data/ops';
@@ -112,6 +112,17 @@ export function HomePage() {
         setState({ todoTab: 'budget' });
         goPage(TODO_PAGE);
       },
+    });
+  }
+  // 定期扣款：本期還沒扣、已預留的（比照預算）；點了進設定看清單
+  const recurSum = recurringReserved(d);
+  if (recurSum > 0) {
+    sideItems.push({
+      key: 'recurring',
+      label: '定期扣款',
+      amount: recurSum,
+      tone: 'budget',
+      onClick: () => goPage(PAGES.indexOf('設定')),
     });
   }
   if (owedSum > 0) {

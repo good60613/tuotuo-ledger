@@ -1,5 +1,6 @@
 // 設定（右二）：只放讓其他功能能運作的項目。
-import { advanceOwedOn } from '../features';
+import { advanceOwedOn, recurringOn } from '../features';
+import { RecurringPanel } from './RecurringSettings';
 import { useRef, useState } from 'preact/hooks';
 import { useBackLayer } from '../backNav';
 import { PAGES } from '../store';
@@ -36,7 +37,7 @@ import { applyTheme, themeOf, THEME_LABEL, type ThemeMode } from '../theme';
 const MULTI_KINDS: AccountKind[] = ['ewallet', 'invest', 'saving', 'other'];
 
 /** 設定目錄的項目（首頁只列項目，點了才進入子頁） */
-type View = 'menu' | 'accounts' | 'small' | 'categories' | 'backup' | 'demo';
+type View = 'menu' | 'accounts' | 'small' | 'categories' | 'recurring' | 'backup' | 'demo';
 
 type SheetState =
   | null
@@ -311,6 +312,10 @@ export function SettingsPage() {
               <span>我先付／朋友付</span>
               <span class="muted">{advanceOwedOn(d.settings) ? '開啟' : '關閉'} ›</span>
             </button>
+            <button class="setting-row" onClick={() => setView('recurring')}>
+              <span>定期扣款</span>
+              <span class="muted">{recurringOn(d.settings) ? `${d.recurring.length} 項` : '關閉'} ›</span>
+            </button>
             <button class="setting-row" onClick={() => setSheet({ k: 'settle' })}>
               <span>結算日</span>
               <span class="muted">每月 {d.settings.settleDay} 號 ›</span>
@@ -324,7 +329,7 @@ export function SettingsPage() {
       ) : (
         <div class="sub-head">
           <button class="icon-btn" onClick={() => setView('menu')} aria-label="返回設定">‹</button>
-          <h1 class="page-title">{{ accounts: '帳戶管理', small: '小帳戶管理', categories: '分類管理', backup: '資料備份', demo: '清空或範例' }[view]}</h1>
+          <h1 class="page-title">{{ accounts: '帳戶管理', small: '小帳戶管理', categories: '分類管理', recurring: '定期扣款', backup: '資料備份', demo: '清空或範例' }[view]}</h1>
         </div>
       )}
 
@@ -408,6 +413,8 @@ export function SettingsPage() {
           />
         </label>
       </section>}
+
+      {view === 'recurring' && <RecurringPanel />}
 
       {(view === 'backup' || view === 'menu') && <section class="panel">
         <h3>匯出與匯入</h3>

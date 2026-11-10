@@ -11,6 +11,7 @@ export function emptyData(): AppData {
     transactions: [],
     categories: defaultCategories(),
     noteTags: defaultTags(),
+    recurring: [],
     settings: {
       defaultReimburseAccountId: null,
       lastUsedAccountId: null,

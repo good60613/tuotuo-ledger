@@ -91,6 +91,10 @@ export interface Transaction {
   budgetPaidTxId?: string;
   /** 真正支出：是哪一筆預算付的款 */
   budgetOfId?: string;
+  /** 定期扣款（補強批，v6）自動記的支出：是哪一項定期扣款 */
+  recurringId?: string;
+  /** 定期扣款自動記的支出：是哪個月份的扣款（'YYYY-MM'），同一項同一月只記一次 */
+  recurringMonth?: string;
   /** 調整紀錄的方向：up＝實際比帳上多，down＝實際比帳上少 */
   adjustDir?: 'up' | 'down';
   /**
@@ -145,20 +149,48 @@ export interface Settings {
   theme?: ThemeMode;
   /** 我先付／朋友付功能開關，缺值＝開啟。判斷一律用 features.ts 的 advanceOwedOn() */
   advanceOwedEnabled?: boolean;
+  /** 定期扣款開關（補強批），缺值＝開啟。判斷一律用 features.ts 的 recurringOn() */
+  recurringEnabled?: boolean;
 }
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 
+/**
+ * 定期扣款（補強批，v6）：固定金額的每月訂閱（HBO、Spotify）。
+ * 每月 day 號自動記一筆支出；當月沒有那天（例如 31 號遇到 11 月）就在當月最後一天扣。
+ */
+export interface Recurring {
+  id: string;
+  name: string;
+  /** 每月金額（正整數元） */
+  amount: number;
+  /** 每月幾號扣（1～31） */
+  day: number;
+  /** 支出分類 */
+  categoryId: string;
+  /** 預設扣款帳戶 */
+  accountId: string;
+  order: number;
+  /**
+   * 下一個要自動記帳的月份（'YYYY-MM'）。比它早的月份都已經處理過，不會再記，
+   * 所以 App 很久沒開、補記時也不會重複。
+   */
+  nextMonth: string;
+  createdAt: string;
+}
+
 export interface AppData {
-  version: 5;
+  version: 6;
   accounts: Account[];
   transactions: Transaction[];
   categories: Category[];
   noteTags: NoteTag[];
+  /** 定期扣款清單（v6）；舊資料、舊備份沒有＝空的 */
+  recurring: Recurring[];
   settings: Settings;
 }
 
-export const DATA_VERSION = 5;
+export const DATA_VERSION = 6;
 
 /** 不需要分類的紀錄來源（投資配息、費用、儲蓄利息） */
 export const TX_SOURCE_NO_CATEGORY = ['invest-dividend', 'invest-fee', 'saving-interest'];

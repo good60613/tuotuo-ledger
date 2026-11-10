@@ -205,6 +205,7 @@ export function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { 
           {t.type !== 'transfer' && acc && <> · {KIND_ICON[acc.kind]} {acc.name}</>}
           {t.type === 'adjust' && <span class="badge calib">不計收支</span>}
           {t.type === 'owed' && <> · 別人先付</>}
+          {t.recurringId && <> · 定期</>}
           {t.calcExpr && <span class="tx-expr"> · {displayExpr(t.calcExpr)}</span>}
           {flag && <span class={`tx-flag ${flag.cls}`}>{flag.text}</span>}
         </span>

@@ -3,7 +3,8 @@ import { useEffect, useState } from 'preact/hooks';
 import type { AppData } from './data/types';
 import { loadData, saveData, requestPersistence } from './data/storage';
 import { sampleData } from './data/seed';
-import { TOAST_MS, TRANSITION } from './config';
+import { TOAST_MS, TRANSITION, RECURRING_CHECK_MS } from './config';
+import { postDueRecurring } from './data/recurring';
 
 export const PAGES = ['待辦', '統計', '首頁', '明細', '設定'] as const;
 export const TODO_PAGE = 0;
@@ -180,7 +181,19 @@ export function goPage(page: number, fade = false) {
   setTimeout(() => setState({ fade: false }), TRANSITION.fadeMs);
 }
 
+/**
+ * 定期扣款自動記帳（補強批）：打開 App、回到前景、每隔一段時間各檢查一次。
+ * 補記日期是原本的扣款日，同一項同一月只記一次（見 data/recurring.ts）。
+ */
+export function runRecurring(now: Date = new Date()) {
+  const r = postDueRecurring(state.data, now);
+  if (r.posted.length === 0) return;
+  updateData(() => r.data);
+  showToast(`已自動記 ${r.posted.length} 筆定期扣款`);
+}
+
 export async function initStore() {
+  let loaded = false;
   try {
     const saved = await loadData();
     if (saved) setState({ data: saved, ready: true });
@@ -189,10 +202,20 @@ export async function initStore() {
       await saveData(d);
       setState({ data: d, ready: true });
     }
+    loaded = true;
   } catch (e) {
     console.error(e);
     setState({ ready: true });
     showToast('無法讀取手機上的資料，這次的變更可能不會保存');
   }
   requestPersistence();
+  // 讀不到手機資料時不自動記帳（避免記在範例資料上）
+  if (!loaded) return;
+  runRecurring();
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') runRecurring();
+    });
+    setInterval(runRecurring, RECURRING_CHECK_MS);
+  }
 }

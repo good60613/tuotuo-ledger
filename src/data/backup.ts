@@ -5,6 +5,8 @@
 //   - type='full'：完整備份，data＝整份資料（含紀錄）。
 //   - type='settings'：只有設定，data＝帳戶、小帳戶、分類、備註標籤、設定（沒有 transactions）。
 //   - data.version 是資料本身的版本（見 types.ts 的 DATA_VERSION），舊版會自動升級。
+//   - 補強批起資料版本 6：多了 recurring（定期扣款），完整備份與「只有設定」都會帶；舊備份沒有＝空的。
+//     舊版 App（資料版本 5）讀不了版本 6 的檔案，會顯示「不支援的資料版本」。
 // 舊版備份檔（第一、二批）沒有 type 與 fileVersion，一律當完整備份。
 import type { Account, AppData, Category, CategoryType, Transaction } from './types';
 import { migrate } from './migrate';
@@ -185,7 +187,13 @@ export function applySettingsImport(
   const settings = { ...incoming.settings };
   if (settings.defaultReimburseAccountId && !ids.has(settings.defaultReimburseAccountId)) settings.defaultReimburseAccountId = null;
   if (settings.lastUsedAccountId && !ids.has(settings.lastUsedAccountId)) settings.lastUsedAccountId = null;
-  const data = normalizeOwed(normalizeBudgets(normalizeBatches({ ...incoming, settings, transactions })));
+  // 定期扣款：同一項在現在的資料裡已經扣到比較後面的月份 → 用比較後面的，避免舊設定檔讓已扣過的月份再扣一次
+  const curNext = new Map((current.recurring ?? []).map((r) => [r.id, r.nextMonth]));
+  const recurring = (incoming.recurring ?? []).map((r) => {
+    const c = curNext.get(r.id);
+    return c && c > r.nextMonth ? { ...r, nextMonth: c } : r;
+  });
+  const data = normalizeOwed(normalizeBudgets(normalizeBatches({ ...incoming, recurring, settings, transactions })));
   return { data, removedSelfTransfers: removed };
 }
 

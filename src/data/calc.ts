@@ -106,11 +106,53 @@ export function bankTotal(data: Pick<AppData, 'accounts' | 'transactions'>): num
 }
 
 /**
- * 剩餘可用＝一般帳戶加總－未付預算－未還朋友錢（2.0）。
+ * 剩餘可用＝一般帳戶加總－未付預算－未還朋友錢（2.0）－本期還沒扣的定期扣款（補強批）。
  * 我先付、報帳還沒收回的錢不先加回，等真的入帳才算（保守）。
  */
-export function spendableTotal(data: Pick<AppData, 'accounts' | 'transactions'>): number {
-  return bankTotal(data) - pendingBudgetTotal(data) - pendingOwedTotal(data);
+export function spendableTotal(data: SpendableData, now: Date = new Date()): number {
+  return bankTotal(data) - pendingBudgetTotal(data) - pendingOwedTotal(data) - recurringReserved(data, now);
+}
+
+type SpendableData = Pick<AppData, 'accounts' | 'transactions'> & Partial<Pick<AppData, 'recurring' | 'settings'>>;
+
+// ---------------- 定期扣款（補強批） ----------------
+
+/** 定期扣款在某個月份（'YYYY-MM'）的扣款日（當地 0 點）。當月沒有那天＝當月最後一天 */
+export function chargeDate(day: number, month: string): Date {
+  const [y, mo] = month.split('-').map(Number);
+  return new Date(y, mo - 1, Math.min(Math.max(1, day), daysIn(y, mo - 1)));
+}
+
+/** 這個月份的扣款日是否已經到了（以日期比，不看幾點） */
+export function chargeDue(day: number, month: string, now: Date): boolean {
+  return dayKey(chargeDate(day, month)) <= dayKey(now);
+}
+
+/** 防呆：一次最多往後看幾個月（資料亂掉時不會跑不完） */
+export const RECURRING_MAX_MONTHS = 240;
+
+/**
+ * 剩餘可用要預留的定期扣款（比照預算）：
+ * 扣款日落在「目前這一期」、而且還沒自動記帳的，金額先扣掉；到扣款日記成支出時同時解除，不會重複扣。
+ * 只算預設帳戶是一般帳戶的項目（小帳戶付的不影響剩餘可用）。開關關掉＝不預留。
+ */
+export function recurringReserved(data: SpendableData, now: Date = new Date()): number {
+  const list = data.recurring;
+  if (!list?.length || !data.settings || data.settings.recurringEnabled === false) return 0;
+  const { start, end } = periodRange(periodKey(now, data.settings.settleDay), data.settings.settleDay);
+  const kindOf = kindLookup(data.accounts);
+  const posted = new Set(data.transactions.filter((t) => t.recurringId).map((t) => `${t.recurringId}@${t.recurringMonth}`));
+  let sum = 0;
+  for (const r of list) {
+    if (kindOf(r.accountId) !== 'bank') continue;
+    let m = r.nextMonth;
+    for (let i = 0; i < RECURRING_MAX_MONTHS; i++, m = shiftPeriod(m, 1)) {
+      const c = chargeDate(r.day, m);
+      if (c >= end) break;
+      if (c >= start && !posted.has(`${r.id}@${m}`)) sum += r.amount;
+    }
+  }
+  return sum;
 }
 
 // ---------------- 投資 ----------------

@@ -166,6 +166,11 @@ export function updateTransaction(data: AppData, id: string, input: TxInput): Ap
     next = build(input, old.id, old.createdAt);
     // 編輯時不重新拆帳：拆帳群組保留；金額沒改才保留原本的算式（改了金額，舊算式就對不上了）
     next.splitId = old.splitId;
+    // 定期扣款自動記的那筆：改帳戶、金額後仍記得是哪一項哪個月（避免補記時重複）
+    if (old.recurringId && next.type === 'expense') {
+      next.recurringId = old.recurringId;
+      next.recurringMonth = old.recurringMonth;
+    }
     if (input.calcExpr === undefined && input.amount === old.amount) {
       next.calcExpr = old.calcExpr;
       next.calcTerm = old.calcTerm;
@@ -326,8 +331,13 @@ export function removeAccount(data: AppData, accountId: string, how: RemoveMode)
   const settings = { ...data.settings };
   if (settings.defaultReimburseAccountId === accountId) settings.defaultReimburseAccountId = null;
   if (settings.lastUsedAccountId === accountId) settings.lastUsedAccountId = null;
+  // 定期扣款：紀錄搬到哪個帳戶，扣款帳戶就跟著搬；刪紀錄的話留著，設定頁會提醒重新選帳戶（不自動記）
+  const recurring = how.mode === 'deleteRecords'
+    ? data.recurring
+    : data.recurring.map((r) => (r.accountId === accountId ? { ...r, accountId: how.targetId } : r));
   return normalizeOwed(normalizeBudgets(normalizeBatches({
     ...data,
+    recurring,
     settings,
     accounts: data.accounts.filter((a) => a.id !== accountId),
     transactions: txs,
@@ -358,8 +368,12 @@ export function removeCategory(data: AppData, categoryId: string, how: RemoveMod
     if (!dst || dst.id === categoryId || dst.type !== src?.type) throw new OpError('請選同類型的另一個分類');
     txs = txs.map((t) => (t.categoryId === categoryId ? { ...t, categoryId: dst.id } : t));
   }
+  const recurring = how.mode === 'deleteRecords'
+    ? data.recurring
+    : data.recurring.map((r) => (r.categoryId === categoryId ? { ...r, categoryId: how.targetId } : r));
   return normalizeOwed(normalizeBudgets(normalizeBatches({
     ...data,
+    recurring,
     categories: data.categories.filter((c) => c.id !== categoryId),
     transactions: txs,
   })));
