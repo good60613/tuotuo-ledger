@@ -2,7 +2,7 @@
 import { colorOf } from '../categoryStyle';
 
 export function catBg(color: string | undefined): string {
-  return colorOf(color) + '40'; // 加透明度，變淡色底
+  return `color-mix(in srgb, ${colorOf(color)} 25%, transparent)`; // 變淡色底
 }
 
 export function CatIcon({ icon, color, class: cls = 'cat-icon' }: { icon: string; color?: string; class?: string }) {

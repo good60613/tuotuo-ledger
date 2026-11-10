@@ -119,7 +119,11 @@ export interface Settings {
   autoSortCategories: boolean;
   /** 手機條碼載具號碼（例 /ABC1234）；沒有＝未設定。第七批加入，舊資料與舊備份缺這欄就當未設定 */
   carrierCode?: string;
+  /** 外觀：亮色／暗色／跟隨系統。2.0 加入，舊資料與舊備份缺這欄＝亮色 */
+  theme?: ThemeMode;
 }
+
+export type ThemeMode = 'light' | 'dark' | 'system';
 
 export interface AppData {
   version: 4;

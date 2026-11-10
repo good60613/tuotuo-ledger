@@ -9,6 +9,7 @@ import { DetailPage } from './pages/Detail';
 import { StatsPage } from './pages/Stats';
 import { TodoPage } from './pages/Todo';
 import { SettingsPage } from './pages/Settings';
+import { applyTheme, themeOf } from './theme';
 
 const NAV_ICON = ['🧾', '📊', '🏠', '📋', '⚙️'];
 
@@ -29,6 +30,12 @@ export function App() {
       onOffset: setOffset,
     });
   }, [s.ready]);
+
+  // 讀到設定或設定變動時套用外觀
+  const themeMode = themeOf(s.data?.settings);
+  useEffect(() => {
+    if (s.ready) applyTheme(themeMode);
+  }, [s.ready, themeMode]);
 
   if (!s.ready) return <div class="loading">讀取中…</div>;
 

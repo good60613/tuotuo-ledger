@@ -87,7 +87,7 @@ export function TagManager({ onClose }: { onClose: () => void }) {
           <span class="grow">{n.text}</span>
           <button
             class="icon-btn"
-            style={{ color: n.pinned ? '#f5a623' : undefined }}
+            style={{ color: n.pinned ? 'var(--pin)' : undefined }}
             onClick={() => updateData((x) => togglePin(x, n.text))}
             aria-label={n.pinned ? '取消釘選' : '釘選'}
           >

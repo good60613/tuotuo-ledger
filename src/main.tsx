@@ -5,11 +5,11 @@ import { installClickGuard } from './gestures/guard';
 import { installNativeBackButton, goHomeFromWidget } from './backNav';
 import { installWidgetSync } from './widget';
 import './styles.css';
-import { TAG_COLOR, BOTTOM_BAR, TIMELINE } from './config';
+import { BOTTOM_BAR, TIMELINE } from './config';
+import { applyCachedTheme } from './theme';
 
-// 報帳、預算的顏色從設定檔套到畫面上（CSS 變數）
-document.documentElement.style.setProperty('--reimb', TAG_COLOR.reimb);
-document.documentElement.style.setProperty('--budget', TAG_COLOR.budget);
+// 第一個畫面前先套顏色（上次存的外觀，沒有就亮色），讀到設定後由 App 再套正確模式
+applyCachedTheme();
 // 底部操作列、導覽列尺寸從設定檔套到畫面（CSS 變數）
 document.documentElement.style.setProperty('--nav-h', BOTTOM_BAR.navHeightPx + 'px');
 document.documentElement.style.setProperty('--bar-h', BOTTOM_BAR.heightPx + 'px');

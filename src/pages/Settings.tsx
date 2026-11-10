@@ -29,6 +29,7 @@ import { pinnedCount } from '../data/notes';
 import { SETTLE } from '../config';
 import { carrierError, isValidCarrier, normalizeCarrier } from '../data/carrier';
 import { Barcode } from '../components/Barcode';
+import { applyTheme, themeOf, THEME_LABEL, type ThemeMode } from '../theme';
 
 /** 可以有多個帳戶的小帳戶類型（其他類型固定一個） */
 const MULTI_KINDS: AccountKind[] = ['ewallet', 'invest', 'saving', 'other'];
@@ -267,6 +268,23 @@ export function SettingsPage() {
         <>
           <h1 class="page-title">設定</h1>
           <section class="panel">
+            <div class="setting-row">
+              <span>外觀</span>
+              <div class="mini-seg">
+                {(['light', 'dark', 'system'] as ThemeMode[]).map((m) => (
+                  <button
+                    key={m}
+                    class={themeOf(d.settings) === m ? 'on' : ''}
+                    onClick={() => {
+                      applyTheme(m); // 立即套用
+                      updateData((x) => ({ ...x, settings: { ...x.settings, theme: m } }));
+                    }}
+                  >
+                    {THEME_LABEL[m]}
+                  </button>
+                ))}
+              </div>
+            </div>
             <button class="setting-row" onClick={() => setView('accounts')}><span>帳戶管理</span><span class="muted">{banks.length} 個 ›</span></button>
             <button class="setting-row" onClick={() => setView('small')}><span>小帳戶管理</span><span class="muted">電子錢包、投資標的、儲蓄目標 ›</span></button>
             <button class="setting-row" onClick={() => setView('categories')}>

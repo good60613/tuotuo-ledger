@@ -24,15 +24,15 @@ export const MISSING_ICON = '❓';
 
 /** 顏色標籤：只是視覺標記，不是大類，不影響統計與分類結構 */
 export const CATEGORY_COLORS = [
-  { key: 'food', label: '飲食', color: '#f59e0b' },
-  { key: 'shopping', label: '消費', color: '#ec4899' },
-  { key: 'fun', label: '娛樂', color: '#8b5cf6' },
-  { key: 'transport', label: '交通', color: '#3b82f6' },
-  { key: 'living', label: '生活', color: '#10b981' },
-  { key: 'study', label: '學習', color: '#6366f1' },
-  { key: 'health', label: '健康', color: '#ef4444' },
-  { key: 'digital', label: '數位', color: '#06b6d4' },
-  { key: 'other', label: '其他', color: '#9ca3af' },
+  { key: 'food', label: '飲食' },
+  { key: 'shopping', label: '消費' },
+  { key: 'fun', label: '娛樂' },
+  { key: 'transport', label: '交通' },
+  { key: 'living', label: '生活' },
+  { key: 'study', label: '學習' },
+  { key: 'health', label: '健康' },
+  { key: 'digital', label: '數位' },
+  { key: 'other', label: '其他' },
 ] as const;
 
 export type CategoryColorKey = (typeof CATEGORY_COLORS)[number]['key'];
@@ -44,7 +44,7 @@ export function isColorKey(v: unknown): v is CategoryColorKey {
   return CATEGORY_COLORS.some((c) => c.key === v);
 }
 
-/** 顏色代碼（顯示在圖示底色） */
+/** 顏色（CSS 變數，實際色碼在 theme.ts，亮暗色各一組；顯示在圖示底色） */
 export function colorOf(key: string | undefined): string {
-  return (CATEGORY_COLORS.find((c) => c.key === key) ?? CATEGORY_COLORS[CATEGORY_COLORS.length - 1]).color;
+  return `var(--cat-${(CATEGORY_COLORS.find((c) => c.key === key) ?? CATEGORY_COLORS[CATEGORY_COLORS.length - 1]).key})`;
 }

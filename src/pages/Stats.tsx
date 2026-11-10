@@ -95,7 +95,7 @@ export function StatsPage() {
             ))}
           </div>
         </div>
-        <BarChart labels={days.map((k) => String(Number(k.slice(8))))} values={series.map((x) => x[barShow])} color={barShow === 'expense' ? '#d64545' : '#1f9d6b'} />
+        <BarChart labels={days.map((k) => String(Number(k.slice(8))))} values={series.map((x) => x[barShow])} color={barShow === 'expense' ? 'var(--expense)' : 'var(--income)'} />
       </section>
 
       <BottomBar>
