@@ -26,6 +26,8 @@ const KEYS = [
   // --- 圖表 ---
   'chart-grid', 'chart-axis', 'chart-track', 'pin',
   'pal-1', 'pal-2', 'pal-3', 'pal-4', 'pal-5', 'pal-6',
+  // --- 毛玻璃（2.1）：玻璃底／邊框／陰影／上緣高光、背景光暈兩團、發光色、淡底 ---
+  'gbg', 'gbd', 'gsh', 'ghi', 'glow-a', 'glow-b', 'glow', 'chip',
   // --- 分類顏色標籤（資料裡存的是 key，色碼在這裡）---
   'cat-food', 'cat-shopping', 'cat-fun', 'cat-transport', 'cat-living',
   'cat-study', 'cat-health', 'cat-digital', 'cat-other',
@@ -36,6 +38,9 @@ export type Palette = Record<TokenName, string>;
 
 /** 亮色：白底、天空藍與薄荷綠點綴 */
 const light: Palette = {
+  gbg: 'rgba(255,255,255,.55)', gbd: 'rgba(255,255,255,.9)', gsh: '0 8px 24px rgba(30,90,110,.14)',
+  ghi: 'inset 0 1px 0 rgba(255,255,255,.95)', 'glow-a': '#9ED8F2', 'glow-b': '#A9EBD6',
+  glow: 'rgba(15,120,176,.35)', chip: 'rgba(15,120,176,.12)',
   bg: '#f2f9fc', card: '#ffffff', text: '#1c2a33', muted: '#5f737d', faint: '#8a9aa3',
   line: '#d9e8ef', 'border-strong': '#b4c6cf', field: '#ffffff',
   accent: '#1a82bd', 'on-accent': '#ffffff', 'accent-soft': '#e4f3fa', 'accent-fill': '#cdeee3',
@@ -57,6 +62,9 @@ const light: Palette = {
 
 /** 暗色：深炭灰底，主色、框線帶柔和金色光 */
 const dark: Palette = {
+  gbg: 'rgba(255,255,255,.07)', gbd: 'rgba(231,184,102,.38)', gsh: '0 10px 28px rgba(0,0,0,.5)',
+  ghi: 'inset 0 1px 0 rgba(255,225,170,.28)', 'glow-a': '#7A4A1E', 'glow-b': '#2B3350',
+  glow: 'rgba(231,184,102,.45)', chip: 'rgba(231,184,102,.14)',
   bg: '#16171a', card: '#202125', text: '#efe9da', muted: '#a8a08c', faint: '#857e6d',
   line: '#3b372c', 'border-strong': '#5a5240', field: '#2a2a2e',
   accent: '#e3b95f', 'on-accent': '#1d1a12', 'accent-soft': '#2e2a1e', 'accent-fill': '#3d3520',
@@ -78,6 +86,9 @@ const dark: Palette = {
 
 /** 橘黃溫暖風：奶油白底、橘與金黃點綴（備用） */
 const warm: Palette = {
+  gbg: 'rgba(255,253,248,.6)', gbd: 'rgba(255,255,255,.9)', gsh: '0 8px 24px rgba(120,70,10,.14)',
+  ghi: 'inset 0 1px 0 rgba(255,255,255,.95)', 'glow-a': '#FBD9A0', 'glow-b': '#FCE8C8',
+  glow: 'rgba(217,115,13,.35)', chip: 'rgba(217,115,13,.12)',
   bg: '#fff8ec', card: '#fffdf8', text: '#3a2a14', muted: '#7d6648', faint: '#a8957a',
   line: '#f0e0c0', 'border-strong': '#d6c19a', field: '#fffdf8',
   accent: '#d9730d', 'on-accent': '#ffffff', 'accent-soft': '#fdeed6', 'accent-fill': '#fbe3b0',

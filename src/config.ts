@@ -235,3 +235,14 @@ export const ACCOUNT_ICON = {
   /** 縮寫徽章字級 */
   badgeFontPx: 17,
 } as const;
+
+/** 毛玻璃（2.1）：模糊與飽和度、背景光暈。關掉或不支援時改實心（styles.css 的 .no-glass／@supports） */
+export const GLASS = {
+  blurPx: 18,
+  saturatePct: 160,
+  /** 底部導覽列 */
+  navBlurPx: 22,
+  navSaturatePct: 170,
+  /** 背景光暈（radial-gradient）濃度，0～100 */
+  glowPct: 55,
+} as const;

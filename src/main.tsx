@@ -5,7 +5,7 @@ import { installClickGuard } from './gestures/guard';
 import { installNativeBackButton, goHomeFromWidget } from './backNav';
 import { installWidgetSync } from './widget';
 import './styles.css';
-import { BOTTOM_BAR, TIMELINE } from './config';
+import { BOTTOM_BAR, TIMELINE, GLASS } from './config';
 import { applyCachedTheme } from './theme';
 
 // 第一個畫面前先套顏色（上次存的外觀，沒有就亮色），讀到設定後由 App 再套正確模式
@@ -14,6 +14,14 @@ applyCachedTheme();
 document.documentElement.style.setProperty('--nav-h', BOTTOM_BAR.navHeightPx + 'px');
 document.documentElement.style.setProperty('--bar-h', BOTTOM_BAR.heightPx + 'px');
 document.documentElement.style.setProperty('--bar-gap', BOTTOM_BAR.gapPx + 'px');
+{
+  const st = document.documentElement.style;
+  st.setProperty('--glass-blur', GLASS.blurPx + 'px');
+  st.setProperty('--glass-sat', GLASS.saturatePct + '%');
+  st.setProperty('--glass-nav-blur', GLASS.navBlurPx + 'px');
+  st.setProperty('--glass-nav-sat', GLASS.navSaturatePct + '%');
+  st.setProperty('--glow-pct', GLASS.glowPct + '%');
+}
 // 時間軸豎線在最後一筆下面延伸的長度
 document.documentElement.style.setProperty('--tl-tail-todo', TIMELINE.tailTodoPx + 'px');
 document.documentElement.style.setProperty('--tl-tail-detail', TIMELINE.tailDetailPx + 'px');

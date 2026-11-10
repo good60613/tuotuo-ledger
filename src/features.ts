@@ -13,3 +13,8 @@ export function recurringOn(settings: Pick<Settings, 'recurringEnabled'> | undef
 export function advanceOwedOn(settings: Pick<Settings, 'advanceOwedEnabled'> | undefined): boolean {
   return settings?.advanceOwedEnabled !== false;
 }
+
+/** 毛玻璃效果是否開啟（缺值＝開啟）。關掉時毛玻璃元素改成實心 */
+export function glassOn(settings: Pick<Settings, 'glass'> | undefined): boolean {
+  return settings?.glass !== false;
+}

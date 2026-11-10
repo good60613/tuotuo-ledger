@@ -10,6 +10,7 @@ import { StatsPage } from './pages/Stats';
 import { TodoPage } from './pages/Todo';
 import { SettingsPage } from './pages/Settings';
 import { applyTheme, themeOf } from './theme';
+import { glassOn } from './features';
 import { BlockedScreen } from './pages/BlockedScreen';
 
 const NAV_ICON = ['🧾', '📊', '🏠', '📋', '⚙️'];
@@ -37,6 +38,12 @@ export function App() {
   useEffect(() => {
     if (s.ready) applyTheme(themeMode);
   }, [s.ready, themeMode]);
+
+  // 毛玻璃關閉時在 <html> 加 no-glass，讓毛玻璃元素改成實心
+  const glass = glassOn(s.data?.settings);
+  useEffect(() => {
+    document.documentElement.classList.toggle('no-glass', !glass);
+  }, [glass]);
 
   if (!s.ready) return <div class="loading">讀取中…</div>;
 
@@ -73,7 +80,7 @@ export function App() {
         </div>
       </div>
 
-      <nav class="bottom-nav">
+      <nav class="bottom-nav glass glass-nav">
         {PAGES.map((name, i) => (
           <button
             key={name}

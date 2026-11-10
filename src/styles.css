@@ -632,3 +632,35 @@ button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 .acc-icon.badge { border-radius: 50%; background: var(--accent); color: var(--on-accent); font-weight: 700; }
 .acc-style-row { display: flex; align-items: center; gap: 12px; margin: 6px 0; }
 .acc-icon-picker { max-height: 30vh; }
+
+/* ---------- 2.1 C 段：毛玻璃（只用在導航列、首頁帳戶卡／小球／剩餘可用大卡、記帳頁拖拖膠囊） ---------- */
+/* 背景光暈：radial-gradient 疊在 body 背景上（不用大面積 blur 元素，省效能） */
+body {
+  background:
+    radial-gradient(ellipse 80% 38% at 8% 0%, color-mix(in srgb, var(--glow-a) var(--glow-pct), transparent), transparent 72%),
+    radial-gradient(ellipse 80% 42% at 100% 100%, color-mix(in srgb, var(--glow-b) var(--glow-pct), transparent), transparent 72%),
+    var(--bg);
+}
+.glass {
+  background: var(--gbg);
+  border: 1px solid var(--gbd);
+  box-shadow: var(--gsh), var(--ghi);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+}
+.glass-nav {
+  -webkit-backdrop-filter: blur(var(--glass-nav-blur)) saturate(var(--glass-nav-sat));
+  backdrop-filter: blur(var(--glass-nav-blur)) saturate(var(--glass-nav-sat));
+}
+/* 關閉毛玻璃：改實心（solid 底＋line 邊），外觀一致 */
+html.no-glass .glass {
+  background: var(--card); border: 1px solid var(--line); box-shadow: 0 1px 3px var(--shadow-xs);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+/* 瀏覽器不支援 backdrop-filter：自動退回實心 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass {
+    background: var(--card); border: 1px solid var(--line); box-shadow: 0 1px 3px var(--shadow-xs);
+  }
+}
+.acc-icon { background: var(--chip); }

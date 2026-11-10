@@ -155,6 +155,8 @@ export interface Settings {
   advanceOwedEnabled?: boolean;
   /** 定期扣款開關（補強批），缺值＝開啟。判斷一律用 features.ts 的 recurringOn() */
   recurringEnabled?: boolean;
+  /** 毛玻璃效果（2.1），缺值＝開啟。判斷一律用 features.ts 的 glassOn() */
+  glass?: boolean;
 }
 
 export type ThemeMode = 'light' | 'dark' | 'system';
