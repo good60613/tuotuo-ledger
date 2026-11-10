@@ -623,3 +623,12 @@ button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 .tx-flag.owed { background: var(--owed); color: var(--on-color); }
 .tx-expr { font-variant-numeric: tabular-nums; }
 .todo-tabs button { min-width: 0; }
+
+/* ---------- 2.1 B 段：圖示選單、帳戶圖示 ---------- */
+.icon-cell { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: var(--text); }
+.icon-cell-label { font-size: 10px; color: var(--muted); line-height: 1; }
+.icon-grid { grid-template-columns: repeat(5, 1fr); }
+.acc-icon { flex: none; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); color: var(--accent); }
+.acc-icon.badge { border-radius: 50%; background: var(--accent); color: var(--on-accent); font-weight: 700; }
+.acc-style-row { display: flex; align-items: center; gap: 12px; margin: 6px 0; }
+.acc-icon-picker { max-height: 30vh; }

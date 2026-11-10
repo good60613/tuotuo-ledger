@@ -218,9 +218,20 @@ export const ICON = {
   size: 22,
   /** 線條粗細（工單規格 1.8） */
   stroke: 1.8,
+  /** 圖示選單格子裡的圖示大小 */
+  pickerPx: 24,
 } as const;
 
 export const HOME_SUM = {
   /** 首頁「本月」「今日」兩行：支出與收入之間的間距（PK 補充，先給 12px，手機看過再調） */
   gapPx: 12,
+} as const;
+
+/** 帳戶圖示（卡片左側、帳戶編輯預覽）：38 見方、圓角 12、圖示 22 */
+export const ACCOUNT_ICON = {
+  boxPx: 38,
+  radiusPx: 12,
+  iconPx: 22,
+  /** 縮寫徽章字級 */
+  badgeFontPx: 17,
 } as const;

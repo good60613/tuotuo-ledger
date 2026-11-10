@@ -29,7 +29,11 @@ const dragCls = (id: string, drag: DragState | null) =>
   !drag ? '' : drag.id === id ? ' lifted' : drag.over === id ? ' over' : '';
 import { money } from '../format';
 import { pinnedCount } from '../data/notes';
-import { SETTLE } from '../config';
+import { SETTLE, ICON } from '../config';
+import { AccountIcon } from '../components/AccountIcon';
+import { Icon } from '../components/Icon';
+import { ACCOUNT_ICONS, ICON_LABELS } from '../icons';
+import { accountIconOf, accountIconStyleOf } from '../categoryStyle';
 import { carrierError, isValidCarrier, normalizeCarrier } from '../data/carrier';
 import { Barcode } from '../components/Barcode';
 import { applyTheme, themeOf, THEME_LABEL, type ThemeMode } from '../theme';
@@ -535,7 +539,7 @@ export function SettingsPage() {
                   showToast(`已刪除「${from.name}」，紀錄已移到「${c.name}」`);
                 }}
               >
-                <span class="pick-icon">{c.icon}</span>
+                <span class="pick-icon"><Icon name={c.icon} /></span>
                 <span class="pick-name">{c.name}</span>
               </button>
             ))}
@@ -554,13 +558,15 @@ function AccountForm({ kind, existing, onClose }: { kind: AccountKind; existing?
   // 新增：填初始餘額；修改：填目前金額（從紀錄推算）
   const [init, setInit] = useState(existing ? String(curBal) : '0');
   const [target, setTarget] = useState(existing?.target ? String(existing.target) : '');
+  const [iconStyle, setIconStyle] = useState<'icon' | 'badge'>(accountIconStyleOf(existing ?? {}));
+  const [icon, setIcon] = useState(accountIconOf(existing ?? { kind }));
   const parsed = Number(init.replace(/,/g, ''));
   const showAmount = !(existing && isHolding);
   const ok = name.trim() !== '' && (!showAmount || (init.trim() !== '' && Number.isFinite(parsed)));
   const save = () => {
     if (!ok) return;
     if (existing) {
-      const acc: Account = { ...existing, name: name.trim() };
+      const acc: Account = { ...existing, name: name.trim(), icon, iconStyle };
       if (kind === 'saving') acc.target = Math.round(Number(target.replace(/,/g, ''))) || 0;
       const newCur = showAmount ? Math.round(parsed) : null;
       try {
@@ -580,6 +586,8 @@ function AccountForm({ kind, existing, onClose }: { kind: AccountKind; existing?
           name: name.trim(),
           kind,
           initialBalance: Math.round(parsed),
+          icon,
+          iconStyle,
           order: d.accounts.filter((a) => a.kind === kind).sort(byOrder).length,
           ...(kind === 'invest' ? { subtype: 'holding' } : {}),
         };
@@ -594,6 +602,28 @@ function AccountForm({ kind, existing, onClose }: { kind: AccountKind; existing?
         <span>名稱</span>
         <input value={name} maxLength={12} onInput={(e) => setName(e.currentTarget.value)} placeholder="例如：薪轉帳戶" />
       </label>
+      <div class="field">
+        <span>顯示方式</span>
+        <div class="acc-style-row">
+          <AccountIcon account={{ name, kind, icon, iconStyle }} />
+          <div class="mini-seg">
+            <button class={iconStyle === 'icon' ? 'on' : ''} onClick={() => setIconStyle('icon')}>圖示</button>
+            <button class={iconStyle === 'badge' ? 'on' : ''} onClick={() => setIconStyle('badge')}>縮寫徽章</button>
+          </div>
+        </div>
+        {iconStyle === 'icon' && (
+          <div class="icon-picker acc-icon-picker" data-no-swipe>
+            <div class="icon-grid">
+              {ACCOUNT_ICONS.map((ic) => (
+                <button key={ic} class={`icon-cell${ic === icon ? ' on' : ''}`} onClick={() => setIcon(ic)} aria-label={ICON_LABELS[ic] ?? ic}>
+                  <Icon name={ic} size={ICON.pickerPx} />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {iconStyle === 'badge' && <span class="muted small">徽章會顯示名稱的第一個字</span>}
+      </div>
       {showAmount && (
         <label class="field">
           <span>{existing ? '目前金額（元，可以是負數）' : '初始餘額（開始記帳那天帳戶裡的錢，可以是負數）'}</span>
