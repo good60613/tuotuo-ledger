@@ -1,5 +1,7 @@
 // 記帳頁（支出／收入）與轉帳輸入，共用同一個畫面。內含「拖拖計算機」：把標記膠囊拖到數字上拆帳。
 import { CatIcon } from '../components/CatIcon';
+import { Icon } from '../components/Icon';
+import { CAPSULE_ICONS, UI_ICONS } from '../icons';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { getState, updateData, closeOverlay, showToast, confirmDanger, type Overlay } from '../store';
 import { addTransaction, addTransactions, updateTransaction, deleteTransaction, isLocked, isBudgetPayment, uid, OpError, type TxInput } from '../data/ops';
@@ -50,7 +52,12 @@ function recordMark(t: Transaction): Mark | null {
   return null;
 }
 
-const CHIP_ICON: Record<Mark, string> = { advance: '🤝', owed: '📥', budget: '🎯', reimb: '🧾' };
+const CHIP_ICON: Record<Mark, string> = {
+  advance: CAPSULE_ICONS['我先付'],
+  owed: CAPSULE_ICONS['朋友付'],
+  budget: CAPSULE_ICONS['預算'],
+  reimb: CAPSULE_ICONS['報帳'],
+};
 
 type Mode = 'expense' | 'income' | 'transfer';
 type EntryOverlay = Extract<Overlay, { kind: 'entry' }>;
@@ -477,14 +484,14 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
   return (
     <div class="entry">
       <div class="entry-top">
-        <button class="icon-btn" onClick={closeOverlay} aria-label="返回">✕</button>
+        <button class="icon-btn" onClick={closeOverlay} aria-label="返回"><Icon name={UI_ICONS['關閉']} /></button>
         <div class="seg">
           <button class={mode === 'expense' ? 'on expense' : ''} onClick={() => switchMode('expense')} disabled={locked}>支出</button>
           <button class={mode === 'income' ? 'on income' : ''} onClick={() => switchMode('income')} disabled={locked}>收入</button>
           <button class={mode === 'transfer' ? 'on transfer' : ''} onClick={() => switchMode('transfer')} disabled={locked}>轉帳</button>
         </div>
         {editing ? (
-          <button class="icon-btn danger" onClick={onDelete} aria-label="刪除">🗑</button>
+          <button class="icon-btn danger" onClick={onDelete} aria-label="刪除"><Icon name={UI_ICONS['刪除']} /></button>
         ) : (
           <span class="icon-btn entry-top-spacer" aria-hidden="true" />
         )}
@@ -506,7 +513,7 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
               setToAccountId(accountId);
             }}
           >
-            ⇄
+            <Icon name="arrow-left-right" />
           </button>
           <button class="xfer-acc" onClick={() => setSheet('to')}>
             <span class="muted">到</span>
@@ -523,7 +530,7 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
             </button>
           ))}
           <button class="cat add" onClick={() => setSheet('newCat')}>
-            <span class="cat-icon">＋</span>
+            <span class="cat-icon"><Icon name={UI_ICONS['新增']} /></span>
             <span class="cat-name">新增分類</span>
           </button>
         </div>
@@ -531,6 +538,7 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
 
       <div class="amount-row" data-no-swipe>
         <label class="when-cell" style={{ flexGrow: ENTRY_ROW.date }}>
+          <Icon name={UI_ICONS['日期']} size={14} />
           <span class="when-text">{whenLabel(when)}</span>
           <input
             type="datetime-local"
@@ -563,23 +571,23 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
 
       {!isTransfer && (
         <div class="mark-row" data-no-swipe ref={markRowRef}>
-          <button class="mark-chip chip-acc" onClick={() => !locked && setSheet('account')} disabled={locked}>
-            💳 {accountId ? accountName(d, accountId) : '選帳戶'}
+          <button class="mark-chip glass chip-acc" onClick={() => !locked && setSheet('account')} disabled={locked}>
+            <Icon name="credit-card" size={16} /> {accountId ? accountName(d, accountId) : '選帳戶'}
           </button>
           {chipMarks.map((m) => (
             <button
               key={m}
-              class={`mark-chip drag mk-${m}${activeOf(m) ? ' on' : ''}`}
+              class={`mark-chip glass drag mk-${m}${activeOf(m) ? ' on' : ''}`}
               onClick={() => onChipTap(m)}
               onPointerDown={(e) => onChipDown(e, m)}
               onPointerMove={onChipMove}
               onPointerUp={onChipUp}
               onPointerCancel={onChipCancel}
             >
-              {CHIP_ICON[m]} {MARK_LABEL[m]}
+              <Icon name={CHIP_ICON[m]} size={16} /> {MARK_LABEL[m]}
             </button>
           ))}
-          <button class="mark-chip chip-other" onClick={() => showToast('即將推出')}>✨ 其他</button>
+          <button class="mark-chip glass chip-other" onClick={() => showToast('即將推出')} aria-label="其他"><Icon name={UI_ICONS['更多']} size={16} /></button>
         </div>
       )}
 
@@ -594,7 +602,7 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
 
       {drag && (
         <div class={`mark-ghost mk-${drag.mark}`} style={{ left: `${drag.x}px`, top: `${drag.y + DRAG_MARK.ghostOffsetY}px` }}>
-          {CHIP_ICON[drag.mark]} {MARK_LABEL[drag.mark]}
+          <Icon name={CHIP_ICON[drag.mark]} size={16} /> {MARK_LABEL[drag.mark]}
         </div>
       )}
 

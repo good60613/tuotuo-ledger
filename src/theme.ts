@@ -27,7 +27,7 @@ const KEYS = [
   'chart-grid', 'chart-axis', 'chart-track', 'pin',
   'pal-1', 'pal-2', 'pal-3', 'pal-4', 'pal-5', 'pal-6',
   // --- 毛玻璃（2.1）：玻璃底／邊框／陰影／上緣高光、背景光暈兩團、發光色、淡底 ---
-  'gbg', 'gbd', 'gsh', 'ghi', 'glow-a', 'glow-b', 'glow', 'chip',
+  'gbg', 'gbd', 'gsh', 'ghi', 'glow-a', 'glow-b', 'glow', 'chip', 'cap-owed', 'cap-owed-soft',
   // --- 分類顏色標籤（資料裡存的是 key，色碼在這裡）---
   'cat-food', 'cat-shopping', 'cat-fun', 'cat-transport', 'cat-living',
   'cat-study', 'cat-health', 'cat-digital', 'cat-other',
@@ -38,6 +38,7 @@ export type Palette = Record<TokenName, string>;
 
 /** 亮色：白底、天空藍與薄荷綠點綴 */
 const light: Palette = {
+  'cap-owed': '#B45A12', 'cap-owed-soft': '#f8e6d6',
   gbg: 'rgba(255,255,255,.55)', gbd: 'rgba(255,255,255,.9)', gsh: '0 8px 24px rgba(30,90,110,.14)',
   ghi: 'inset 0 1px 0 rgba(255,255,255,.95)', 'glow-a': '#9ED8F2', 'glow-b': '#A9EBD6',
   glow: 'rgba(15,120,176,.35)', chip: 'rgba(15,120,176,.12)',
@@ -62,6 +63,7 @@ const light: Palette = {
 
 /** 暗色：深炭灰底，主色、框線帶柔和金色光 */
 const dark: Palette = {
+  'cap-owed': '#F0A968', 'cap-owed-soft': '#3a2b1c',
   gbg: 'rgba(255,255,255,.07)', gbd: 'rgba(231,184,102,.38)', gsh: '0 10px 28px rgba(0,0,0,.5)',
   ghi: 'inset 0 1px 0 rgba(255,225,170,.28)', 'glow-a': '#7A4A1E', 'glow-b': '#2B3350',
   glow: 'rgba(231,184,102,.45)', chip: 'rgba(231,184,102,.14)',
@@ -86,6 +88,7 @@ const dark: Palette = {
 
 /** 橘黃溫暖風：奶油白底、橘與金黃點綴（備用） */
 const warm: Palette = {
+  'cap-owed': '#B45A12', 'cap-owed-soft': '#f8e6d6',
   gbg: 'rgba(255,253,248,.6)', gbd: 'rgba(255,255,255,.9)', gsh: '0 8px 24px rgba(120,70,10,.14)',
   ghi: 'inset 0 1px 0 rgba(255,255,255,.95)', 'glow-a': '#FBD9A0', 'glow-b': '#FCE8C8',
   glow: 'rgba(217,115,13,.35)', chip: 'rgba(217,115,13,.12)',

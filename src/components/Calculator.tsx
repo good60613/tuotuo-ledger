@@ -1,5 +1,7 @@
 import type { CalcKey } from '../calcExpr';
 import { CALC } from '../config';
+import { Icon } from './Icon';
+import { UI_ICONS } from '../icons';
 
 interface Props {
   onKey: (k: CalcKey) => void;
@@ -27,7 +29,7 @@ export function Calculator({ onKey, onOk, okLabel, okDisabled }: Props) {
           onClick={() => onKey(k)}
           aria-label={k === '⌫' ? '退格' : undefined}
         >
-          {k}
+          {k === '⌫' ? <Icon name={UI_ICONS['退格']} size={22} /> : k}
         </button>
       ))}
       <button class="calc-key ok" disabled={okDisabled} onClick={onOk}>{okLabel}</button>
