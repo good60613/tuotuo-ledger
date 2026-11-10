@@ -1,6 +1,8 @@
 import type { AppData } from '../data/types';
 import { ballTotal } from '../data/calc';
-import { balls, KIND_ICON } from '../selectors';
+import { balls } from '../selectors';
+import { ACCOUNT_KIND_ICON } from '../icons';
+import { Icon } from './Icon';
 import { money } from '../format';
 import { openSub } from '../actions';
 
@@ -17,7 +19,7 @@ export function Balls({ data, droppable, onTap }: { data: AppData; droppable?: b
             data-drop={droppable ? `ball:${b.kind}` : undefined}
             onClick={() => (onTap ? onTap(b.kind) : openSub(b.kind))}
           >
-            <div class="ball-dot">{KIND_ICON[b.kind]}</div>
+            <div class="ball-dot glass"><Icon name={ACCOUNT_KIND_ICON[b.kind]} size={24} /></div>
             <div class="ball-label">{b.label}</div>
             <div class="ball-amt">{money(sum)}</div>
           </div>

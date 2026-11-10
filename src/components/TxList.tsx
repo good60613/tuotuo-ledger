@@ -1,5 +1,7 @@
 // 時間軸明細列表：明細頁、待辦頁共用。
 import { catBg } from './CatIcon';
+import { Icon } from './Icon';
+import { colorOf } from '../categoryStyle';
 import type { AppData, Transaction } from '../data/types';
 import { statEffect, kindLookup, dayKey } from '../data/calc';
 import { accountName, categoryOf, KIND_ICON } from '../selectors';
@@ -117,11 +119,13 @@ const SOURCE_LABEL: Record<string, [string, string]> = {
   'saving-interest': ['🪙', '利息'],
 };
 
-export function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { data: AppData; t: Transaction; onTap: (t: Transaction) => void; selected?: boolean; selectable: boolean; onLongPress?: (t: Transaction) => void }) {
-  const d = new Date(t.occurredAt);
+/** 一筆紀錄要顯示的圖示、標題、金額字串與樣式（TxCard 與首頁最近紀錄共用；只整理顯示，不算金額） */
+export function txView(data: AppData, t: Transaction) {
   const acc = data.accounts.find((a) => a.id === (t.type === 'reimburse_in' ? t.toAccountId : t.accountId));
   let icon = '？', title = '', amt = '', cls = '';
   let bg: string | undefined;
+  let fg: string | undefined;
+  let catName: string | undefined;
   if (t.type === 'transfer') {
     icon = '⇄';
     title = `${accountName(data, t.accountId)} ⇄ ${accountName(data, t.toAccountId)}`;
@@ -156,12 +160,19 @@ export function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { 
   } else {
     const c = categoryOf(data, t.categoryId);
     icon = c?.icon ?? '？';
-    if (c) bg = catBg(c.color);
+    if (c) { bg = catBg(c.color); fg = colorOf(c.color); }
+    catName = c?.name;
     title = c?.name ?? '（已刪除分類）';
     amt = (t.type === 'expense' || t.type === 'owed' ? '-' : '+') + money(t.amount);
     // 朋友付記帳當天不算支出（還錢那天才算），用灰色
     cls = t.type === 'owed' ? 'transfer' : t.type;
   }
+  return { icon, title, amt, cls, bg, fg, acc, catName };
+}
+
+export function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { data: AppData; t: Transaction; onTap: (t: Transaction) => void; selected?: boolean; selectable: boolean; onLongPress?: (t: Transaction) => void }) {
+  const d = new Date(t.occurredAt);
+  const { icon, title, amt, cls, bg, fg, acc } = txView(data, t);
   // 報帳／預算標示：未結案＝彩色外框＋「報」「預」；結案＝拿掉外框，留淺色「已報」「已付」。色弱靠小字辨識
   let flag: { cls: string; text: string } | null = null;
   let frame = '';
@@ -194,7 +205,7 @@ export function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { 
   return (
     <button class={`tx-card${frame}${selected ? ' selected' : ''}`} onClick={() => onTap(t)} {...longPressHandlers(t, onLongPress)}>
       {selectable && <span class={`check${selected ? ' on' : ''}`}>{selected ? '✓' : ''}</span>}
-      <span class={`tx-icon ${cls}`} style={bg ? { background: bg } : undefined}>{icon}</span>
+      <span class={`tx-icon ${cls}`} style={bg ? { background: bg, color: fg } : undefined}><Icon name={icon} size={20} /></span>
       <span class="tx-mid">
         <span class="tx-title">
           {title}

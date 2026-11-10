@@ -46,23 +46,20 @@ button { font: inherit; color: inherit; }
 .page-title { font-size: 20px; margin: 4px 0 12px; }
 
 /* ---------- 底部導覽列 ---------- */
+/* 浮動膠囊（2.1）：高度 --nav-h、左右與離底 --nav-gap（config BOTTOM_BAR）；毛玻璃外觀在檔尾的 .glass */
 .bottom-nav {
-  display: flex; height: calc(var(--nav-h) + env(safe-area-inset-bottom));
-  padding-bottom: env(safe-area-inset-bottom);
-  background: var(--card); border-top: 1px solid var(--line);
+  display: flex; flex: none; height: var(--nav-h); padding: 0 6px;
+  margin: 0 var(--nav-gap) calc(var(--nav-gap) + env(safe-area-inset-bottom));
+  border-radius: calc(var(--nav-h) / 2); position: relative; z-index: 3;
 }
 .nav-item {
   flex: 1; border: 0; background: none; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 2px; color: var(--muted); position: relative;
 }
-.nav-icon { font-size: 20px; filter: grayscale(1); opacity: .6; }
-.nav-label { font-size: 12px; }
+.nav-icon { width: 46px; height: 30px; border-radius: 15px; display: flex; align-items: center; justify-content: center; }
+.nav-label { font-size: 11px; }
 .nav-item.active { color: var(--accent); font-weight: 700; }
-.nav-item.active .nav-icon { filter: none; opacity: 1; }
-.nav-item.active::before {
-  content: ''; position: absolute; top: 0; left: 25%; right: 25%; height: 3px;
-  background: var(--accent); border-radius: 0 0 3px 3px;
-}
+.nav-item.active .nav-icon { background: var(--chip); }
 
 /* ---------- 首頁 ---------- */
 .home { display: flex; flex-direction: column; height: 100%; overflow: hidden; padding: 0 14px 12px; }
@@ -171,7 +168,7 @@ button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 .btn:disabled { opacity: .4; }
 
 .toast {
-  position: absolute; left: 12px; right: 12px; bottom: calc(var(--nav-h) + 14px + env(safe-area-inset-bottom));
+  position: absolute; left: 12px; right: 12px; bottom: calc(var(--nav-h) + var(--nav-gap) + 14px + env(safe-area-inset-bottom));
   background: var(--inverse); color: var(--on-inverse); border-radius: 12px; padding: 12px 14px; display: flex;
   align-items: center; justify-content: space-between; z-index: 200; box-shadow: 0 6px 18px var(--shadow-lg);
 }
@@ -405,12 +402,6 @@ button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 @media (max-height: 700px) {
   .home-head { height: 62px; padding-top: 6px; }
   .drag-hint { height: 20px; line-height: 20px; font-size: 13px; }
-  .card { min-height: 72px; padding: 10px 12px; }
-  .card-balance { font-size: 20px; }
-  .cards { gap: 8px; }
-  .home .balls { margin: 10px 0 4px; }
-  .ball-dot { width: 42px; height: 42px; font-size: 19px; }
-  .amounts { --amt-k: var(--amt-short); }
   .amt-mid { font-size: 18px; }
   .calc { grid-auto-rows: var(--calc-row-short, 46px); }
 }
@@ -575,7 +566,7 @@ button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 .detail .fab { bottom: calc(var(--bar-h) + var(--bar-gap) * 2 + 8px); }
 .detail .fab { margin-bottom: 8px; }
 /* 提示條浮在操作列上方（--bottom-bar-h 由 app.tsx 依目前頁面設定） */
-.toast { bottom: calc(var(--nav-h) + 14px + var(--bottom-bar-h, 0px) + env(safe-area-inset-bottom)); }
+.toast { bottom: calc(var(--nav-h) + var(--nav-gap) + 14px + var(--bottom-bar-h, 0px) + env(safe-area-inset-bottom)); }
 
 /* 待辦頁（第五批）：總額在最上、清單在中間可捲動、控制項由下往上＝切換列→未付／已付→多選列 */
 .page-pad.todo { height: 100%; padding-bottom: 0; overflow: hidden; }
@@ -653,7 +644,7 @@ body {
   backdrop-filter: blur(var(--glass-nav-blur)) saturate(var(--glass-nav-sat));
 }
 /* 關閉毛玻璃：改實心（solid 底＋line 邊），外觀一致 */
-html.no-glass .glass {
+:where(html.no-glass) .glass {
   background: var(--card); border: 1px solid var(--line); box-shadow: 0 1px 3px var(--shadow-xs);
   -webkit-backdrop-filter: none; backdrop-filter: none;
 }
@@ -664,3 +655,50 @@ html.no-glass .glass {
   }
 }
 .acc-icon { background: var(--chip); }
+
+/* ---------- 2.1 D 段：首頁版面（標題→剩餘可用大卡→帳戶卡→小球→最近紀錄→浮動導覽列） ---------- */
+.home { gap: var(--home-gap); padding-bottom: 0; }
+.home-head { height: 40px; padding-top: 6px; align-items: center; justify-content: space-between; }
+.home-title { font-size: 22px; font-weight: 800; }
+.home-date { font-size: 13px; }
+.home > .home-sum { flex: none; }
+.home-sum { border-radius: 20px; padding: 14px 16px 12px; }
+.sum-top { display: flex; align-items: center; gap: 14px; }
+.sum-main { min-width: 0; flex: 1 1 auto; }
+.sum-label { font-size: var(--sum-label); color: var(--muted); }
+.sum-big { font-size: var(--sum-big); font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; line-height: 1.15; white-space: nowrap; }
+.home-sum .amt-divider { margin: 4px 0; }
+.sum-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.sum-col { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.sum-vals { display: flex; gap: var(--sum-gap); font-size: var(--sum-row); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sum-vals .expense { color: var(--expense); }
+.sum-vals .income { color: var(--income); }
+
+.cards { gap: 10px; }
+.card { height: var(--home-card-h); min-height: 0; padding: 0 12px; align-items: center; border-radius: 20px; }
+.card-body { align-self: center; justify-content: center; gap: 1px; }
+.card-name-row { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.card-name { font-size: 13px; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-budget { flex: none; font-size: 10px; color: var(--budget); white-space: nowrap; }
+.card-balance { font-size: 19px; }
+.card.is-source { border-width: 1px; }
+.empty.glass, .cards > .empty { border-radius: 20px; }
+
+.balls { margin: 0; }
+.ball { padding: 0; }
+.ball-dot { width: var(--home-ball); height: var(--home-ball); color: var(--accent); box-shadow: var(--gsh), var(--ghi); }
+.ball-label { font-size: 11px; }
+.ball-amt { font-size: 10px; }
+
+.home-recent { flex: 1 1 0; min-height: 0; }
+.recent-card { flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 0 14px var(--recent-pad); overflow: hidden; margin-bottom: var(--nav-gap); }
+.recent-head { flex: none; height: var(--recent-head); display: flex; align-items: center; justify-content: space-between; font-size: 14px; }
+.recent-list { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.recent-row { flex: 1 1 0; min-height: 0; max-height: 64px; display: flex; align-items: center; gap: 10px; border: 0; background: none; padding: 0; text-align: left; border-top: 1px solid var(--line); }
+.recent-row:first-child { border-top: 0; }
+.recent-icon { flex: none; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.recent-mid { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.recent-title { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.recent-sub { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.recent-row:active { opacity: .85; }
+.home-zones { padding-bottom: var(--nav-gap); }

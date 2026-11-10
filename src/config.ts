@@ -105,11 +105,21 @@ export const HOME = {
   /** 卡片之間的間距 */
   cardGapPx: 10,
   /** 最近紀錄每一筆佔的高度（卡片 54px＋間距） */
-  recentRowPx: 58,
+  recentRowPx: 52,
   /** 最近紀錄每筆之間的間距（含在 recentRowPx 裡） */
   recentGapPx: 4,
   /** 最近紀錄固定顯示幾筆（貼在導覽列上方；螢幕太矮時自動少顯示） */
-  recentCount: 3,
+  recentCount: 6,
+  /** 最近紀錄卡：標題列高度、上下內距（算能放幾筆用） */
+  recentHeadPx: 40,
+  recentPadPx: 8,
+  /** 首頁各區塊之間的間距 */
+  gapPx: 12,
+  /** 帳戶卡高度、小帳戶球直徑 */
+  cardHeightPx: 68,
+  ballPx: 54,
+  /** 剩餘可用大卡 */
+  sum: { bigPx: 36, labelPx: 12, rowPx: 15 },
   /** 拿起卡片時，最下面「支出／收入」放置區的最小高度（螢幕太矮時仍要出現） */
   dropZoneMinPx: 96,
   /** 拿起時放置區上緣提示字那一行的高度 */
@@ -210,7 +220,9 @@ export const BOTTOM_BAR = {
   /** 操作列與內容、浮動「＋」、提示條之間的間距 */
   gapPx: 10,
   /** 底部導覽列高度（原本寫在 styles.css 的 --nav-h） */
-  navHeightPx: 58,
+  navHeightPx: 62,
+  /** 導覽列浮起：左右與離底的留白 */
+  navInsetPx: 14,
 } as const;
 
 export const ICON = {

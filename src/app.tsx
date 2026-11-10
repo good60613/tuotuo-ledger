@@ -11,9 +11,11 @@ import { TodoPage } from './pages/Todo';
 import { SettingsPage } from './pages/Settings';
 import { applyTheme, themeOf } from './theme';
 import { glassOn } from './features';
+import { UI_ICONS } from './icons';
+import { Icon } from './components/Icon';
 import { BlockedScreen } from './pages/BlockedScreen';
 
-const NAV_ICON = ['🧾', '📊', '🏠', '📋', '⚙️'];
+const NAV_ICON = UI_ICONS;
 
 export function App() {
   const s = useAppState();
@@ -88,7 +90,7 @@ export function App() {
             onClick={() => goPage(i)}
             aria-current={i === s.page ? 'page' : undefined}
           >
-            <span class="nav-icon">{NAV_ICON[i]}</span>
+            <span class="nav-icon"><Icon name={NAV_ICON[name as keyof typeof UI_ICONS]} size={22} /></span>
             <span class="nav-label">{name}</span>
           </button>
         ))}

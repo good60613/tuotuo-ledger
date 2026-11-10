@@ -5,7 +5,7 @@ import { installClickGuard } from './gestures/guard';
 import { installNativeBackButton, goHomeFromWidget } from './backNav';
 import { installWidgetSync } from './widget';
 import './styles.css';
-import { BOTTOM_BAR, TIMELINE, GLASS } from './config';
+import { BOTTOM_BAR, TIMELINE, GLASS, HOME } from './config';
 import { applyCachedTheme } from './theme';
 
 // 第一個畫面前先套顏色（上次存的外觀，沒有就亮色），讀到設定後由 App 再套正確模式
@@ -16,6 +16,10 @@ document.documentElement.style.setProperty('--bar-h', BOTTOM_BAR.heightPx + 'px'
 document.documentElement.style.setProperty('--bar-gap', BOTTOM_BAR.gapPx + 'px');
 {
   const st = document.documentElement.style;
+  st.setProperty('--nav-gap', BOTTOM_BAR.navInsetPx + 'px');
+  st.setProperty('--home-gap', HOME.gapPx + 'px');
+  st.setProperty('--home-card-h', HOME.cardHeightPx + 'px');
+  st.setProperty('--home-ball', HOME.ballPx + 'px');
   st.setProperty('--glass-blur', GLASS.blurPx + 'px');
   st.setProperty('--glass-sat', GLASS.saturatePct + '%');
   st.setProperty('--glass-nav-blur', GLASS.navBlurPx + 'px');
