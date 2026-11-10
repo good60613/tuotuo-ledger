@@ -1,9 +1,9 @@
-// 借我（2.0 第一批，PK 2026-11-10 定案）：別人先幫我付，之後我要還。
-// - 記借我：不選帳戶、任何帳戶都不動；本月／今日支出、分類統計都算（飯是今天吃的）；剩餘可用扣掉未還的。
+// 朋友付（2.0 第一批，PK 2026-11-10 定案）：別人先幫我付，之後我要還。
+// - 記朋友付：不選帳戶、任何帳戶都不動；本月／今日支出、分類統計都算（飯是今天吃的）；剩餘可用扣掉未還的。
 // - 還錢：選從哪個帳戶付（任何帳戶都可以，包括悠遊卡、電子錢包），新增一筆 owed_repay 扣款，
-//   不算任何支出；借我改成已還，剩餘可用不再變動（一般帳戶付：帳戶少 600、未還借我也少 600）。
+//   不算任何支出；朋友付改成已還，剩餘可用不再變動（一般帳戶付：帳戶少 600、未還朋友錢也少 600）。
 //   用小帳戶付時一般帳戶不用再預留這筆，剩餘可用變多是對的（PK 定案）。
-// - 退回未還：刪掉還款那筆（錢加回帳戶），借我回到未還。
+// - 退回未還：刪掉還款那筆（錢加回帳戶），朋友付回到未還。
 import type { AppData, Transaction } from './types';
 import { isPendingOwed } from './calc';
 
@@ -11,7 +11,7 @@ export class OwedError extends Error {}
 
 const newId = () => `t${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 
-/** 整批還錢：同一個帳戶付。每筆借我各自產生一筆還款紀錄（金額＝借我金額） */
+/** 整批還錢：同一個帳戶付。每筆朋友付各自產生一筆還款紀錄（金額＝朋友付金額） */
 export function markOwedPaid(
   data: AppData,
   owedIds: string[],
@@ -19,7 +19,7 @@ export function markOwedPaid(
   now: Date = new Date(),
   mkId: () => string = newId,
 ): AppData {
-  if (owedIds.length === 0) throw new OwedError('請先選擇借我紀錄');
+  if (owedIds.length === 0) throw new OwedError('請先選擇朋友付紀錄');
   if (new Set(owedIds).size !== owedIds.length) throw new OwedError('同一筆不能重複還');
   if (!data.accounts.some((a) => a.id === accountId)) throw new OwedError('找不到付款帳戶');
   const nowIso = now.toISOString();
@@ -27,7 +27,7 @@ export function markOwedPaid(
   const created: Transaction[] = [];
   for (const id of owedIds) {
     const o = data.transactions.find((t) => t.id === id);
-    if (!o || !isPendingOwed(o)) throw new OwedError('只能選還沒還的借我');
+    if (!o || !isPendingOwed(o)) throw new OwedError('只能選還沒還的朋友付');
     const rid = mkId();
     created.push({
       id: rid,
@@ -54,10 +54,10 @@ export function markOwedPaid(
   };
 }
 
-/** 退回未還：刪掉還款那筆，借我回到未還 */
+/** 退回未還：刪掉還款那筆，朋友付回到未還 */
 export function revertOwedPaid(data: AppData, owedId: string): AppData {
   const o = data.transactions.find((t) => t.id === owedId);
-  if (!o || o.type !== 'owed' || o.owedStatus !== 'paid') throw new OwedError('這筆借我還沒還');
+  if (!o || o.type !== 'owed' || o.owedStatus !== 'paid') throw new OwedError('這筆朋友付還沒還');
   return {
     ...data,
     transactions: data.transactions
@@ -67,10 +67,10 @@ export function revertOwedPaid(data: AppData, owedId: string): AppData {
 }
 
 /**
- * 確保借我和還款對得上（匯入備份、刪帳戶後都會跑）：
- * - 借我欄位缺漏：帳戶清空、狀態補「未還」，拿掉不該有的報帳／預算標記
+ * 確保朋友付和還款對得上（匯入備份、刪帳戶後都會跑）：
+ * - 朋友付欄位缺漏：帳戶清空、狀態補「未還」，拿掉不該有的報帳／預算標記
  * - 已還但還款那筆不見了 → 回到未還（避免「還了」卻沒扣錢）
- * - 還款那筆找不到對應的已還借我 → 刪掉還款（避免重複扣錢；借我本身仍在待辦）
+ * - 還款那筆找不到對應的已還朋友錢 → 刪掉還款（避免重複扣錢；朋友付本身仍在待辦）
  */
 export function normalizeOwed<T extends Pick<AppData, 'transactions'>>(data: T): T {
   const txs = data.transactions;

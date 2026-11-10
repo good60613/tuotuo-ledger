@@ -1,4 +1,4 @@
-// 待辦頁的「借我」分頁（2.0 第一批）：別人先幫我付的錢，還錢時選從哪個帳戶付（任何帳戶都可以）。
+// 待辦頁的「朋友付」分頁（2.0 第一批）：別人先幫我付的錢，還錢時選從哪個帳戶付（任何帳戶都可以）。
 // 操作比照報帳分頁：點一筆看詳細、長按多選、整批還款；已還的可以退回未還。
 import { useEffect, useState } from 'preact/hooks';
 import { useAppState, getState, updateData, showToast, ask, PAGES } from '../store';
@@ -50,7 +50,7 @@ export function OwedTab({ onBar }: { onBar?: (on: boolean) => void }) {
   return (
     <div class="todo-tab owed">
       <div class="todo-total">
-        <div class="amt-label">{tab === 'pending' ? '借我未還' : '已還總額'}</div>
+        <div class="amt-label">{tab === 'pending' ? '朋友付未還' : '已還總額'}</div>
         <div class="amt-mid owed-color">{money(tab === 'pending' ? pendingTotal : doneTotal)}</div>
       </div>
 
@@ -62,7 +62,7 @@ export function OwedTab({ onBar }: { onBar?: (on: boolean) => void }) {
               txs={pending}
               onTap={(t) => (multi ? setSel((x) => (x.includes(t.id) ? x.filter((i) => i !== t.id) : [...x, t.id])) : setDetail(t))}
               selected={multi ? new Set(selected) : undefined}
-              empty="沒有要還的借我 🎉"
+              empty="沒有要還朋友的款項 🎉"
               onLongPress={(t) => {
                 setMulti(true);
                 setSel((x) => (multi ? (x.includes(t.id) ? x : [...x, t.id]) : [t.id]));
@@ -70,7 +70,7 @@ export function OwedTab({ onBar }: { onBar?: (on: boolean) => void }) {
             />
           </div>
           <div class="reimb-tools">
-            <span class="muted">{multi ? '點選這次要還的借我（可多筆）' : '點一筆看詳細；長按可多選'}</span>
+            <span class="muted">{multi ? '點選這次要還的紀錄（可多筆）' : '點一筆看詳細；長按可多選'}</span>
             <button
               class={`pill-btn small${multi ? ' on' : ''}`}
               onClick={() => {
@@ -84,7 +84,7 @@ export function OwedTab({ onBar }: { onBar?: (on: boolean) => void }) {
         </>
       ) : (
         <>
-          <div class="todo-list"><TxList data={d} txs={done} onTap={setDetail} empty="還沒有已還的借我" /></div>
+          <div class="todo-list"><TxList data={d} txs={done} onTap={setDetail} empty="還沒有已還的款項" /></div>
           <div class="reimb-tools"><span class="muted">按錯了？點一筆可退回未還</span></div>
         </>
       )}
@@ -143,7 +143,7 @@ async function askRevertOwed(owedId: string) {
   if (!o || !r) return;
   const v = await ask(
     '退回未還？',
-    `退回後，${accountName(d, r.accountId)} 會加回 ${money(r.amount)}，這筆借我回到「未還」，剩餘可用不變。`,
+    `退回後，${accountName(d, r.accountId)} 會加回 ${money(r.amount)}，這筆朋友付回到「未還」，剩餘可用不變。`,
     [
       { label: '取消', value: 'no', style: 'secondary' },
       { label: '退回', value: 'yes', style: 'danger' },
@@ -165,7 +165,7 @@ function OwedDetail({ t, onClose, onPay, onRevert }: { t: Transaction; onClose: 
   const isDone = t.owedStatus === 'paid';
   const repay = isDone ? d.transactions.find((x) => x.id === t.owedPaidTxId) : undefined;
   return (
-    <Sheet title="借我紀錄" onClose={onClose}>
+    <Sheet title="朋友付紀錄" onClose={onClose}>
       <div class="detail-head">
         <span class="tx-icon">{c?.icon ?? '？'}</span>
         <span class="grow detail-name">{c?.name ?? '（已刪除分類）'}</span>
@@ -233,7 +233,7 @@ function OwedPay({ ids, total, onClose, onDone }: { ids: string[]; total: number
         {(kind === 'easycard' || kind === 'ewallet') && (
           <div class="muted small">小提醒：儲值時已經算過一次支出，這筆飯錢在本月支出會多算一次。</div>
         )}
-        <div class="muted small">還錢不算支出（記借我時已經算過）。</div>
+        <div class="muted small">還錢不算支出（記朋友付時已經算過）。</div>
         <div class="dialog-btns">
           <button class="btn secondary" onClick={onClose}>取消</button>
           <button class="btn owed-btn" disabled={!acc} onClick={confirm}>確認已還</button>

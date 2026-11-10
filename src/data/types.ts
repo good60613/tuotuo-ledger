@@ -42,9 +42,9 @@ export interface Account {
  */
 export type TxType =
   | 'expense' | 'income' | 'transfer' | 'reimburse_in' | 'adjust' | 'valuation'
-  /** 借我（2.0）：別人先幫我付。不選帳戶（accountId＝''）、不動任何帳戶；算支出；剩餘可用扣掉未還的 */
+  /** 朋友付（2.0）：別人先幫我付。不選帳戶（accountId＝''）、不動任何帳戶；算支出；剩餘可用扣掉未還的 */
   | 'owed'
-  /** 還借我（2.0）：從某帳戶扣款還錢。不算任何支出；owedOfId 指回借我那筆 */
+  /** 還朋友錢（2.0）：從某帳戶扣款還錢。不算任何支出；owedOfId 指回朋友付那筆 */
   | 'owed_repay';
 
 export interface Transaction {
@@ -64,15 +64,15 @@ export interface Transaction {
   reimburseStatus?: 'pending' | 'done';
   reimburseBatchId?: string;
   /**
-   * 2.0：'advance'＝代墊（我先幫別人付，之後收回）。和報帳共用同一套機制
+   * 2.0：'advance'＝我先付（我先幫別人付，之後收回）。和報帳共用同一套機制
    * （reimbursable、reimburseStatus、reimburseBatchId），缺值＝報帳。收回那筆 reimburse_in 也帶這個欄位。
    */
   reimburseKind?: 'advance';
-  /** 借我的狀態（只有 type='owed'）：pending＝還沒還、paid＝已還 */
+  /** 朋友付的狀態（只有 type='owed'）：pending＝還沒還、paid＝已還 */
   owedStatus?: 'pending' | 'paid';
-  /** 借我：還錢時新增的那筆 owed_repay */
+  /** 朋友付：還錢時新增的那筆 owed_repay */
   owedPaidTxId?: string;
-  /** 還借我：是哪一筆借我 */
+  /** 還朋友錢：是哪一筆朋友付 */
   owedOfId?: string;
   /** 2.0 拖拖計算機：記帳時的算式（例如 "1100−600"），只供顯示來龍去脈，不進備註 */
   calcExpr?: string;
@@ -143,7 +143,7 @@ export interface Settings {
   carrierCode?: string;
   /** 外觀：亮色／暗色／跟隨系統。2.0 加入，舊資料與舊備份缺這欄＝亮色 */
   theme?: ThemeMode;
-  /** 代墊／借我功能開關，缺值＝開啟。判斷一律用 features.ts 的 advanceOwedOn() */
+  /** 我先付／朋友付功能開關，缺值＝開啟。判斷一律用 features.ts 的 advanceOwedOn() */
   advanceOwedEnabled?: boolean;
 }
 

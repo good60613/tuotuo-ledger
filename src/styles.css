@@ -604,7 +604,7 @@ button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 .barcode { background: #fff; padding: 10px 0 6px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; max-width: 100%; overflow: hidden; }
 .barcode svg { display: block; max-width: 100%; }
 .barcode-text { font-size: 14px; letter-spacing: 2px; font-variant-numeric: tabular-nums; color: #000; }
-/* ---------- 2.0 代墊、借我（比照報帳、預算的標示方式） ---------- */
+/* ---------- 2.0 我先付、朋友付（比照報帳、預算的標示方式） ---------- */
 .advance-color { color: var(--advance); }
 .owed-color, .tone-owed { color: var(--owed); }
 .btn.advance-btn { background: var(--advance); color: var(--on-color); }

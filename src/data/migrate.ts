@@ -48,14 +48,14 @@ function v3to4(d: AnyData): AnyData {
 }
 
 /**
- * v4 → v5（2.0 第一批）：加入代墊（reimburseKind）、借我（owed、owed_repay）、算式欄位，
- * 設定加外觀、代墊／借我開關。舊紀錄、舊設定沒有這些欄位＝報帳／一般紀錄、亮色、開關開啟，不用補。
+ * v4 → v5（2.0 第一批）：加入我先付（reimburseKind）、朋友付（owed、owed_repay）、算式欄位，
+ * 設定加外觀、我先付／朋友付開關。舊紀錄、舊設定沒有這些欄位＝報帳／一般紀錄、亮色、開關開啟，不用補。
  */
 function v4to5(d: AnyData): AnyData {
   return { ...d, version: 5 };
 }
 
-/** 代墊標記只能掛在報帳類紀錄上；亂填的值拿掉 */
+/** 我先付標記只能掛在報帳類紀錄上；亂填的值拿掉 */
 function fixAdvance(t: Transaction): Transaction {
   if (t.reimburseKind === undefined) return t;
   const ok = t.reimburseKind === 'advance' && (t.reimbursable || t.type === 'reimburse_in');

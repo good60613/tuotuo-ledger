@@ -1,4 +1,4 @@
-// 2.0 第一批：代墊、借我的錢怎麼算、資料 v5、舊備份匯入。
+// 2.0 第一批：我先付、朋友付的錢怎麼算、資料 v5、舊備份匯入。
 import { describe, expect, it } from 'vitest';
 import { allBalances, bankTotal, spendableTotal, totals, pendingOwedTotal, categoryBreakdown, periodKey, dayKey, inMainLedger, kindLookup } from '../src/data/calc';
 import { addTransaction, deleteTransaction, updateTransaction, markReimbursed, revertBatch, removeAccount, OpError } from '../src/data/ops';
@@ -34,7 +34,7 @@ const expenseOf = (d: AppData) => totals(d, { period: per }).expense;
 const todayExp = (d: AppData) => totals(d, { day: today }).expense;
 
 describe('工單驗算用例', () => {
-  it('14,004、預算 1,000 → 13,004；借我 600 → 12,404；從現金還 600 → 帳戶 13,404、剩餘可用仍 12,404', () => {
+  it('14,004、預算 1,000 → 13,004；朋友付 600 → 12,404；從現金還 600 → 帳戶 13,404、剩餘可用仍 12,404', () => {
     let d = base();
     d = addTransaction(d, { type: 'expense', amount: 1000, accountId: 'A', categoryId: 'c-e1', occurredAt: AT, budget: true }).data;
     expect(bankTotal(d)).toBe(14004);
@@ -49,7 +49,7 @@ describe('工單驗算用例', () => {
   });
 });
 
-describe('借我', () => {
+describe('朋友付', () => {
   it('記帳當下：帳戶都不動、算本月／今日／分類支出、剩餘可用減少', () => {
     const before = base();
     const { data: d, id } = owed(before);
@@ -61,7 +61,7 @@ describe('借我', () => {
     expect(tx(d, id).accountId).toBe('');
     expect(tx(d, id).owedStatus).toBe('pending');
     expect(inMainLedger(tx(d, id), kindLookup(d.accounts))).toBe(true);
-    // 指定單一帳戶的統計不含借我（借我沒有帳戶）
+    // 指定單一帳戶的統計不含朋友付（朋友付沒有帳戶）
     expect(totals(d, { period: per, accountId: 'A' }).expense).toBe(0);
     // 不會改到「上次使用的帳戶」
     expect(d.settings.lastUsedAccountId).toBe(before.settings.lastUsedAccountId);
@@ -108,7 +108,7 @@ describe('借我', () => {
     expect(() => deleteTransaction(d, r.id)).toThrow(OpError);
   });
 
-  it('未還的借我改成一般支出：改成扣帳戶', () => {
+  it('未還的朋友付改成一般支出：改成扣帳戶', () => {
     const o = owed(base());
     const d = updateTransaction(o.data, o.id, { type: 'expense', amount: 600, accountId: 'A', categoryId: 'c-e1', occurredAt: AT });
     expect(tx(d, o.id).type).toBe('expense');
@@ -117,7 +117,7 @@ describe('借我', () => {
     expect(pendingOwedTotal(d)).toBe(0);
   });
 
-  it('刪掉付款帳戶（連紀錄一起刪）：借我回到未還，剩餘可用照扣', () => {
+  it('刪掉付款帳戶（連紀錄一起刪）：朋友付回到未還，剩餘可用照扣', () => {
     const o = owed(base());
     let d = markOwedPaid(o.data, [o.id], 'B', NOW);
     d = removeAccount(d, 'B', { mode: 'deleteRecords' });
@@ -125,12 +125,12 @@ describe('借我', () => {
     expect(spendableTotal(d)).toBe(10004 - 600);
   });
 
-  it('借我不能同時是預算', () => {
+  it('朋友付不能同時是預算', () => {
     expect(() => addTransaction(base(), { type: 'owed', amount: 1, accountId: '', categoryId: 'c-e1', occurredAt: AT, budget: true })).toThrow(OpError);
   });
 });
 
-describe('代墊（比照報帳）', () => {
+describe('我先付（比照報帳）', () => {
   it('記帳當下：帳戶扣款、剩餘可用減少、不算支出', () => {
     const { data: d, id } = advance(base());
     expect(allBalances(d).get('A')).toBe(9404);
@@ -150,7 +150,7 @@ describe('代墊（比照報帳）', () => {
     expect(tx(d, a.id).reimburseStatus).toBe('done');
     const inTx = d.transactions.find((t) => t.type === 'reimburse_in')!;
     expect(inTx.reimburseKind).toBe('advance');
-    expect(inTx.note).toContain('代墊');
+    expect(inTx.note).toContain('我先付');
     d = revertBatch(d, 'b1');
     expect(spendableTotal(d)).toBe(13404);
     expect(tx(d, a.id).reimburseStatus).toBe('pending');
@@ -163,14 +163,14 @@ describe('代墊（比照報帳）', () => {
     expect(spendableTotal(d)).toBe(13404);
   });
 
-  it('代墊和報帳不能同一批結案', () => {
+  it('我先付和報帳不能同一批結案', () => {
     let d = advance(base()).data;
     d = addTransaction(d, { type: 'expense', amount: 100, accountId: 'A', categoryId: 'c-e1', occurredAt: AT, reimbursable: true }).data;
     const ids = d.transactions.map((t) => t.id);
     expect(() => markReimbursed(d, ids, 'A', NOW)).toThrow(OpError);
   });
 
-  it('已收回的代墊不能改成報帳', () => {
+  it('已收回的我先付不能改成報帳', () => {
     const a = advance(base());
     const d = markReimbursed(a.data, [a.id], 'A', NOW);
     expect(() =>
@@ -180,7 +180,7 @@ describe('代墊（比照報帳）', () => {
 });
 
 describe('資料 v5 與舊備份', () => {
-  it('v5 匯出再匯入：代墊、借我、還款、算式欄位全保留，金額不變', () => {
+  it('v5 匯出再匯入：我先付、朋友付、還款、算式欄位全保留，金額不變', () => {
     let d = base();
     const o = owed(d);
     d = markOwedPaid(o.data, [o.id], 'A', NOW);
@@ -196,7 +196,7 @@ describe('資料 v5 與舊備份', () => {
     expect(JSON.parse(JSON.stringify(back.transactions))).toEqual(JSON.parse(JSON.stringify(d.transactions)));
   });
 
-  it('舊 v4 備份照常匯入：沒有代墊借我、金額不變、外觀亮色、開關開啟', () => {
+  it('舊 v4 備份照常匯入：沒有我先付朋友付、金額不變、外觀亮色、開關開啟', () => {
     const v4 = { ...sampleData(), version: 4 };
     const before = spendableTotal(v4 as unknown as AppData);
     const d = parseBackup(JSON.stringify(v4));
@@ -207,7 +207,7 @@ describe('資料 v5 與舊備份', () => {
     expect(advanceOwedOn(d.settings)).toBe(true);
   });
 
-  it('改壞的備份：已還但還款不見 → 回未還；孤兒還款 → 刪掉；借我帶帳戶 → 清掉', () => {
+  it('改壞的備份：已還但還款不見 → 回未還；孤兒還款 → 刪掉；朋友付帶帳戶 → 清掉', () => {
     const o = owed(base());
     const d = markOwedPaid(o.data, [o.id], 'A', NOW);
     const repay = d.transactions.find((t) => t.type === 'owed_repay')!;
@@ -220,7 +220,7 @@ describe('資料 v5 與舊備份', () => {
     expect(allBalances(broken3)).toEqual(allBalances(d));
   });
 
-  it('亂填的代墊標記會被拿掉', () => {
+  it('亂填的我先付標記會被拿掉', () => {
     const d = base();
     d.transactions = [{ id: 'x', type: 'expense', amount: 1, accountId: 'A', categoryId: 'c-e1', note: '', occurredAt: AT, reimbursable: false, reimburseKind: 'advance', createdAt: AT }];
     expect(migrate(d).transactions[0].reimburseKind).toBeUndefined();
@@ -233,7 +233,7 @@ describe('開關與共存', () => {
     expect(advanceOwedOn({ advanceOwedEnabled: false })).toBe(false);
   });
 
-  it('預算付款＋借我同時存在', () => {
+  it('預算付款＋朋友付同時存在', () => {
     const b = addTransaction(base(), { type: 'expense', amount: 1000, accountId: 'A', categoryId: 'c-e1', occurredAt: AT, budget: true });
     let d = markBudgetPaid(b.data, [{ id: b.id, amount: 1000 }], NOW);
     d = owed(d).data;

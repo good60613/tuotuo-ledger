@@ -98,7 +98,7 @@ export function HomePage() {
     }
   };
 
-  // 剩餘可用右側小字欄：預算、借我（同樣式、同位置；開關關掉時未還的借我仍顯示）
+  // 剩餘可用右側小字欄：預算、朋友付（同樣式、同位置；開關關掉時未還的朋友付仍顯示）
   const sideItems: SideNote[] = [];
   if (budgetSum > 0) {
     sideItems.push({
@@ -117,7 +117,7 @@ export function HomePage() {
   if (owedSum > 0) {
     sideItems.push({
       key: 'owed',
-      label: '借我',
+      label: '朋友付',
       amount: owedSum,
       tone: 'owed',
       onClick: () => {

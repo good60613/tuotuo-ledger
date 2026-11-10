@@ -37,10 +37,10 @@ describe('算式拆成數字', () => {
 });
 
 describe('拆帳', () => {
-  it('工單例：1100−600，600 掛代墊 → 一般 500＋代墊 600，帳戶共扣 1,100', () => {
+  it('工單例：1100−600，600 掛我先付 → 一般 500＋我先付 600，帳戶共扣 1,100', () => {
     const p = ok(splitPlan('1100−600', { 1: 'advance' }));
     expect(p).toEqual({ ok: true, general: 500, parts: [{ term: 1, mark: 'advance', amount: 600 }] });
-    expect(previewText(p, '吃飯', money)).toBe('會拆成：吃飯 500＋代墊 600');
+    expect(previewText(p, '吃飯', money)).toBe('會拆成：吃飯 500＋我先付 600');
     const r = addTransactions(base(), splitInputs(p, B('1100−600')));
     expect(allBalances(r.data).get('A')).toBe(8900);
     expect(totals(r.data, { period: periodKey(NOW, 1) }).expense).toBe(500);
@@ -48,11 +48,11 @@ describe('拆帳', () => {
     expect(r.data.transactions.find((t) => t.reimburseKind === 'advance')?.calcTerm).toBe(1);
   });
 
-  it('500＋600，600 掛代墊 → 一般 500＋代墊 600', () => {
+  it('500＋600，600 掛我先付 → 一般 500＋我先付 600', () => {
     expect(ok(splitPlan('500+600', { 1: 'advance' })).general).toBe(500);
   });
 
-  it('1100−600，600 掛借我 → 一般 500 扣帳戶，借我 600 不扣；剩餘可用少 1,100', () => {
+  it('1100−600，600 掛朋友付 → 一般 500 扣帳戶，朋友付 600 不扣；剩餘可用少 1,100', () => {
     const p = ok(splitPlan('1100−600', { 1: 'owed' }));
     const r = addTransactions(base(), splitInputs(p, B('1100−600')));
     expect(allBalances(r.data).get('A')).toBe(9500);
@@ -77,7 +77,7 @@ describe('拆帳', () => {
     expect(inputs[0].calcExpr).toBeUndefined();
   });
 
-  it('全部是借我：不需要帳戶', () => {
+  it('全部是朋友付：不需要帳戶', () => {
     const p = ok(splitPlan('600', { 0: 'owed' }));
     expect(splitInputs(p, B('600', null))[0].type).toBe('owed');
   });
@@ -98,7 +98,7 @@ describe('拆帳', () => {
 
   it('乘除裡的數字不能掛', () => {
     expect(splitPlan('3×200+100', { 0: 'advance' })).toMatchObject({ ok: false, error: '乘除裡的數字不能掛標記' });
-    // 乘除項本身沒掛標記時照常：3×200＋100，100 掛代墊 → 一般 600
+    // 乘除項本身沒掛標記時照常：3×200＋100，100 掛我先付 → 一般 600
     expect(ok(splitPlan('3×200+100', { 2: 'advance' })).general).toBe(600);
   });
 

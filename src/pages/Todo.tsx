@@ -1,5 +1,5 @@
-// 待辦頁（左二）：報帳、代墊、借我、預算四個分頁，操作一致。
-// 代墊／借我開關關掉時，若已經沒有這兩種紀錄就不顯示分頁；還有未結案或已結案的仍顯示，避免錢算不清。
+// 待辦頁（左二）：報帳、我先付、朋友付、預算四個分頁，操作一致。
+// 我先付／朋友付開關關掉時，若已經沒有這兩種紀錄就不顯示分頁；還有未結案或已結案的仍顯示，避免錢算不清。
 import { useState } from 'preact/hooks';
 import { useAppState, setState, type TodoTab } from '../store';
 import { BottomBar } from '../components/BottomBar';
@@ -22,8 +22,8 @@ export function TodoPage() {
   const showOwed = on || txs.some((t) => t.type === 'owed');
   const tabs: { key: TodoTab; label: string; count: number }[] = [
     { key: 'reimb', label: '報帳', count: reimbCount },
-    ...(showAdv ? [{ key: 'advance' as const, label: '代墊', count: advCount }] : []),
-    ...(showOwed ? [{ key: 'owed' as const, label: '借我', count: owedCount }] : []),
+    ...(showAdv ? [{ key: 'advance' as const, label: '我先付', count: advCount }] : []),
+    ...(showOwed ? [{ key: 'owed' as const, label: '朋友付', count: owedCount }] : []),
     { key: 'budget', label: '預算', count: budgetCount },
   ];
   const cur = tabs.some((t) => t.key === s.todoTab) ? s.todoTab : 'reimb';

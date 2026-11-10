@@ -21,7 +21,7 @@ export interface TxInput {
   reimbursable?: boolean;
   /** 預算（只限一般帳戶的支出，和報帳互斥） */
   budget?: boolean;
-  /** 代墊（2.0）：reimbursable 為 true 時，'advance'＝代墊、缺值＝報帳 */
+  /** 我先付（2.0）：reimbursable 為 true 時，'advance'＝我先付、缺值＝報帳 */
   reimburseKind?: 'advance';
   /** 拖拖計算機的算式、標記項次、拆帳群組（見 Transaction） */
   calcExpr?: string;
@@ -36,9 +36,9 @@ export class OpError extends Error {}
 function validate(data: AppData, input: TxInput) {
   if (!(input.amount > 0) || !Number.isInteger(input.amount)) throw new OpError('金額必須大於 0');
   if (input.type === 'owed') {
-    // 借我：不選帳戶、要分類、不能同時是報帳／代墊／預算
+    // 朋友付：不選帳戶、要分類、不能同時是報帳／我先付／預算
     if (!input.categoryId) throw new OpError('請選分類');
-    if (input.reimbursable || input.budget) throw new OpError('借我不能同時設成報帳、代墊或預算');
+    if (input.reimbursable || input.budget) throw new OpError('朋友付不能同時設成報帳、我先付或預算');
     return;
   }
   if (!data.accounts.some((a) => a.id === input.accountId)) throw new OpError('找不到帳戶');
@@ -130,7 +130,7 @@ export function updateTransaction(data: AppData, id: string, input: TxInput): Ap
   if (!old) throw new OpError('找不到這筆紀錄');
   if (old.type === 'reimburse_in') throw new OpError('報帳入帳請用「退回待報帳」處理');
   if (old.type === 'adjust' || old.type === 'valuation') throw new OpError('調整、市值紀錄不能編輯，只能刪除後重新校正');
-  if (old.type === 'owed_repay') throw new OpError('這筆是還借我的款項，要改請在待辦頁退回未還');
+  if (old.type === 'owed_repay') throw new OpError('這筆是還朋友的款項，要改請在待辦頁退回未還');
   validate(data, input);
   let next: Transaction;
   if (isLocked(old)) {
@@ -149,11 +149,11 @@ export function updateTransaction(data: AppData, id: string, input: TxInput): Ap
     )
       throw new OpError(
         paidOwed
-          ? '這筆借我已還，要改金額請先在待辦頁退回未還'
+          ? '這筆朋友付已還，要改金額請先在待辦頁退回未還'
           : paidBudget
             ? '這筆預算已付款，要改金額或帳戶，請先在待辦頁退回未付'
             : old.reimburseKind === 'advance'
-              ? '這筆代墊已收回，要改金額或帳戶，請先在待辦頁退回未收'
+              ? '這筆我先付已收回，要改金額或帳戶，請先在待辦頁退回未收'
               : '這筆已報帳，要改金額或帳戶，請先在待辦頁退回待報帳',
       );
     next = { ...old, categoryId: input.categoryId, note: input.note ?? '', occurredAt: input.occurredAt };
@@ -180,14 +180,14 @@ export function deleteTransaction(data: AppData, id: string): AppData {
   if (isLocked(old))
     throw new OpError(
       old.type === 'owed'
-        ? '這筆借我已還，請先在待辦頁退回未還再刪除'
+        ? '這筆朋友付已還，請先在待辦頁退回未還再刪除'
         : old.budget
           ? '這筆預算已付款，請先在待辦頁退回未付再刪除'
           : old.reimburseKind === 'advance'
-            ? '這筆代墊已收回，請先在待辦頁退回未收再刪除'
+            ? '這筆我先付已收回，請先在待辦頁退回未收再刪除'
             : '這筆已報帳，請先在待辦頁退回待報帳再刪除',
     );
-  if (old.type === 'owed_repay') throw new OpError('這筆是還借我的款項，請在待辦頁退回未還');
+  if (old.type === 'owed_repay') throw new OpError('這筆是還朋友的款項，請在待辦頁退回未還');
   if (isBudgetPayment(old)) throw new OpError('這筆是預算付款，請先在待辦頁退回未付再刪除');
   if (old.type === 'reimburse_in') throw new OpError('報帳入帳請用「退回待報帳」處理');
   return { ...data, transactions: data.transactions.filter((t) => t.id !== id) };
@@ -215,9 +215,9 @@ export function markReimbursed(
   if (items.length === 0) throw new OpError('請先選擇紀錄');
   if (items.length !== set.size || items.some((t) => t.reimburseStatus !== 'pending'))
     throw new OpError('只能選待報帳的紀錄');
-  // 代墊和報帳不能混在同一批（收回的錢來源不同）
+  // 我先付和報帳不能混在同一批（收回的錢來源不同）
   const advance = items[0].reimburseKind === 'advance';
-  if (items.some((t) => (t.reimburseKind === 'advance') !== advance)) throw new OpError('代墊和報帳要分開結案');
+  if (items.some((t) => (t.reimburseKind === 'advance') !== advance)) throw new OpError('我先付和報帳要分開結案');
   if (!data.accounts.some((a) => a.id === toAccountId)) throw new OpError('找不到入帳帳戶');
   const sum = items.reduce((s, t) => s + t.amount, 0);
   const inTx: Transaction = {
@@ -226,7 +226,7 @@ export function markReimbursed(
     amount: sum,
     accountId: toAccountId,
     toAccountId,
-    note: advance ? `代墊收回（${items.length} 筆）` : `報帳入帳（${items.length} 筆）`,
+    note: advance ? `我先付收回（${items.length} 筆）` : `報帳入帳（${items.length} 筆）`,
     reimburseKind: advance ? 'advance' : undefined,
     occurredAt: now.toISOString(),
     reimbursable: false,

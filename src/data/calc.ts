@@ -39,9 +39,9 @@ function balanceDeltas(t: Transaction): [string | undefined, number][] {
     case 'adjust':
       return [[t.accountId, t.adjustDir === 'down' ? -t.amount : t.amount]];
     case 'owed_repay':
-      // 還借我：從選的帳戶扣款（任何帳戶都可以）
+      // 還朋友錢：從選的帳戶扣款（任何帳戶都可以）
       return [[t.accountId, -t.amount]];
-    // 'owed'（借我）不動任何帳戶
+    // 'owed'（朋友付）不動任何帳戶
     default:
       // valuation 不動餘額
       return [];
@@ -87,12 +87,12 @@ export function pendingBudgetTotal(data: Pick<AppData, 'accounts' | 'transaction
     .reduce((s, t) => s + t.amount, 0);
 }
 
-/** 是否為「還沒還」的借我 */
+/** 是否為「還沒還」的朋友付 */
 export function isPendingOwed(t: Transaction): boolean {
   return t.type === 'owed' && t.owedStatus !== 'paid';
 }
 
-/** 未還借我合計（首頁剩餘可用旁的「借我 600」） */
+/** 未還朋友錢合計（首頁剩餘可用旁的「朋友付 600」） */
 export function pendingOwedTotal(data: Pick<AppData, 'transactions'>): number {
   return data.transactions.filter(isPendingOwed).reduce((s, t) => s + t.amount, 0);
 }
@@ -106,8 +106,8 @@ export function bankTotal(data: Pick<AppData, 'accounts' | 'transactions'>): num
 }
 
 /**
- * 剩餘可用＝一般帳戶加總－未付預算－未還借我（2.0）。
- * 代墊、報帳還沒收回的錢不先加回，等真的入帳才算（保守）。
+ * 剩餘可用＝一般帳戶加總－未付預算－未還朋友錢（2.0）。
+ * 我先付、報帳還沒收回的錢不先加回，等真的入帳才算（保守）。
  */
 export function spendableTotal(data: Pick<AppData, 'accounts' | 'transactions'>): number {
   return bankTotal(data) - pendingBudgetTotal(data) - pendingOwedTotal(data);
@@ -215,9 +215,9 @@ export interface StatEffect {
  * - 其他一律不算：轉帳、報帳入帳、調整、市值、小帳戶內的收支（含配息、費用、利息）。
  */
 export function statEffect(t: Transaction, kindOf: KindOf): StatEffect | null {
-  // 借我：飯是當天吃的，算支出（不論還了沒）；沒有帳戶，所以只出現在「全部帳戶」的統計
+  // 朋友付：飯是當天吃的，算支出（不論還了沒）；沒有帳戶，所以只出現在「全部帳戶」的統計
   if (t.type === 'owed') return { type: 'expense', amount: t.amount, accountId: '', categoryId: t.categoryId ?? '' };
-  // 還借我：之前已經算過支出，還錢不再算
+  // 還朋友錢：之前已經算過支出，還錢不再算
   if (t.type === 'owed_repay') return null;
   const k = kindOf(t.accountId);
   if (k !== 'bank') return null;

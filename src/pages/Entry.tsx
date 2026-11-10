@@ -131,9 +131,9 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
 
   const lockedText = (act: string) => {
     if (isPay) return '這筆是預算付款，不能改成預算或報帳';
-    if (editing?.type === 'owed') return `這筆借我已還，${act}請先在待辦頁退回未還`;
+    if (editing?.type === 'owed') return `這筆朋友付已還，${act}請先在待辦頁退回未還`;
     if (editing?.budget) return `這筆預算已付款，${act}請先在待辦頁退回未付`;
-    if (editing?.reimburseKind === 'advance') return `這筆代墊已收回，${act}請先在待辦頁退回`;
+    if (editing?.reimburseKind === 'advance') return `這筆我先付已收回，${act}請先在待辦頁退回`;
     return `這筆已報帳，${act}請先在待辦頁退回待報帳`;
   };
   const lockedHint = () => showToast(isPay ? lockedText('') : lockedText('不能再改標記，要改'));

@@ -1,6 +1,6 @@
 import { money } from '../format';
 
-/** 右側小字欄的一列（例如「預算 1,000」、之後的「借我 600」） */
+/** 右側小字欄的一列（例如「預算 1,000」、之後的「朋友付 600」） */
 export interface SideNote {
   key: string;
   label: string;
