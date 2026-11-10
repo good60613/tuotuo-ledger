@@ -23,7 +23,8 @@ initStore();
 void installNativeBackButton();
 // 桌面小工具：資料一變就把數字送過去；點小工具回首頁
 void installWidgetSync(
-  () => (getState().ready ? getState().data : null),
+  // 保護狀態（讀不到資料）時不送數字給小工具
+  () => (getState().ready && !getState().blocked ? getState().data : null),
   subscribeState,
   () => void goHomeFromWidget(),
 );

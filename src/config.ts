@@ -84,6 +84,17 @@ export const SETTLE = {
 /** 定期扣款：App 一直開著時，每隔多久檢查一次有沒有到扣款日（打開 App、回到前景時也會檢查） */
 export const RECURRING_CHECK_MS = 30 * 60 * 1000;
 
+/**
+ * 自動留底（2.0 修正批）：存在 App 自己的另一個資料庫，和主資料分開寫。
+ * 每份大約等於一份完整備份檔大小（一千筆紀錄約 0.3 MB），兩種合計最多 12 份。
+ */
+export const SNAPSHOT = {
+  /** 每天第一次開啟時的留底，保留最近幾份（＝最近幾天） */
+  dailyKeep: 7,
+  /** 匯入、清空、載入範例、還原、資料升級前的留底，保留最近幾份 */
+  eventKeep: 5,
+} as const;
+
 /** 「已記一筆」提示停留多久（可按復原） */
 export const TOAST_MS = 4000;
 

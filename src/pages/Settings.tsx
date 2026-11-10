@@ -4,7 +4,7 @@ import { RecurringPanel } from './RecurringSettings';
 import { useRef, useState } from 'preact/hooks';
 import { useBackLayer } from '../backNav';
 import { PAGES } from '../store';
-import { useAppState, getState, updateData, showToast, ask, confirmDanger, setState } from '../store';
+import { useAppState, getState, updateData, showToast, ask, confirmDanger, setState, replaceData } from '../store';
 import {
   byOrder, reorder, uid, upsertAccount, removeAccount, countAccountRecords,
   removeCategory, countCategoryRecords, OpError, editAccount,
@@ -15,7 +15,8 @@ import { accountName, accountsOfKind, bankAccounts, categoriesOf, KIND_ICON } fr
 import { applySettingsImport, checkSettingsImport, exportJson, readBackup, saveBackupFile, type SettingsImportMapping } from '../data/backup';
 import { sampleData, blankData } from '../data/seed';
 import { clearRecords } from '../data/reset';
-import { saveData } from '../data/storage';
+import type { SnapshotReason } from '../data/snapshots';
+import { SnapshotList } from '../components/SnapshotList';
 import { Sheet } from '../components/Sheet';
 import { AccountPicker } from '../components/AccountPicker';
 import { CategoryForm, TagManager } from '../components/Editors';
@@ -48,7 +49,8 @@ type SheetState =
   | { k: 'settle' }
   | { k: 'carrier' }
   | { k: 'moveAccount'; from: Account }
-  | { k: 'moveCategory'; from: Category };
+  | { k: 'moveCategory'; from: Category }
+  | { k: 'snapshots' };
 
 export function SettingsPage() {
   const s = useAppState();
@@ -136,9 +138,9 @@ export function SettingsPage() {
           '取代',
         );
         if (!ok) return;
-        await saveData(next);
-        setState({ data: next, ...resetFilters });
-        showToast('已從備份還原');
+        await replaceData(next, 'pre-import');
+        setState({ ...resetFilters });
+        showToast('已從備份還原（原本的資料已自動留底）');
         return;
       }
       // 只有設定：紀錄保留，找不到的帳戶、分類一個一個問要移到哪裡
@@ -196,8 +198,8 @@ export function SettingsPage() {
         '取代設定',
       );
       if (!ok) return;
-      await saveData(next);
-      setState({ data: next, ...resetFilters });
+      await replaceData(next, 'pre-settings-import');
+      setState({ ...resetFilters });
       showToast('已匯入設定，紀錄保留');
     } catch (e) {
       showToast(e instanceof Error ? e.message : '匯入失敗');
@@ -213,8 +215,14 @@ export function SettingsPage() {
     if (v === 'export') doExport('full');
     return v === 'yes';
   };
-  const applyReset = (next: (x: typeof d) => typeof d, msg: string) => {
-    updateData(next);
+  /** 清空、載入範例：先自動留底（失敗就不執行），再取代 */
+  const applyReset = async (next: (x: typeof d) => typeof d, reason: SnapshotReason, msg: string) => {
+    try {
+      await replaceData(next(getState().data), reason);
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : '處理失敗');
+      return;
+    }
     setState({ ...resetFilters });
     showToast(msg);
   };
@@ -225,7 +233,7 @@ export function SettingsPage() {
       '繼續',
     ))) return;
     if (!(await confirmDanger('再確認一次', '帳戶和設定都會被蓋掉，整個換成範例資料。確定嗎？', '換成範例'))) return;
-    applyReset(() => sampleData(), '已載入範例資料');
+    await applyReset(() => sampleData(), 'pre-sample', '已載入範例資料（原本的資料已自動留底）');
   };
   const clearRecordsOnly = async () => {
     const n = getState().data.transactions.length;
@@ -234,7 +242,7 @@ export function SettingsPage() {
       `會刪除全部 ${n} 筆記帳紀錄（含校正、報帳、轉帳），無法復原。\n帳戶、小帳戶、分類、備註標籤、結算日等設定都會保留，帳戶金額回到初始餘額。\n建議先匯出完整備份。`,
       '清空紀錄',
     ))) return;
-    applyReset((x) => clearRecords(x), '已清空紀錄，設定保留');
+    await applyReset((x) => clearRecords(x), 'pre-clear-records', '已清空紀錄，設定保留（原本的資料已自動留底）');
   };
   const clearAll = async () => {
     if (!(await firstConfirm(
@@ -243,7 +251,7 @@ export function SettingsPage() {
       '繼續',
     ))) return;
     if (!(await confirmDanger('再確認一次', '帳戶、紀錄、設定全部清除，無法復原。確定嗎？', '全部清除'))) return;
-    applyReset(() => blankData(), '已清空所有資料');
+    await applyReset(() => blankData(), 'pre-clear-all', '已清空所有資料（原本的資料已自動留底）');
   };
 
   const banks = bankAccounts(d);
@@ -428,6 +436,10 @@ export function SettingsPage() {
           <button class="btn secondary" onClick={() => fileRef.current?.click()}>從備份匯入</button>
         </div>
         <p class="muted small">會自動判斷檔案類型：完整備份會取代全部資料；只有設定的檔案只取代設定，紀錄保留。</p>
+        <div class="btn-row">
+          <button class="btn secondary" onClick={() => setSheet({ k: 'snapshots' })}>自動留底</button>
+        </div>
+        <p class="muted small">App 每天第一次開啟、以及匯入、清空、載入範例、還原之前，會自動在手機裡留一份，可以選一份還原。只存在這支手機上，換手機仍要靠匯出備份。</p>
         <input
           ref={fileRef}
           type="file"
@@ -456,6 +468,15 @@ export function SettingsPage() {
       {sheet?.k === 'settle' && <SettleForm onClose={() => setSheet(null)} />}
       {sheet?.k === 'carrier' && <CarrierForm onClose={() => setSheet(null)} />}
       {sheet?.k === 'tags' && <TagManager onClose={() => setSheet(null)} />}
+      {sheet?.k === 'snapshots' && (
+        <Sheet title="自動留底" onClose={() => setSheet(null)}>
+          <p class="muted small">點一份還原。還原前會先把目前資料再留一份，按錯可以還原回來。</p>
+          <SnapshotList onRestored={() => {
+            setSheet(null);
+            setState({ ...resetFilters });
+          }} />
+        </Sheet>
+      )}
       {sheet?.k === 'defaultReimb' && (
         <AccountPicker
           title="預設報帳帳戶"

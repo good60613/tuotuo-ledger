@@ -1,10 +1,12 @@
 // 全域狀態：資料（會存檔）＋畫面狀態（不存檔）。
 import { useEffect, useState } from 'preact/hooks';
 import type { AppData } from './data/types';
-import { loadData, saveData, requestPersistence } from './data/storage';
+import { saveData, requestPersistence, deviceStorage } from './data/storage';
 import { sampleData } from './data/seed';
 import { TOAST_MS, TRANSITION, RECURRING_CHECK_MS } from './config';
 import { postDueRecurring } from './data/recurring';
+import { boot, ensureDailySnapshot, loadSnapshotData, replaceWithSnapshot, type BlockReason } from './data/boot';
+import type { SnapshotReason } from './data/snapshots';
 
 export const PAGES = ['待辦', '統計', '首頁', '明細', '設定'] as const;
 export const TODO_PAGE = 0;
@@ -70,6 +72,11 @@ export interface State {
   dragging: boolean;
   /** 待辦頁目前的分頁（首頁點「已圈預算」會切到預算） */
   todoTab: TodoTab;
+  /**
+   * 資料保護狀態（2.0 修正批）：讀不到、升級失敗、版本比 App 新時不為 null。
+   * 這時畫面只顯示保護畫面，任何存檔都會被擋下。
+   */
+  blocked: { reason: BlockReason; message: string } | null;
 }
 
 let state: State = {
@@ -85,7 +92,11 @@ let state: State = {
   toast: null,
   dragging: false,
   todoTab: 'reimb',
+  blocked: null,
 };
+
+/** 保護狀態時手機上的原始資料（還原、匯入前要先把它留一份） */
+let blockedRaw: unknown = null;
 
 const listeners = new Set<() => void>();
 export const getState = () => state;
@@ -103,6 +114,11 @@ export function setState(patch: Partial<State> | ((s: State) => Partial<State>))
 let saveChain: Promise<void> = Promise.resolve();
 /** 改資料並存檔。fn 丟出錯誤時資料不變，錯誤往外丟給畫面顯示 */
 export function updateData(fn: (d: AppData) => AppData) {
+  if (state.blocked || !state.ready) {
+    // 保護狀態（或還沒讀完資料）：不改、不存，並說明原因
+    showToast('資料保護中：目前不會存任何變更');
+    return;
+  }
   const next = fn(state.data);
   setState({ data: next });
   saveChain = saveChain.then(() => saveData(next)).catch((e) => {
@@ -186,36 +202,80 @@ export function goPage(page: number, fade = false) {
  * 補記日期是原本的扣款日，同一項同一月只記一次（見 data/recurring.ts）。
  */
 export function runRecurring(now: Date = new Date()) {
+  if (state.blocked) return;
   const r = postDueRecurring(state.data, now);
   if (r.posted.length === 0) return;
   updateData(() => r.data);
   showToast(`已自動記 ${r.posted.length} 筆定期扣款`);
 }
 
-export async function initStore() {
-  let loaded = false;
-  try {
-    const saved = await loadData();
-    if (saved) setState({ data: saved, ready: true });
-    else {
-      const d = sampleData();
-      await saveData(d);
-      setState({ data: d, ready: true });
-    }
-    loaded = true;
-  } catch (e) {
-    console.error(e);
-    setState({ ready: true });
-    showToast('無法讀取手機上的資料，這次的變更可能不會保存');
-  }
-  requestPersistence();
-  // 讀不到手機資料時不自動記帳（避免記在範例資料上）
-  if (!loaded) return;
+/** 每天第一次開啟（含 App 一直開著跨日後回到前景）留一份 */
+function dailySnapshot() {
+  if (state.blocked || !state.ready) return;
+  ensureDailySnapshot(deviceStorage, state.data).catch((e) => console.error('每日留底失敗', e));
+}
+
+let running = false;
+/** 讀到資料之後才開始的背景工作（定期扣款、每日留底）；只會啟動一次 */
+function startRunning() {
+  if (running) return;
+  running = true;
   runRecurring();
   if (typeof document !== 'undefined') {
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') runRecurring();
+      if (document.visibilityState !== 'visible') return;
+      dailySnapshot();
+      runRecurring();
     });
     setInterval(runRecurring, RECURRING_CHECK_MS);
   }
+}
+
+/**
+ * 開啟 App：讀資料（見 data/boot.ts）。讀不到、升級失敗、版本太新 → 保護狀態，絕不寫入；
+ * 第一次使用才載入範例。重試也走這裡。
+ */
+export async function initStore() {
+  const r = await boot(deviceStorage);
+  if (r.kind === 'blocked') {
+    blockedRaw = r.raw;
+    setState({ ready: true, blocked: { reason: r.reason, message: r.message } });
+    return;
+  }
+  blockedRaw = null;
+  setState({ data: r.data, ready: true, blocked: null });
+  if (r.warnings.length) showToast(r.warnings.join('；'));
+  requestPersistence();
+  startRunning();
+}
+
+/**
+ * 整份取代（匯入完整備份、匯入設定、清空、載入範例、還原留底）：
+ * 先把目前資料自動留一份，再存新的。留底失敗就不取代，丟錯給畫面顯示。
+ * 保護狀態下也能用（用來救回資料），留的是手機上原本那份。
+ */
+export async function replaceData(next: AppData, reason: SnapshotReason) {
+  await saveChain; // 等前面還在排隊的存檔寫完，避免舊的蓋掉新的
+  const current = state.blocked ? blockedRaw : state.data;
+  const p = replaceWithSnapshot(deviceStorage, current, next, reason);
+  saveChain = p.catch(() => undefined);
+  await p;
+  const wasBlocked = !!state.blocked;
+  blockedRaw = null;
+  setState({ data: next, blocked: null, ready: true });
+  if (wasBlocked) {
+    requestPersistence();
+    startRunning();
+  }
+}
+
+/** 從某份自動留底還原（還原前會先把目前資料再留一份） */
+export async function restoreSnapshot(id: string) {
+  const data = await loadSnapshotData(deviceStorage, id);
+  await replaceData(data, 'pre-restore');
+}
+
+/** 保護畫面「從範例開始」：只有找不到主資料時才提供 */
+export async function startFresh() {
+  await replaceData(sampleData(), 'pre-sample');
 }

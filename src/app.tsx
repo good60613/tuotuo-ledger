@@ -10,6 +10,7 @@ import { StatsPage } from './pages/Stats';
 import { TodoPage } from './pages/Todo';
 import { SettingsPage } from './pages/Settings';
 import { applyTheme, themeOf } from './theme';
+import { BlockedScreen } from './pages/BlockedScreen';
 
 const NAV_ICON = ['🧾', '📊', '🏠', '📋', '⚙️'];
 
@@ -38,6 +39,16 @@ export function App() {
   }, [s.ready, themeMode]);
 
   if (!s.ready) return <div class="loading">讀取中…</div>;
+
+  // 資料保護狀態：只顯示保護畫面（不顯示範例資料、不能記帳）
+  if (s.blocked)
+    return (
+      <div class="app">
+        <BlockedScreen />
+        <DialogHost />
+        {s.toast && <div class="toast" role="status"><span>{s.toast.text}</span></div>}
+      </div>
+    );
 
   // 目前這頁有沒有底部操作列（統計、明細、待辦）：提示條要再往上抬
   // 有疊層（記帳頁、小帳戶畫面）開著時，畫面上看不到底部操作列，提示條不用再往上抬
