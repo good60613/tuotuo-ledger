@@ -1,7 +1,7 @@
 @echo off
 chcp 65001 >nul
-rem 一鍵打包正式版 APK：建網頁 → 同步到 Android 專案 → 用正式金鑰簽章打包
-rem Java 用 Android Studio 內建的那一份（Android Studio 裝在 D:\1）
+rem One-click release APK: build web, sync to Android, sign and package.
+rem Java is the one bundled with Android Studio, installed at D drive folder 1.
 set "JAVA_HOME=D:\1\jbr"
 cd /d "%~dp0"
 call npm run build || goto :fail
@@ -9,7 +9,7 @@ call npx cap sync android || goto :fail
 cd android
 call .\gradlew.bat assembleRelease || goto :fail
 cd /d "%~dp0"
-rem 複製一份到專案資料夾裡的 APK 資料夾，檔名帶版本號，比較好找
+rem Copy the APK into the APK folder with the version in its name.
 for /f "tokens=2" %%v in ('findstr /c:"versionName" android\app\build.gradle') do set "VER=%%~v"
 if not exist APK mkdir APK
 copy /y "android\app\build\outputs\apk\release\app-release.apk" "APK\拖拖記帳-%VER%.apk" >nul
