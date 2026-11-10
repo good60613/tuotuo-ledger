@@ -1,0 +1,1117 @@
+{
+ "_說明": "拖拖記帳 2.0 第二批圖示清單。lucide 圖示請從 lucide-static 1.71.0（ISC 授權）取同名 SVG 的內層標記；custom 圖示的內層標記直接放在下面 custom 欄位。顯示時一律 24 格、stroke=currentColor、stroke-width=1.8、round 圓頭圓角、fill=none。App 內只存圖示名稱字串，不存 SVG。",
+ "lucide": {
+  "package": "lucide-static",
+  "version": "1.71.0",
+  "license": "ISC"
+ },
+ "custom": {
+  "cuffs": "<circle cx=\"6.4\" cy=\"13.5\" r=\"4.4\"/><circle cx=\"17.6\" cy=\"13.5\" r=\"4.4\"/><rect x=\"9.8\" y=\"12.2\" width=\"4.4\" height=\"2.6\" rx=\"1.3\"/><rect x=\"4.9\" y=\"5.8\" width=\"3\" height=\"2.6\" rx=\".9\"/><rect x=\"16.1\" y=\"5.8\" width=\"3\" height=\"2.6\" rx=\".9\"/>",
+  "collar": "<g transform=\"translate(0 -1.5)\"><path d=\"M3.5 9.5c2.5 3.5 5 5 8.5 5s6-1.5 8.5-5\"/><path d=\"M3.5 12.5c2.5 3.5 5 5 8.5 5s6-1.5 8.5-5\"/><path d=\"M3.5 9.5v3M20.5 9.5v3\"/><circle cx=\"12\" cy=\"19.7\" r=\"1.7\"/></g>",
+  "rope": "<path d=\"M2.5 8.5c2.4 0 2.4 7 4.8 7s2.4-7 4.8-7 2.4 7 4.8 7\"/><path d=\"M2.5 15.5c2.4 0 2.4-7 4.8-7s2.4 7 4.8 7 2.4-7 4.8-7\"/><path d=\"M16.9 15.5l4.6 1.3M16.9 8.5l4.6-1.3\"/>",
+  "whip": "<rect x=\"2.6\" y=\"15.3\" width=\"7.2\" height=\"3.2\" rx=\"1.6\" transform=\"rotate(-45 6.2 16.9)\"/><path d=\"M9 14c.2-4 1.8-7.5 5.5-9.5\"/><path d=\"M9 14c1.5-3 4-5 8-5.7\"/><path d=\"M9 14c2.5-1.8 5.5-2.7 10.5-2.3\"/>",
+  "paddle": "<g transform=\"rotate(30 12 12)\"><rect x=\"8\" y=\"2.5\" width=\"8\" height=\"10\" rx=\"3.5\"/><path d=\"M12 12.5V21M10.2 21h3.6\"/><path d=\"M10.5 6h.01M13.5 6h.01M12 9h.01\"/></g>",
+  "candle": "<path d=\"M12 2.8c1.8 1.9 2.6 3.2 2.6 4.4a2.6 2.6 0 01-5.2 0c0-1.2.8-2.5 2.6-4.4z\"/><path d=\"M12 10.5V12\"/><rect x=\"7.5\" y=\"12\" width=\"9\" height=\"9\" rx=\"1.6\"/><path d=\"M7.5 15.5c1.3.9 2.2.7 3-.8\"/>",
+  "belt": "<path d=\"M9 8.5H4.1a1.6 1.6 0 00-1.6 1.6v3.8a1.6 1.6 0 001.6 1.6H9\"/><path d=\"M15 8.5h4.9a1.6 1.6 0 011.6 1.6v3.8a1.6 1.6 0 01-1.6 1.6H15\"/><rect x=\"9\" y=\"6.5\" width=\"6\" height=\"11\" rx=\"1.4\"/><path d=\"M5.3 12h.01M17.4 12h.01M19.6 12h.01\"/>"
+ },
+ "accountTypeDefaults": {
+  "銀行/郵局": "landmark",
+  "現金": "banknote",
+  "數位銀行": "smartphone",
+  "卡片": "credit-card",
+  "保險箱": "vault",
+  "外幣": "circle-dollar-sign",
+  "悠遊卡": "nfc",
+  "電子錢包": "wallet",
+  "投資": "trending-up",
+  "儲蓄": "piggy-bank",
+  "其他": "layout-grid"
+ },
+ "accountExtraIcons": [
+  "landmark",
+  "banknote",
+  "smartphone",
+  "credit-card",
+  "vault",
+  "circle-dollar-sign",
+  "nfc",
+  "wallet",
+  "trending-up",
+  "piggy-bank",
+  "layout-grid",
+  "building-2",
+  "briefcase",
+  "hand-coins",
+  "shield-check",
+  "receipt"
+ ],
+ "capsuleIcons": {
+  "我先付": "corner-down-left",
+  "朋友付": "corner-down-right",
+  "預算": "target",
+  "報帳": "receipt-text"
+ },
+ "uiIcons": {
+  "首頁": "house",
+  "明細": "list",
+  "統計": "chart-column",
+  "待辦": "square-check",
+  "設定": "sliders-horizontal",
+  "關閉": "x",
+  "刪除": "trash-2",
+  "新增": "plus",
+  "日期": "calendar",
+  "更多": "ellipsis",
+  "退格": "delete"
+ },
+ "badge": {
+  "_說明": "沒有 logo 的銀行或帳戶：取名稱第一個字，放在彩色圓裡（顏色跟帳戶顏色）。",
+  "example": [
+   "中",
+   "郵",
+   "台",
+   "玉",
+   "富",
+   "國"
+  ]
+ },
+ "categoryGroups": [
+  {
+   "id": "cat00",
+   "title": "飲食",
+   "color": "c1",
+   "icons": [
+    {
+     "name": "utensils",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "utensils-crossed",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "coffee",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "cup-soda",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "beer",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "wine",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "cake-slice",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "croissant",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "pizza",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "sandwich",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "soup",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "salad",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "ice-cream-cone",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "cookie",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "apple",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "fish",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "egg-fried",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "beef",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "popcorn",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "candy",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "milk",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "cooking-pot",
+     "label": "",
+     "source": "lucide"
+    }
+   ]
+  },
+  {
+   "id": "cat01",
+   "title": "交通",
+   "color": "c5",
+   "icons": [
+    {
+     "name": "bus",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "train-front",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "car",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "bike",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "fuel",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "plane",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "ship",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "car-taxi-front",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "parking-meter",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "tram-front",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "motorbike",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "ticket",
+     "label": "",
+     "source": "lucide"
+    }
+   ]
+  },
+  {
+   "id": "cat02",
+   "title": "居家",
+   "color": "c2",
+   "icons": [
+    {
+     "name": "house",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "sofa",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "bed",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "bath",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "lamp",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "lightbulb",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "wrench",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "hammer",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "paint-roller",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "key-round",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "plug-zap",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "droplet",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "flame",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "washing-machine",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "refrigerator",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "armchair",
+     "label": "",
+     "source": "lucide"
+    }
+   ]
+  },
+  {
+   "id": "cat03",
+   "title": "購物",
+   "color": "c3",
+   "icons": [
+    {
+     "name": "shopping-cart",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "shopping-bag",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "shopping-basket",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "store",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "gift",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "package",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "tag",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "shirt",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "glasses",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "watch",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "gem",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "crown",
+     "label": "",
+     "source": "lucide"
+    }
+   ]
+  },
+  {
+   "id": "cat04",
+   "title": "娛樂",
+   "color": "c4",
+   "icons": [
+    {
+     "name": "gamepad-2",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "clapperboard",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "film",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "tv",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "music",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "headphones",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "mic",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "drama",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "dices",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "puzzle",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "palette",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "guitar",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "camera",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "party-popper",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "book-open",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "library",
+     "label": "",
+     "source": "lucide"
+    }
+   ]
+  },
+  {
+   "id": "cat05",
+   "title": "醫療健康",
+   "color": "c6",
+   "icons": [
+    {
+     "name": "pill",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "stethoscope",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "syringe",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "heart-pulse",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "activity",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "hospital",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "cross",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "bandage",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "thermometer",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "brain",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "eye",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "dumbbell",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "hand-heart",
+     "label": "",
+     "source": "lucide"
+    }
+   ]
+  },
+  {
+   "id": "cat06",
+   "title": "學習工作",
+   "color": "c5",
+   "icons": [
+    {
+     "name": "graduation-cap",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "school",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "backpack",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "pencil",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "notebook-pen",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "briefcase-business",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "laptop",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "monitor",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "printer",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "calculator",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "presentation",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "file-text",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "book",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "mail",
+     "label": "",
+     "source": "lucide"
+    }
+   ]
+  },
+  {
+   "id": "cat07",
+   "title": "通訊訂閱",
+   "color": "c4",
+   "icons": [
+    {
+     "name": "phone",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "smartphone",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "wifi",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "cloud",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "newspaper",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "podcast",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "message-circle",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "rss",
+     "label": "",
+     "source": "lucide"
+    }
+   ]
+  },
+  {
+   "id": "cat08",
+   "title": "人情家庭",
+   "color": "c3",
+   "icons": [
+    {
+     "name": "users",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "baby",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "heart",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "hand-heart",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "flower-2",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "paw-print",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "dog",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "cat",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "bone",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "cake",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "handshake",
+     "label": "",
+     "source": "lucide"
+    }
+   ]
+  },
+  {
+   "id": "cat09",
+   "title": "美妝香氛",
+   "color": "c3",
+   "icons": [
+    {
+     "name": "spray-can",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "sparkles",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "flower",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "scissors",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "paintbrush",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "sparkle",
+     "label": "",
+     "source": "lucide"
+    }
+   ]
+  },
+  {
+   "id": "cat10",
+   "title": "圈內・BDSM 相關",
+   "color": "c4",
+   "icons": [
+    {
+     "name": "cuffs",
+     "label": "手銬",
+     "source": "custom"
+    },
+    {
+     "name": "collar",
+     "label": "項圈",
+     "source": "custom"
+    },
+    {
+     "name": "rope",
+     "label": "繩",
+     "source": "custom"
+    },
+    {
+     "name": "whip",
+     "label": "鞭",
+     "source": "custom"
+    },
+    {
+     "name": "paddle",
+     "label": "拍板",
+     "source": "custom"
+    },
+    {
+     "name": "candle",
+     "label": "蠟燭",
+     "source": "custom"
+    },
+    {
+     "name": "belt",
+     "label": "皮帶",
+     "source": "custom"
+    },
+    {
+     "name": "venetian-mask",
+     "label": "面具",
+     "source": "lucide"
+    },
+    {
+     "name": "link-2",
+     "label": "鎖鏈",
+     "source": "lucide"
+    },
+    {
+     "name": "lock-keyhole",
+     "label": "鎖",
+     "source": "lucide"
+    },
+    {
+     "name": "key-round",
+     "label": "鑰匙",
+     "source": "lucide"
+    },
+    {
+     "name": "feather",
+     "label": "羽毛",
+     "source": "lucide"
+    },
+    {
+     "name": "rose",
+     "label": "玫瑰",
+     "source": "lucide"
+    },
+    {
+     "name": "eye-closed",
+     "label": "眼罩",
+     "source": "lucide"
+    },
+    {
+     "name": "crown",
+     "label": "皇冠",
+     "source": "lucide"
+    },
+    {
+     "name": "ribbon",
+     "label": "緞帶",
+     "source": "lucide"
+    },
+    {
+     "name": "heart-handshake",
+     "label": "同意",
+     "source": "lucide"
+    }
+   ]
+  },
+  {
+   "id": "cat11",
+   "title": "金融稅務",
+   "color": "c2",
+   "icons": [
+    {
+     "name": "receipt-text",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "coins",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "badge-percent",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "scale",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "file-spreadsheet",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "circle-dollar-sign",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "landmark",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "hand-coins",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "shield-check",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "banknote",
+     "label": "",
+     "source": "lucide"
+    }
+   ]
+  },
+  {
+   "id": "cat12",
+   "title": "旅遊戶外",
+   "color": "c2",
+   "icons": [
+    {
+     "name": "luggage",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "tent",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "map",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "map-pin",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "compass",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "mountain",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "tree-palm",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "umbrella",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "sun",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "hotel",
+     "label": "",
+     "source": "lucide"
+    }
+   ]
+  },
+  {
+   "id": "cat13",
+   "title": "運動",
+   "color": "c1",
+   "icons": [
+    {
+     "name": "footprints",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "trophy",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "volleyball",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "medal",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "waves",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "timer",
+     "label": "",
+     "source": "lucide"
+    }
+   ]
+  },
+  {
+   "id": "cat14",
+   "title": "收入",
+   "color": "c2",
+   "icons": [
+    {
+     "name": "banknote-arrow-up",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "badge-dollar-sign",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "award",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "trending-up",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "gift",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "piggy-bank",
+     "label": "",
+     "source": "lucide"
+    }
+   ]
+  },
+  {
+   "id": "cat15",
+   "title": "其他",
+   "color": "c6",
+   "icons": [
+    {
+     "name": "circle-help",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "ellipsis",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "star",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "bookmark",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "circle-ellipsis",
+     "label": "",
+     "source": "lucide"
+    },
+    {
+     "name": "pin",
+     "label": "",
+     "source": "lucide"
+    }
+   ]
+  }
+ ]
+}
