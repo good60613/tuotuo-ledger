@@ -1,3 +1,4 @@
+import { Icon } from '../components/Icon';
 // 統計頁（左一）：看全貌。點分類或日期 → 跳到明細頁並篩選好。
 import { catBg } from '../components/CatIcon';
 import { useState } from 'preact/hooks';
@@ -146,7 +147,7 @@ function CategorySection({ title, data, list, total, onPick }: { title: string; 
             const c = categoryDisplay(data, x.categoryId);
             return (
               <button key={x.categoryId} class="bar-row" onClick={() => onPick(x.categoryId)}>
-                <span class="bar-icon cat-bg" style={c.color ? { background: catBg(c.color) } : undefined}>{c.icon}</span>
+                <span class="bar-icon cat-bg" style={c.color ? { background: catBg(c.color) } : undefined}><Icon name={c.icon} size={20} /></span>
                 <span class="bar-main">
                   <span class="bar-top">
                     <span>{c.name}</span>
@@ -154,7 +155,7 @@ function CategorySection({ title, data, list, total, onPick }: { title: string; 
                   </span>
                   <span class="bar-track"><span class="bar-fill" style={{ width: `${Math.max(2, x.ratio * 100)}%` }} /></span>
                 </span>
-                <span class="chev">›</span>
+                <span class="chev"><Icon name="chevron-right" size={16} /></span>
               </button>
             );
           })}

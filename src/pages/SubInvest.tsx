@@ -1,3 +1,4 @@
+import { Icon } from '../components/Icon';
 // 投資子畫面：頂端總額（待投入＋各標的現值）、卡片列（待投入／各標的／＋）、更新市值、記一筆四種。
 import { useState } from 'preact/hooks';
 import { useAppState, updateData, showToast } from '../store';
@@ -58,7 +59,7 @@ export function InvestSub() {
             </button>
           );
         })}
-        <button class="mini-card add" onClick={() => setSheet('addHolding')} aria-label="新增標的">＋</button>
+        <button class="mini-card add" onClick={() => setSheet('addHolding')} aria-label="新增標的"><Icon name="plus" size={20} /></button>
       </div>
 
       {sheet === 'entry' && cash && <InvestEntry cash={cash} holdings={hs} preset={selHolding?.id ?? null} onClose={() => setSheet(null)} />}

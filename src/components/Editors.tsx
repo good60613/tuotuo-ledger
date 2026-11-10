@@ -105,9 +105,9 @@ export function TagManager({ onClose }: { onClose: () => void }) {
             onClick={() => updateData((x) => togglePin(x, n.text))}
             aria-label={n.pinned ? '取消釘選' : '釘選'}
           >
-            {n.pinned ? '★' : '☆'}
+            <Icon name="star" class={n.pinned ? 'star-on' : ''} />
           </button>
-          <button class="icon-btn danger" onClick={() => updateData((x) => hideNote(x, n.text))} aria-label="刪除">🗑</button>
+          <button class="icon-btn danger" onClick={() => updateData((x) => hideNote(x, n.text))} aria-label="刪除"><Icon name="trash-2" /></button>
         </div>
       ))}
     </Sheet>

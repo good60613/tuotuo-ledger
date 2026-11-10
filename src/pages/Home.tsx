@@ -224,10 +224,10 @@ export function HomePage() {
           <div class="drag-hint show" style={{ height: `${HOME.dragHintPx}px`, lineHeight: `${HOME.dragHintPx}px` }}>{hint}</div>
           <div class="home-zones">
             <div class="drop-zone zone-expense" data-drop="expense">
-              <span class="zone-icon">－</span>支出
+              <span class="zone-icon"><Icon name="minus" size={22} /></span>支出
             </div>
             <div class="drop-zone zone-income" data-drop="income">
-              <span class="zone-icon">＋</span>收入
+              <span class="zone-icon"><Icon name="plus" size={22} /></span>收入
             </div>
           </div>
           </>

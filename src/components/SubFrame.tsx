@@ -1,3 +1,4 @@
+import { Icon } from './Icon';
 // 小帳戶子畫面的共用框架：最上面總額、中間各自的內容、最下面該小帳戶的時間軸（按結算期，附月份切換）、「記一筆」按鈕。
 import { useState } from 'preact/hooks';
 import type { ComponentChildren } from 'preact';
@@ -36,7 +37,7 @@ export function SubFrame({ title, total, subLine, topRight, accountIds, children
   return (
     <div class="sub-screen" style={{ '--sub-fab-right': `${SUB_FAB.rightPx}px`, '--sub-fab-bottom': `${SUB_FAB.bottomPx}px` }}>
       <div class="sub-top">
-        <button class="icon-btn" onClick={closeOverlay} aria-label="返回">‹</button>
+        <button class="icon-btn" onClick={closeOverlay} aria-label="返回"><Icon name="chevron-left" /></button>
         <span class="sub-title">{title}</span>
         <span class="sub-top-right">{topRight}</span>
       </div>
@@ -47,7 +48,7 @@ export function SubFrame({ title, total, subLine, topRight, accountIds, children
         <PeriodBar hideAccount period={cur} onPeriod={setPeriod} />
         <TxList data={d} txs={txs} onTap={openTx} empty="這一期沒有紀錄" />
       </div>
-      <button class="fab" onClick={onAdd} aria-label="記一筆">＋</button>
+      <button class="fab" onClick={onAdd} aria-label="記一筆"><Icon name="plus" size={28} /></button>
     </div>
   );
 }

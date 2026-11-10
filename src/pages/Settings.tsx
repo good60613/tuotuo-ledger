@@ -11,7 +11,9 @@ import {
 } from '../data/ops';
 import { SMALL_KINDS, KIND_LABEL, type Account, type AccountKind, type Category, type CategoryType } from '../data/types';
 import { allBalances } from '../data/calc';
-import { accountName, accountsOfKind, bankAccounts, categoriesOf, KIND_ICON } from '../selectors';
+import { accountName, accountsOfKind, bankAccounts, categoriesOf } from '../selectors';
+import { ACCOUNT_KIND_ICON } from '../icons';
+import LUCIDE_LICENSE from '../../LICENSE-lucide.txt?raw';
 import { applySettingsImport, checkSettingsImport, exportJson, readBackup, saveBackupFile, type SettingsImportMapping } from '../data/backup';
 import { sampleData, blankData } from '../data/seed';
 import { clearRecords } from '../data/reset';
@@ -49,6 +51,7 @@ type SheetState =
   | { k: 'account'; kind: AccountKind; existing?: Account }
   | { k: 'category'; type: CategoryType; existing?: Category }
   | { k: 'tags' }
+  | { k: 'license' }
   | { k: 'defaultReimb' }
   | { k: 'settle' }
   | { k: 'carrier' }
@@ -276,7 +279,7 @@ export function SettingsPage() {
         <span>{a.name}</span>
         <span class="muted small">目前 {money(bal.get(a.id) ?? 0)}</span>
       </button>
-      {canDelete && <button class="icon-btn danger" onClick={() => deleteAccount(a)} aria-label="刪除">🗑</button>}
+      {canDelete && <button class="icon-btn danger" onClick={() => deleteAccount(a)} aria-label="刪除"><Icon name="trash-2" /></button>}
     </div>
   );
   const accList = (list: Account[], canDelete: (a: Account) => boolean) => (
@@ -359,7 +362,7 @@ export function SettingsPage() {
         </>
       ) : (
         <div class="sub-head">
-          <button class="icon-btn" onClick={() => setView('menu')} aria-label="返回設定">‹</button>
+          <button class="icon-btn" onClick={() => setView('menu')} aria-label="返回設定"><Icon name="chevron-left" /></button>
           <h1 class="page-title">{{ accounts: '帳戶管理', small: '小帳戶管理', categories: '分類管理', recurring: '定期扣款', backup: '資料備份', demo: '清空或範例' }[view]}</h1>
         </div>
       )}
@@ -368,7 +371,7 @@ export function SettingsPage() {
         <h3>首頁卡片</h3>
         {banks.length > 1 && <p class="muted small">點一下修改，長按拖曳換位置</p>}
         {accList(banks, () => true)}
-        <button class="add-row" onClick={() => setSheet({ k: 'account', kind: 'bank' })}>＋ 新增帳戶</button>
+        <button class="add-row" onClick={() => setSheet({ k: 'account', kind: 'bank' })}><Icon name="plus" size={16} /> 新增帳戶</button>
       </section>}
 
       {view === 'small' && <section class="panel">
@@ -378,10 +381,10 @@ export function SettingsPage() {
           const multi = MULTI_KINDS.includes(kind);
           return (
             <div key={kind} class="kind-group">
-              <div class="kind-title">{KIND_ICON[kind]} {KIND_LABEL[kind]}{multi && <span class="muted small">（可以有多個）</span>}</div>
+              <div class="kind-title"><Icon name={ACCOUNT_KIND_ICON[kind]} size={18} /> {KIND_LABEL[kind]}{multi && <span class="muted small">（可以有多個）</span>}</div>
               {accList(list, (a) => (multi || list.length > 1) && !(a.kind === 'invest' && a.subtype !== 'holding'))}
               {(multi || list.length === 0) && (
-                <button class="add-row" onClick={() => setSheet({ k: 'account', kind })}>＋ 新增{KIND_LABEL[kind]}</button>
+                <button class="add-row" onClick={() => setSheet({ k: 'account', kind })}><Icon name="plus" size={16} /> 新增{KIND_LABEL[kind]}</button>
               )}
             </div>
           );
@@ -419,12 +422,12 @@ export function SettingsPage() {
               ))}
               {drag ? (
                 <div class={`cat trash${drag.over === TRASH_ID ? ' over' : ''}`} data-sort={TRASH_ID}>
-                  <span class="cat-icon">✕</span>
+                  <span class="cat-icon"><Icon name="x" /></span>
                   <span class="cat-name">刪除</span>
                 </div>
               ) : (
                 <button class="cat add" onClick={() => setSheet({ k: 'category', type: catType })}>
-                  <span class="cat-icon">＋</span>
+                  <span class="cat-icon"><Icon name="plus" /></span>
                   <span class="cat-name">新增</span>
                 </button>
               )}
@@ -476,6 +479,13 @@ export function SettingsPage() {
         />
       </section>}
 
+      {view === 'menu' && (
+        <button class="setting-row license-row" onClick={() => setSheet({ k: 'license' })}>
+          <span>開放原始碼授權</span>
+          <span class="muted">Lucide ›</span>
+        </button>
+      )}
+
       {(view === 'demo' || view === 'menu') && <section class="panel">
         <h3>清空或範例</h3>
         <div class="btn-row three">
@@ -491,6 +501,12 @@ export function SettingsPage() {
       {sheet?.k === 'settle' && <SettleForm onClose={() => setSheet(null)} />}
       {sheet?.k === 'carrier' && <CarrierForm onClose={() => setSheet(null)} />}
       {sheet?.k === 'tags' && <TagManager onClose={() => setSheet(null)} />}
+      {sheet?.k === 'license' && (
+        <Sheet title="開放原始碼授權" onClose={() => setSheet(null)}>
+          <p class="muted small">圖示來自 Lucide（ISC 授權）。</p>
+          <pre class="license-text">{LUCIDE_LICENSE}</pre>
+        </Sheet>
+      )}
       {sheet?.k === 'snapshots' && (
         <Sheet title="自動留底" onClose={() => setSheet(null)}>
           <p class="muted small">點一份還原。還原前會先把目前資料再留一份，按錯可以還原回來。</p>

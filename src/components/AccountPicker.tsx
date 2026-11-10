@@ -1,7 +1,9 @@
 import { useAppState } from '../store';
 import { Sheet } from './Sheet';
 import { allBalances } from '../data/calc';
-import { bankAccounts, balls, KIND_ICON } from '../selectors';
+import { bankAccounts, balls } from '../selectors';
+import { Icon } from './Icon';
+import { accountIconOf } from '../categoryStyle';
 import { money } from '../format';
 
 interface Props {
@@ -37,7 +39,7 @@ export function AccountPicker(p: Props) {
         p.onClose();
       }}
     >
-      <span class="pick-icon">{icon}</span>
+      <span class="pick-icon"><Icon name={icon} /></span>
       <span class="pick-name">{name}</span>
       <span class="pick-amt">{money(bal.get(id) ?? 0)}</span>
     </button>
@@ -64,17 +66,17 @@ export function AccountPicker(p: Props) {
             p.onClose();
           }}
         >
-          <span class="pick-icon">📚</span>
+          <span class="pick-icon"><Icon name="layers" /></span>
           <span class="pick-name">全部</span>
         </button>
       )}
       {bankAccounts(d).some((a) => shown(a.id)) && <div class="pick-group">一般帳戶</div>}
-      {bankAccounts(d).map((a) => row(a.id, a.name, KIND_ICON.bank))}
+      {bankAccounts(d).map((a) => row(a.id, a.name, accountIconOf(a)))}
       {!p.mainOnly && balls(d).map((b) =>
         !b.accounts.some((a) => shown(a.id)) ? null : (
           <div key={b.kind}>
             <div class="pick-group">{b.label}</div>
-            {b.accounts.map((a) => row(a.id, a.name, KIND_ICON[b.kind]))}
+            {b.accounts.map((a) => row(a.id, a.name, accountIconOf(a)))}
           </div>
         ),
       )}

@@ -14,6 +14,7 @@ const EXTRA = [
   'chevron-left', 'chevron-right', 'chevron-down', 'chevron-up', 'check', 'pencil', 'grip-vertical',
   'arrow-left-right', 'rotate-ccw', 'download', 'upload', 'circle-alert', 'info', 'clock', 'repeat',
   'archive', 'shield', 'eye-off', 'search', 'minus', 'arrow-left', 'calendar-clock', 'history',
+  'undo-2', 'coins', 'corner-up-right', 'triangle-alert', 'circle-check', 'arrow-right', 'layers',
 ];
 
 const names = new Set([

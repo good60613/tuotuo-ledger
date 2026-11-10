@@ -1,3 +1,4 @@
+import { Icon } from '../components/Icon';
 // 明細頁（右一）：時間軸列出每一筆
 import { useAppState, setState } from '../store';
 import { totals, periodKey, dayKey, touchesAccount, statEffect, kindLookup, inMainLedger } from '../data/calc';
@@ -49,12 +50,12 @@ export function DetailPage() {
         <div class="filter-chips">
           {f.categoryId && (
             <button class="chip" onClick={() => setFilter({ categoryId: null })}>
-              分類：{categoryDisplay(d, f.categoryId).name} ✕
+              分類：{categoryDisplay(d, f.categoryId).name} <Icon name="x" size={14} />
             </button>
           )}
           {f.day && (
             <button class="chip" onClick={() => setFilter({ day: null })}>
-              日期：{mdLabel(new Date(f.day + 'T00:00'))} ✕
+              日期：{mdLabel(new Date(f.day + 'T00:00'))} <Icon name="x" size={14} />
             </button>
           )}
         </div>
@@ -62,7 +63,7 @@ export function DetailPage() {
 
       <TxList data={d} txs={txs} onTap={openTx} empty="這個條件下沒有紀錄" />
 
-      <button class="fab" onClick={() => quickEntry(f.accountId)} aria-label="快速記帳">＋</button>
+      <button class="fab" onClick={() => quickEntry(f.accountId)} aria-label="快速記帳"><Icon name="plus" size={28} /></button>
 
       <BottomBar>
         <PeriodBar

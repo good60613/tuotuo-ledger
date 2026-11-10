@@ -749,3 +749,14 @@ html.no-glass .mark-chip.glass.on { background: var(--mk); }
   .term.marked { animation: none; }
   .tags { transition: none; }
 }
+
+/* ---------- 2.1 G 段：其餘畫面的圖示對齊 ---------- */
+svg.icon { vertical-align: -0.2em; flex: none; }
+.star-on { fill: currentColor; }
+.zone-icon { display: inline-flex; }
+.sub-kind-icon { vertical-align: -2px; }
+.blocked-icon { vertical-align: -4px; color: var(--warn); }
+.fab, .chip, .pill-btn, .add-row, .goal-row.add { align-items: center; }
+.chip .icon, .add-row .icon, .goal-row .icon, .pill-btn .icon { margin: 0 2px; }
+.license-text { white-space: pre-wrap; font-size: 12px; line-height: 1.5; user-select: text; -webkit-user-select: text; max-height: 50vh; overflow-y: auto; margin: 0; }
+.license-row { margin-top: 12px; }

@@ -3,7 +3,9 @@ import { useState } from 'preact/hooks';
 import { useAppState, openOverlay, updateData, showToast, type Overlay } from '../store';
 import { allBalances } from '../data/calc';
 import { calibrate, OpError } from '../data/ops';
-import { accountsOfKind, KIND_ICON } from '../selectors';
+import { accountsOfKind } from '../selectors';
+import { Icon } from '../components/Icon';
+import { ACCOUNT_KIND_ICON } from '../icons';
 import { SubFrame } from '../components/SubFrame';
 import { AmountForm, diffText } from '../components/AmountForm';
 import { InvestSub } from './SubInvest';
@@ -79,7 +81,7 @@ function WalletSub({ kind }: { kind: 'easycard' | 'ewallet' }) {
               onClick={() => setSel(a.id === sel ? null : a.id)}
               aria-pressed={a.id === sel}
             >
-              <span class="mini-card-name">{KIND_ICON[kind]} {a.name}</span>
+              <span class="mini-card-name"><Icon name={ACCOUNT_KIND_ICON[kind]} size={16} /> {a.name}</span>
               <b>{money(bal.get(a.id) ?? 0)}</b>
             </button>
           ))}

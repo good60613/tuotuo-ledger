@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 桌面小工具的顏色（系統暗色模式用）：色名與 values/widget_colors.xml 完全一致，色值對照 src/theme.ts 的暗色色票（金色夕陽） -->
+<resources>
+    <color name="widget_bg">#E616171A</color>
+    <color name="widget_hint_bg">#33F4EEE2</color>
+    <color name="widget_text">#F4EEE2</color>
+    <color name="widget_muted">#B9AF9E</color>
+    <color name="widget_expense">#F2837A</color>
+    <color name="widget_negative">#F2837A</color>
+</resources>

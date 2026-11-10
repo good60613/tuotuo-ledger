@@ -1,3 +1,4 @@
+import { Icon } from '../components/Icon';
 // 設定 → 定期扣款（2.0 補強批）：固定金額的每月訂閱。規則見 data/recurring.ts。
 import { useState } from 'preact/hooks';
 import { useAppState, updateData, showToast, confirmDanger } from '../store';
@@ -52,7 +53,7 @@ export function RecurringPanel() {
           </div>
         );
       })}
-      <button class="add-row" onClick={() => setEdit('new')}>＋ 新增定期扣款</button>
+      <button class="add-row" onClick={() => setEdit('new')}><Icon name="plus" size={16} /> 新增定期扣款</button>
       {edit && <RecurringForm existing={edit === 'new' ? null : edit} onClose={() => setEdit(null)} />}
     </section>
   );
@@ -118,7 +119,7 @@ function RecurringForm({ existing, onClose }: { existing: Recurring | null; onCl
         </label>
         <div class="field">
           <span>預設扣款帳戶</span>
-          <button class="pill-btn" onClick={() => setPicking(true)}>{acc ? accountName(d, acc) : '選擇帳戶'} ▾</button>
+          <button class="pill-btn" onClick={() => setPicking(true)}>{acc ? accountName(d, acc) : '選擇帳戶'} <Icon name="chevron-down" size={14} /></button>
         </div>
         {accKind && accKind !== 'bank' && <p class="muted small">小帳戶扣款：只記在小帳戶，不算主帳支出，也不預留剩餘可用。</p>}
         <p class="muted small">臨時要換帳戶：等那筆自動記下來後，點進那筆自己改。</p>

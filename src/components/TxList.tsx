@@ -4,7 +4,8 @@ import { Icon } from './Icon';
 import { colorOf } from '../categoryStyle';
 import type { AppData, Transaction } from '../data/types';
 import { statEffect, kindLookup, dayKey } from '../data/calc';
-import { accountName, categoryOf, KIND_ICON } from '../selectors';
+import { accountName, categoryOf } from '../selectors';
+import { ACCOUNT_KIND_ICON } from '../icons';
 import { money, mdLabel, weekday, hm } from '../format';
 import { GESTURE } from '../config';
 import { vibrate } from '../gestures/haptics';
@@ -114,9 +115,9 @@ export function TxList({ data, txs, onTap, selected, empty, onLongPress }: Props
 
 /** 沒有分類的小帳戶紀錄（配息、費用、利息）的顯示 */
 const SOURCE_LABEL: Record<string, [string, string]> = {
-  'invest-dividend': ['💵', '配息'],
-  'invest-fee': ['🧾', '費用'],
-  'saving-interest': ['🪙', '利息'],
+  'invest-dividend': ['banknote', '配息'],
+  'invest-fee': ['receipt-text', '費用'],
+  'saving-interest': ['coins', '利息'],
 };
 
 /** 一筆紀錄要顯示的圖示、標題、金額字串與樣式（TxCard 與首頁最近紀錄共用；只整理顯示，不算金額） */
@@ -127,28 +128,28 @@ export function txView(data: AppData, t: Transaction) {
   let fg: string | undefined;
   let catName: string | undefined;
   if (t.type === 'transfer') {
-    icon = '⇄';
+    icon = 'arrow-left-right';
     title = `${accountName(data, t.accountId)} ⇄ ${accountName(data, t.toAccountId)}`;
     amt = money(t.amount);
     cls = 'transfer';
   } else if (t.type === 'reimburse_in') {
-    icon = '↩';
+    icon = 'undo-2';
     title = `${t.reimburseKind === 'advance' ? '我先付收回' : '報帳入帳'} → ${accountName(data, t.toAccountId)}`;
     amt = '+' + money(t.amount);
     cls = 'reimb-in';
   } else if (t.type === 'owed_repay') {
     // 還朋友錢：從帳戶扣款；用一般帳戶還算支出（補強批）
-    icon = '↪';
+    icon = 'corner-up-right';
     title = '還朋友錢';
     amt = '-' + money(t.amount);
     cls = acc?.kind === 'bank' ? 'expense' : 'transfer';
   } else if (t.type === 'adjust') {
-    icon = '⚖';
+    icon = 'scale';
     title = '校正';
     amt = (t.adjustDir === 'down' ? '-' : '+') + money(t.amount);
     cls = 'transfer';
   } else if (t.type === 'valuation') {
-    icon = '📈';
+    icon = 'trending-up';
     title = '更新市值';
     amt = money(t.amount);
     cls = 'transfer';
@@ -204,7 +205,7 @@ export function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { 
   }
   return (
     <button class={`tx-card${frame}${selected ? ' selected' : ''}`} onClick={() => onTap(t)} {...longPressHandlers(t, onLongPress)}>
-      {selectable && <span class={`check${selected ? ' on' : ''}`}>{selected ? '✓' : ''}</span>}
+      {selectable && <span class={`check${selected ? ' on' : ''}`}>{selected ? <Icon name="check" size={14} /> : ''}</span>}
       <span class={`tx-icon ${cls}`} style={bg ? { background: bg, color: fg } : undefined}><Icon name={icon} size={20} /></span>
       <span class="tx-mid">
         <span class="tx-title">
@@ -213,7 +214,7 @@ export function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { 
         </span>
         <span class="tx-sub">
           {hm(d)}
-          {t.type !== 'transfer' && acc && <> · {KIND_ICON[acc.kind]} {acc.name}</>}
+          {t.type !== 'transfer' && acc && <> · <Icon name={ACCOUNT_KIND_ICON[acc.kind]} size={12} class="sub-kind-icon" /> {acc.name}</>}
           {t.type === 'adjust' && <span class="badge calib">不計收支</span>}
           {t.type === 'owed' && <> · 別人先付</>}
           {t.recurringId && <> · 定期</>}

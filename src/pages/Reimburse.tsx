@@ -1,11 +1,12 @@
+import { Icon } from '../components/Icon';
 // 待辦頁的「報帳」「我先付」分頁：追蹤公司／朋友還欠多少錢。（第四批起從報帳頁搬進待辦頁）
 // 2.0：我先付沿用報帳同一套（reimbursable＋reimburseKind='advance'），只有文字與顏色不同。
 
 export type ClaimKind = 'reimb' | 'advance';
 
 const TXT = {
-  reimb: { pending: '待報帳', done: '已報帳', pendingTotal: '待報帳總額', doneTotal: '已收回總額', emptyPending: '沒有待報帳的紀錄 🎉', emptyDone: '還沒有已報帳的紀錄', pickHint: '點選要報帳的紀錄（可多筆）', revertHint: '按錯了？點一筆可整批退回待報帳', act: '已報帳', revert: '退回待報帳', title: '報帳紀錄' },
-  advance: { pending: '待收回', done: '已收回', pendingTotal: '我先付待收回', doneTotal: '已收回總額', emptyPending: '沒有待收回的款項 🎉', emptyDone: '還沒有已收回的款項', pickHint: '點選朋友還了的款項（可多筆）', revertHint: '按錯了？點一筆可整批退回待收回', act: '已收回', revert: '退回待收回', title: '我先付紀錄' },
+  reimb: { pending: '待報帳', done: '已報帳', pendingTotal: '待報帳總額', doneTotal: '已收回總額', emptyPending: '沒有待報帳的紀錄', emptyDone: '還沒有已報帳的紀錄', pickHint: '點選要報帳的紀錄（可多筆）', revertHint: '按錯了？點一筆可整批退回待報帳', act: '已報帳', revert: '退回待報帳', title: '報帳紀錄' },
+  advance: { pending: '待收回', done: '已收回', pendingTotal: '我先付待收回', doneTotal: '已收回總額', emptyPending: '沒有待收回的款項', emptyDone: '還沒有已收回的款項', pickHint: '點選朋友還了的款項（可多筆）', revertHint: '按錯了？點一筆可整批退回待收回', act: '已收回', revert: '退回待收回', title: '我先付紀錄' },
 } as const;
 import { useEffect, useState } from 'preact/hooks';
 import { useAppState, getState, updateData, showToast, PAGES } from '../store';
@@ -169,7 +170,7 @@ function TxDetail({ kind, t, onClose, onReimburse, onRevert }: { kind: ClaimKind
   return (
     <Sheet title={T.title} onClose={onClose}>
       <div class="detail-head">
-        <span class="tx-icon">{c?.icon ?? '？'}</span>
+        <span class="tx-icon"><Icon name={c?.icon ?? '？'} size={20} /></span>
         <span class="grow detail-name">{c?.name ?? '（已刪除分類）'}</span>
         <span class="amt-mid expense">-{money(t.amount)}</span>
       </div>
@@ -187,7 +188,7 @@ function TxDetail({ kind, t, onClose, onReimburse, onRevert }: { kind: ClaimKind
             openTx(t);
           }}
         >
-          ✏️ 編輯
+          <Icon name="pencil" size={16} /> 編輯
         </button>
         {isDone ? (
           <button class="btn danger" onClick={onRevert}>{T.revert}</button>
@@ -229,7 +230,7 @@ function ReimburseConfirm({ kind, ids, total, onClose, onDone }: { kind: ClaimKi
         </div>
         <div class="field">
           <span>錢進了哪個帳戶{usedDefault ? '（預設報帳帳戶）' : ''}</span>
-          <button class="pill-btn" onClick={() => setPicking(true)}>{acc ? accountName(d, acc) : '選擇帳戶'} ▾</button>
+          <button class="pill-btn" onClick={() => setPicking(true)}>{acc ? accountName(d, acc) : '選擇帳戶'} <Icon name="chevron-down" size={14} /></button>
         </div>
         {kind === 'advance' && acc && d.accounts.find((a) => a.id === acc)?.kind !== 'bank' && (
           <div class="muted small">這筆會留在小帳戶，不會算進主帳支出</div>

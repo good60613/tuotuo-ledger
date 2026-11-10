@@ -1,3 +1,4 @@
+import { Icon } from '../components/Icon';
 // 待辦頁的「預算」分頁（第四批第 3、4 段）：操作比照報帳分頁——可多選、整批按「已支付」。
 // 已支付：當天新增一筆真正的支出（金額可改成實際付款金額），帳戶扣款、預算消掉。
 import { useEffect, useState } from 'preact/hooks';
@@ -67,7 +68,7 @@ export function BudgetTab({ onBar }: { onBar?: (on: boolean) => void }) {
             txs={pending}
             onTap={onTapPending}
             selected={multi ? new Set(selected) : undefined}
-            empty="沒有未付的預算 🎉"
+            empty="沒有未付的預算"
             onLongPress={(t) => {
               setMulti(true);
               setSel((x) => (multi ? (x.includes(t.id) ? x : [...x, t.id]) : [t.id]));
@@ -158,7 +159,7 @@ function BudgetDetail({ t, onClose, onPay, onRevert }: { t: Transaction; onClose
   return (
     <Sheet title="預算紀錄" onClose={onClose}>
       <div class="detail-head">
-        <span class="tx-icon">{c?.icon ?? '？'}</span>
+        <span class="tx-icon"><Icon name={c?.icon ?? '？'} size={20} /></span>
         <span class="grow detail-name">{c?.name ?? '（已刪除分類）'}</span>
         <span class="amt-mid budget-color">{money(t.amount)}</span>
       </div>
@@ -179,7 +180,7 @@ function BudgetDetail({ t, onClose, onPay, onRevert }: { t: Transaction; onClose
             openTx(t);
           }}
         >
-          ✏️ 編輯
+          <Icon name="pencil" size={16} /> 編輯
         </button>
         {isPaid ? (
           <button class="btn danger" onClick={onRevert}>退回未付</button>

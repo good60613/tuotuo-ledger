@@ -1,3 +1,4 @@
+import { Icon } from '../components/Icon';
 // 待辦頁的「朋友付」分頁（2.0 第一批）：別人先幫我付的錢，還錢時選從哪個帳戶付（任何帳戶都可以）。
 // 操作比照報帳分頁：點一筆看詳細、長按多選、整批還款；已還的可以退回未還。
 import { useEffect, useState } from 'preact/hooks';
@@ -62,7 +63,7 @@ export function OwedTab({ onBar }: { onBar?: (on: boolean) => void }) {
               txs={pending}
               onTap={(t) => (multi ? setSel((x) => (x.includes(t.id) ? x.filter((i) => i !== t.id) : [...x, t.id])) : setDetail(t))}
               selected={multi ? new Set(selected) : undefined}
-              empty="沒有要還朋友的款項 🎉"
+              empty="沒有要還朋友的款項"
               onLongPress={(t) => {
                 setMulti(true);
                 setSel((x) => (multi ? (x.includes(t.id) ? x : [...x, t.id]) : [t.id]));
@@ -167,7 +168,7 @@ function OwedDetail({ t, onClose, onPay, onRevert }: { t: Transaction; onClose: 
   return (
     <Sheet title="朋友付紀錄" onClose={onClose}>
       <div class="detail-head">
-        <span class="tx-icon">{c?.icon ?? '？'}</span>
+        <span class="tx-icon"><Icon name={c?.icon ?? '？'} size={20} /></span>
         <span class="grow detail-name">{c?.name ?? '（已刪除分類）'}</span>
         <span class="amt-mid expense">-{money(t.amount)}</span>
       </div>
@@ -185,7 +186,7 @@ function OwedDetail({ t, onClose, onPay, onRevert }: { t: Transaction; onClose: 
             openTx(t);
           }}
         >
-          ✏️ 編輯
+          <Icon name="pencil" size={16} /> 編輯
         </button>
         {isDone ? (
           <button class="btn danger" onClick={onRevert}>退回未還</button>
@@ -231,7 +232,7 @@ function OwedPay({ ids, total, onClose, onDone }: { ids: string[]; total: number
         </div>
         <div class="field">
           <span>從哪個帳戶付</span>
-          <button class="pill-btn" onClick={() => setPicking(true)}>{acc ? accountName(d, acc) : '選擇帳戶'} ▾</button>
+          <button class="pill-btn" onClick={() => setPicking(true)}>{acc ? accountName(d, acc) : '選擇帳戶'} <Icon name="chevron-down" size={14} /></button>
         </div>
         {kind && kind !== 'bank' ? (
           <div class="muted small">用小帳戶還：只記在小帳戶自己的明細，不算進主帳支出（儲值時已經算過）。</div>
