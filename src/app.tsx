@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useRef } from 'preact/hooks';
 import { PAGES, getState, goPage, useAppState, hideToast } from './store';
 import { attachPager } from './gestures/pager';
 import { PAGER, BOTTOM_BAR } from './config';
@@ -20,7 +20,21 @@ const NAV_ICON = UI_ICONS;
 export function App() {
   const s = useAppState();
   const pagerRef = useRef<HTMLDivElement>(null);
-  const [offset, setOffset] = useState<number | null>(null);
+  // 翻頁時手指的位移直接寫到 track 的樣式上，不經過 state：
+  // 用 state 的話每移動一點點就會把 5 個分頁（含首頁的餘額計算）整個重畫一次，這就是翻頁會頓的原因。
+  const trackRef = useRef<HTMLDivElement>(null);
+  const onOffset = (dx: number | null) => {
+    const t = trackRef.current;
+    if (!t) return;
+    const base = -getState().page * 100;
+    if (dx === null) {
+      t.style.transition = `transform ${PAGER.animMs}ms ease-out`;
+      t.style.transform = `translateX(${base}%)`;
+    } else {
+      t.style.transition = 'none';
+      t.style.transform = `translateX(calc(${base}% + ${dx}px))`;
+    }
+  };
 
   useEffect(() => {
     const el = pagerRef.current;
@@ -31,7 +45,7 @@ export function App() {
       setPage: goPage,
       // 卡片拿起中、或有輸入畫面開著，都不換頁
       getDragging: () => getState().dragging || getState().overlays.length > 0,
-      onOffset: setOffset,
+      onOffset,
     });
   }, [s.ready]);
 
@@ -69,9 +83,10 @@ export function App() {
       <div class="pager" ref={pagerRef}>
         <div
           class="track"
+          ref={trackRef}
           style={{
-            transform: `translateX(calc(${-s.page * 100}% + ${offset ?? 0}px))`,
-            transition: s.fade ? 'none' : offset === null ? `transform ${PAGER.animMs}ms ease-out` : 'none',
+            transform: `translateX(${-s.page * 100}%)`,
+            transition: s.fade ? 'none' : `transform ${PAGER.animMs}ms ease-out`,
           }}
         >
           {pages.map((p, i) => (
