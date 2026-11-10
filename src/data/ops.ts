@@ -94,6 +94,27 @@ export function addTransaction(data: AppData, input: TxInput, id = uid('t')): { 
   };
 }
 
+/**
+ * 一次新增多筆（拖拖計算機拆帳）。全部檢查過才一起存，任何一筆不合格就整批不存，
+ * 不會出現「拆一半」的情況。回傳新增的 id（復原時一起刪）。
+ */
+export function addTransactions(data: AppData, inputs: TxInput[], mkId: () => string = () => uid('t')): { data: AppData; ids: string[] } {
+  if (inputs.length === 0) throw new OpError('沒有要記的紀錄');
+  for (const i of inputs) validate(data, i);
+  const now = new Date().toISOString();
+  const ids = inputs.map(() => mkId());
+  const txs = inputs.map((i, k) => build(i, ids[k], now));
+  const lastAcc = [...inputs].reverse().find((i) => i.type !== 'owed')?.accountId;
+  return {
+    ids,
+    data: {
+      ...data,
+      transactions: [...data.transactions, ...txs],
+      settings: lastAcc ? { ...data.settings, lastUsedAccountId: lastAcc } : data.settings,
+    },
+  };
+}
+
 /** 已報帳（done）、已付（paid）預算的紀錄，金額、帳戶、類型、報帳／預算不能改，要先在待辦頁退回 */
 export function isLocked(t: Transaction): boolean {
   return t.reimburseStatus === 'done' || (!!t.budget && t.budgetStatus === 'paid') || (t.type === 'owed' && t.owedStatus === 'paid');
