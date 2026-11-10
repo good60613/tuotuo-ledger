@@ -38,6 +38,10 @@ function balanceDeltas(t: Transaction): [string | undefined, number][] {
       return [[t.toAccountId, t.amount]];
     case 'adjust':
       return [[t.accountId, t.adjustDir === 'down' ? -t.amount : t.amount]];
+    case 'owed_repay':
+      // 還借我：從選的帳戶扣款（任何帳戶都可以）
+      return [[t.accountId, -t.amount]];
+    // 'owed'（借我）不動任何帳戶
     default:
       // valuation 不動餘額
       return [];
@@ -83,13 +87,30 @@ export function pendingBudgetTotal(data: Pick<AppData, 'accounts' | 'transaction
     .reduce((s, t) => s + t.amount, 0);
 }
 
-/** 剩餘可用＝一般帳戶餘額合計－未付預算 */
-export function spendableTotal(data: Pick<AppData, 'accounts' | 'transactions'>): number {
+/** 是否為「還沒還」的借我 */
+export function isPendingOwed(t: Transaction): boolean {
+  return t.type === 'owed' && t.owedStatus !== 'paid';
+}
+
+/** 未還借我合計（首頁剩餘可用旁的「借我 600」） */
+export function pendingOwedTotal(data: Pick<AppData, 'transactions'>): number {
+  return data.transactions.filter(isPendingOwed).reduce((s, t) => s + t.amount, 0);
+}
+
+/** 一般帳戶餘額合計（帳戶加總） */
+export function bankTotal(data: Pick<AppData, 'accounts' | 'transactions'>): number {
   const bal = allBalances(data);
-  const sum = data.accounts
+  return data.accounts
     .filter((a) => SPENDABLE_KINDS.includes(a.kind))
     .reduce((s, a) => s + (bal.get(a.id) ?? 0), 0);
-  return sum - pendingBudgetTotal(data);
+}
+
+/**
+ * 剩餘可用＝一般帳戶加總－未付預算－未還借我（2.0）。
+ * 代墊、報帳還沒收回的錢不先加回，等真的入帳才算（保守）。
+ */
+export function spendableTotal(data: Pick<AppData, 'accounts' | 'transactions'>): number {
+  return bankTotal(data) - pendingBudgetTotal(data) - pendingOwedTotal(data);
 }
 
 // ---------------- 投資 ----------------
@@ -194,6 +215,10 @@ export interface StatEffect {
  * - 其他一律不算：轉帳、報帳入帳、調整、市值、小帳戶內的收支（含配息、費用、利息）。
  */
 export function statEffect(t: Transaction, kindOf: KindOf): StatEffect | null {
+  // 借我：飯是當天吃的，算支出（不論還了沒）；沒有帳戶，所以只出現在「全部帳戶」的統計
+  if (t.type === 'owed') return { type: 'expense', amount: t.amount, accountId: '', categoryId: t.categoryId ?? '' };
+  // 還借我：之前已經算過支出，還錢不再算
+  if (t.type === 'owed_repay') return null;
   const k = kindOf(t.accountId);
   if (k !== 'bank') return null;
   if (t.type === 'income') return { type: 'income', amount: t.amount, accountId: t.accountId, categoryId: t.categoryId ?? '' };
@@ -209,6 +234,7 @@ export function statEffect(t: Transaction, kindOf: KindOf): StatEffect | null {
 
 /** 這筆紀錄是否出現在主帳（明細「全部帳戶」）：有碰到任何一般帳戶 */
 export function inMainLedger(t: Transaction, kindOf: KindOf): boolean {
+  if (t.type === 'owed') return true;
   return kindOf(t.accountId) === 'bank' || kindOf(t.toAccountId) === 'bank';
 }
 

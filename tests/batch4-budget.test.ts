@@ -158,7 +158,7 @@ describe('資料 v4 與備份', () => {
     d = markBudgetPaid(d, [{ id: a.id, amount: 990 }], NOW);
     d = budget(d, 200, 'B').data;
     const back = parseBackup(exportJson(d));
-    expect(back.version).toBe(4);
+    expect(back.version).toBe(5);
     expect(spendableTotal(back)).toBe(spendableTotal(d));
     expect(allBalances(back)).toEqual(allBalances(d));
     expect(JSON.parse(JSON.stringify(back.transactions))).toEqual(JSON.parse(JSON.stringify(d.transactions)));
@@ -168,7 +168,7 @@ describe('資料 v4 與備份', () => {
     const v3 = { ...sampleData(), version: 3 };
     const before = spendableTotal(v3 as unknown as AppData);
     const d = parseBackup(JSON.stringify(v3));
-    expect(d.version).toBe(4);
+    expect(d.version).toBe(5);
     expect(spendableTotal(d)).toBe(before);
     expect(d.transactions.every((t) => !t.budget)).toBe(true);
   });

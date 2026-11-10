@@ -40,7 +40,12 @@ export interface Account {
  * adjust＝校正產生的「調整」（只影響餘額，不算收支）；
  * valuation＝投資標的「更新市值」（amount＝現值，不影響任何帳戶餘額）。
  */
-export type TxType = 'expense' | 'income' | 'transfer' | 'reimburse_in' | 'adjust' | 'valuation';
+export type TxType =
+  | 'expense' | 'income' | 'transfer' | 'reimburse_in' | 'adjust' | 'valuation'
+  /** 借我（2.0）：別人先幫我付。不選帳戶（accountId＝''）、不動任何帳戶；算支出；剩餘可用扣掉未還的 */
+  | 'owed'
+  /** 還借我（2.0）：從某帳戶扣款還錢。不算任何支出；owedOfId 指回借我那筆 */
+  | 'owed_repay';
 
 export interface Transaction {
   id: string;
@@ -58,6 +63,23 @@ export interface Transaction {
   reimbursable: boolean;
   reimburseStatus?: 'pending' | 'done';
   reimburseBatchId?: string;
+  /**
+   * 2.0：'advance'＝代墊（我先幫別人付，之後收回）。和報帳共用同一套機制
+   * （reimbursable、reimburseStatus、reimburseBatchId），缺值＝報帳。收回那筆 reimburse_in 也帶這個欄位。
+   */
+  reimburseKind?: 'advance';
+  /** 借我的狀態（只有 type='owed'）：pending＝還沒還、paid＝已還 */
+  owedStatus?: 'pending' | 'paid';
+  /** 借我：還錢時新增的那筆 owed_repay */
+  owedPaidTxId?: string;
+  /** 還借我：是哪一筆借我 */
+  owedOfId?: string;
+  /** 2.0 拖拖計算機：記帳時的算式（例如 "1100−600"），只供顯示來龍去脈，不進備註 */
+  calcExpr?: string;
+  /** 算式裡掛標記的那個數字是第幾項（從 0 起）；一般部分沒有這欄 */
+  calcTerm?: number;
+  /** 同一個算式拆出來的幾筆共用同一個 id（復原時一起收回） */
+  splitId?: string;
   /**
    * 預算（第四批，v4）：只有一般帳戶的支出可以是預算。
    * 預算紀錄本身不扣帳戶、不算當月支出，但「剩餘可用」要扣掉未付的預算。
@@ -121,12 +143,14 @@ export interface Settings {
   carrierCode?: string;
   /** 外觀：亮色／暗色／跟隨系統。2.0 加入，舊資料與舊備份缺這欄＝亮色 */
   theme?: ThemeMode;
+  /** 代墊／借我功能開關，缺值＝開啟。判斷一律用 features.ts 的 advanceOwedOn() */
+  advanceOwedEnabled?: boolean;
 }
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 
 export interface AppData {
-  version: 4;
+  version: 5;
   accounts: Account[];
   transactions: Transaction[];
   categories: Category[];
@@ -134,7 +158,7 @@ export interface AppData {
   settings: Settings;
 }
 
-export const DATA_VERSION = 4;
+export const DATA_VERSION = 5;
 
 /** 不需要分類的紀錄來源（投資配息、費用、儲蓄利息） */
 export const TX_SOURCE_NO_CATEGORY = ['invest-dividend', 'invest-fee', 'saving-interest'];

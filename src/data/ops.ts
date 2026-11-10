@@ -3,6 +3,7 @@ import type { Account, AppData, Category, Transaction, TxType } from './types';
 import { TX_SOURCE_NO_CATEGORY } from './types';
 import { allBalances } from './calc';
 import { normalizeBudgets } from './budget';
+import { normalizeOwed } from './owed';
 
 export function uid(prefix = ''): string {
   const r = Math.random().toString(36).slice(2, 8);
@@ -10,7 +11,7 @@ export function uid(prefix = ''): string {
 }
 
 export interface TxInput {
-  type: Exclude<TxType, 'reimburse_in' | 'adjust' | 'valuation'>;
+  type: Exclude<TxType, 'reimburse_in' | 'adjust' | 'valuation' | 'owed_repay'>;
   amount: number;
   accountId: string;
   toAccountId?: string;
@@ -20,6 +21,12 @@ export interface TxInput {
   reimbursable?: boolean;
   /** 預算（只限一般帳戶的支出，和報帳互斥） */
   budget?: boolean;
+  /** 代墊（2.0）：reimbursable 為 true 時，'advance'＝代墊、缺值＝報帳 */
+  reimburseKind?: 'advance';
+  /** 拖拖計算機的算式、標記項次、拆帳群組（見 Transaction） */
+  calcExpr?: string;
+  calcTerm?: number;
+  splitId?: string;
   /** 來源畫面標記（投資、儲蓄的記一筆），見 Transaction.source */
   source?: string;
 }
@@ -28,6 +35,12 @@ export class OpError extends Error {}
 
 function validate(data: AppData, input: TxInput) {
   if (!(input.amount > 0) || !Number.isInteger(input.amount)) throw new OpError('金額必須大於 0');
+  if (input.type === 'owed') {
+    // 借我：不選帳戶、要分類、不能同時是報帳／代墊／預算
+    if (!input.categoryId) throw new OpError('請選分類');
+    if (input.reimbursable || input.budget) throw new OpError('借我不能同時設成報帳、代墊或預算');
+    return;
+  }
   if (!data.accounts.some((a) => a.id === input.accountId)) throw new OpError('找不到帳戶');
   if (input.type === 'transfer') {
     if (!input.toAccountId || !data.accounts.some((a) => a.id === input.toAccountId))
@@ -44,17 +57,23 @@ function validate(data: AppData, input: TxInput) {
 function build(input: TxInput, id: string, createdAt: string): Transaction {
   const isBudget = input.type === 'expense' && !!input.budget;
   const isReimb = input.type === 'expense' && !!input.reimbursable && !isBudget;
+  const isOwed = input.type === 'owed';
   return {
     id,
     type: input.type,
     amount: input.amount,
-    accountId: input.accountId,
+    accountId: isOwed ? '' : input.accountId,
     toAccountId: input.type === 'transfer' ? input.toAccountId : undefined,
     categoryId: input.type === 'transfer' ? undefined : input.categoryId,
     note: input.note ?? '',
     occurredAt: input.occurredAt,
     reimbursable: isReimb,
     reimburseStatus: isReimb ? 'pending' : undefined,
+    reimburseKind: isReimb && input.reimburseKind === 'advance' ? 'advance' : undefined,
+    owedStatus: isOwed ? 'pending' : undefined,
+    calcExpr: input.calcExpr || undefined,
+    calcTerm: input.calcTerm,
+    splitId: input.splitId,
     budget: isBudget || undefined,
     budgetStatus: isBudget ? 'pending' : undefined,
     source: input.source,
@@ -70,14 +89,14 @@ export function addTransaction(data: AppData, input: TxInput, id = uid('t')): { 
     data: {
       ...data,
       transactions: [...data.transactions, tx],
-      settings: { ...data.settings, lastUsedAccountId: input.accountId },
+      settings: input.type === 'owed' ? data.settings : { ...data.settings, lastUsedAccountId: input.accountId },
     },
   };
 }
 
 /** 已報帳（done）、已付（paid）預算的紀錄，金額、帳戶、類型、報帳／預算不能改，要先在待辦頁退回 */
 export function isLocked(t: Transaction): boolean {
-  return t.reimburseStatus === 'done' || (!!t.budget && t.budgetStatus === 'paid');
+  return t.reimburseStatus === 'done' || (!!t.budget && t.budgetStatus === 'paid') || (t.type === 'owed' && t.owedStatus === 'paid');
 }
 
 /** 預算付款時新增的那筆支出 */
@@ -90,20 +109,31 @@ export function updateTransaction(data: AppData, id: string, input: TxInput): Ap
   if (!old) throw new OpError('找不到這筆紀錄');
   if (old.type === 'reimburse_in') throw new OpError('報帳入帳請用「退回待報帳」處理');
   if (old.type === 'adjust' || old.type === 'valuation') throw new OpError('調整、市值紀錄不能編輯，只能刪除後重新校正');
+  if (old.type === 'owed_repay') throw new OpError('這筆是還借我的款項，要改請在待辦頁退回未還');
   validate(data, input);
   let next: Transaction;
   if (isLocked(old)) {
     const paidBudget = !!old.budget;
+    const paidOwed = old.type === 'owed';
+    const sameMark = paidOwed
+      ? !input.reimbursable && !input.budget
+      : paidBudget
+        ? input.budget !== false && !input.reimbursable
+        : input.reimbursable !== false && !input.budget && (input.reimburseKind === 'advance') === (old.reimburseKind === 'advance');
     if (
       input.amount !== old.amount ||
-      input.accountId !== old.accountId ||
+      (!paidOwed && input.accountId !== old.accountId) ||
       input.type !== old.type ||
-      (paidBudget ? input.budget === false || !!input.reimbursable : input.reimbursable === false || !!input.budget)
+      !sameMark
     )
       throw new OpError(
-        paidBudget
-          ? '這筆預算已付款，要改金額或帳戶，請先在待辦頁退回未付'
-          : '這筆已報帳，要改金額或帳戶，請先在待辦頁退回待報帳',
+        paidOwed
+          ? '這筆借我已還，要改金額請先在待辦頁退回未還'
+          : paidBudget
+            ? '這筆預算已付款，要改金額或帳戶，請先在待辦頁退回未付'
+            : old.reimburseKind === 'advance'
+              ? '這筆代墊已收回，要改金額或帳戶，請先在待辦頁退回未收'
+              : '這筆已報帳，要改金額或帳戶，請先在待辦頁退回待報帳',
       );
     next = { ...old, categoryId: input.categoryId, note: input.note ?? '', occurredAt: input.occurredAt };
   } else if (isBudgetPayment(old)) {
@@ -113,6 +143,12 @@ export function updateTransaction(data: AppData, id: string, input: TxInput): Ap
     next = { ...build(input, old.id, old.createdAt), budgetOfId: old.budgetOfId };
   } else {
     next = build(input, old.id, old.createdAt);
+    // 編輯時不重新拆帳：拆帳群組保留；金額沒改才保留原本的算式（改了金額，舊算式就對不上了）
+    next.splitId = old.splitId;
+    if (input.calcExpr === undefined && input.amount === old.amount) {
+      next.calcExpr = old.calcExpr;
+      next.calcTerm = old.calcTerm;
+    }
   }
   return { ...data, transactions: data.transactions.map((t) => (t.id === id ? next : t)) };
 }
@@ -121,7 +157,16 @@ export function deleteTransaction(data: AppData, id: string): AppData {
   const old = data.transactions.find((t) => t.id === id);
   if (!old) return data;
   if (isLocked(old))
-    throw new OpError(old.budget ? '這筆預算已付款，請先在待辦頁退回未付再刪除' : '這筆已報帳，請先在待辦頁退回待報帳再刪除');
+    throw new OpError(
+      old.type === 'owed'
+        ? '這筆借我已還，請先在待辦頁退回未還再刪除'
+        : old.budget
+          ? '這筆預算已付款，請先在待辦頁退回未付再刪除'
+          : old.reimburseKind === 'advance'
+            ? '這筆代墊已收回，請先在待辦頁退回未收再刪除'
+            : '這筆已報帳，請先在待辦頁退回待報帳再刪除',
+    );
+  if (old.type === 'owed_repay') throw new OpError('這筆是還借我的款項，請在待辦頁退回未還');
   if (isBudgetPayment(old)) throw new OpError('這筆是預算付款，請先在待辦頁退回未付再刪除');
   if (old.type === 'reimburse_in') throw new OpError('報帳入帳請用「退回待報帳」處理');
   return { ...data, transactions: data.transactions.filter((t) => t.id !== id) };
@@ -149,6 +194,9 @@ export function markReimbursed(
   if (items.length === 0) throw new OpError('請先選擇紀錄');
   if (items.length !== set.size || items.some((t) => t.reimburseStatus !== 'pending'))
     throw new OpError('只能選待報帳的紀錄');
+  // 代墊和報帳不能混在同一批（收回的錢來源不同）
+  const advance = items[0].reimburseKind === 'advance';
+  if (items.some((t) => (t.reimburseKind === 'advance') !== advance)) throw new OpError('代墊和報帳要分開結案');
   if (!data.accounts.some((a) => a.id === toAccountId)) throw new OpError('找不到入帳帳戶');
   const sum = items.reduce((s, t) => s + t.amount, 0);
   const inTx: Transaction = {
@@ -157,7 +205,8 @@ export function markReimbursed(
     amount: sum,
     accountId: toAccountId,
     toAccountId,
-    note: `報帳入帳（${items.length} 筆）`,
+    note: advance ? `代墊收回（${items.length} 筆）` : `報帳入帳（${items.length} 筆）`,
+    reimburseKind: advance ? 'advance' : undefined,
     occurredAt: now.toISOString(),
     reimbursable: false,
     reimburseBatchId: batchId,
@@ -256,12 +305,12 @@ export function removeAccount(data: AppData, accountId: string, how: RemoveMode)
   const settings = { ...data.settings };
   if (settings.defaultReimburseAccountId === accountId) settings.defaultReimburseAccountId = null;
   if (settings.lastUsedAccountId === accountId) settings.lastUsedAccountId = null;
-  return normalizeBudgets(normalizeBatches({
+  return normalizeOwed(normalizeBudgets(normalizeBatches({
     ...data,
     settings,
     accounts: data.accounts.filter((a) => a.id !== accountId),
     transactions: txs,
-  }));
+  })));
 }
 
 export function upsertAccount(data: AppData, acc: Account): AppData {
@@ -288,11 +337,11 @@ export function removeCategory(data: AppData, categoryId: string, how: RemoveMod
     if (!dst || dst.id === categoryId || dst.type !== src?.type) throw new OpError('請選同類型的另一個分類');
     txs = txs.map((t) => (t.categoryId === categoryId ? { ...t, categoryId: dst.id } : t));
   }
-  return normalizeBudgets(normalizeBatches({
+  return normalizeOwed(normalizeBudgets(normalizeBatches({
     ...data,
     categories: data.categories.filter((c) => c.id !== categoryId),
     transactions: txs,
-  }));
+  })));
 }
 
 export function upsertCategory(data: AppData, cat: Category): AppData {

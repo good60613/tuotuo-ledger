@@ -17,7 +17,12 @@ export function openTx(t: Transaction) {
     void askDeleteSpecial(t);
     return;
   }
-  openOverlay({ kind: 'entry', mode: t.type, accountId: t.accountId, toAccountId: t.toAccountId ?? null, txId: t.id });
+  // 還借我那筆：要改請在待辦頁「退回未還」
+  if (t.type === 'owed_repay') {
+    showToast('這筆是還借我的款項，要改請在待辦頁退回未還');
+    return;
+  }
+  openOverlay({ kind: 'entry', mode: t.type === 'owed' ? 'expense' : t.type, accountId: t.accountId, toAccountId: t.toAccountId ?? null, txId: t.id });
 }
 
 /** 整批退回待報帳（要確認） */

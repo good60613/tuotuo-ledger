@@ -1,9 +1,10 @@
 // 舊資料升級：讀取手機資料、匯入備份時都會經過這裡，舊版資料自動補成新格式。
-// 一版一版往上升：v1 → v2 → v3 → v4。
+// 一版一版往上升：v1 → v2 → v3 → v4 → v5。
 import type { Account, AppData, Category, Transaction } from './types';
 import { DATA_VERSION } from './types';
 import { SETTLE } from '../config';
 import { normalizeBudgets } from './budget';
+import { normalizeOwed } from './owed';
 import { DEFAULT_COLOR, MISSING_ICON, isColorKey } from '../categoryStyle';
 
 type AnyData = Omit<AppData, 'version'> & { version: number };
@@ -46,6 +47,21 @@ function v3to4(d: AnyData): AnyData {
   return { ...d, version: 4 };
 }
 
+/**
+ * v4 → v5（2.0 第一批）：加入代墊（reimburseKind）、借我（owed、owed_repay）、算式欄位，
+ * 設定加外觀、代墊／借我開關。舊紀錄、舊設定沒有這些欄位＝報帳／一般紀錄、亮色、開關開啟，不用補。
+ */
+function v4to5(d: AnyData): AnyData {
+  return { ...d, version: 5 };
+}
+
+/** 代墊標記只能掛在報帳類紀錄上；亂填的值拿掉 */
+function fixAdvance(t: Transaction): Transaction {
+  if (t.reimburseKind === undefined) return t;
+  const ok = t.reimburseKind === 'advance' && (t.reimbursable || t.type === 'reimburse_in');
+  return ok ? t : { ...t, reimburseKind: undefined };
+}
+
 /** 預算欄位缺漏或矛盾時修正（v4 資料也會檢查，防手動改過的備份檔） */
 function fixBudget(t: Transaction): Transaction {
   if (!t.budget) {
@@ -81,7 +97,8 @@ export function migrate(raw: unknown): AppData {
   if (d.version === 1) d = v1to2(d);
   if (d.version === 2) d = v2to3(d);
   if (d.version === 3) d = v3to4(d);
+  if (d.version === 4) d = v4to5(d);
   const categories = d.categories.map(fixCategory);
-  const transactions = Array.isArray(d.transactions) ? d.transactions.map(fixBudget) : d.transactions;
-  return normalizeBudgets({ ...d, version: DATA_VERSION, categories, transactions } as AppData);
+  const transactions = Array.isArray(d.transactions) ? d.transactions.map((t) => fixAdvance(fixBudget(t))) : d.transactions;
+  return normalizeOwed(normalizeBudgets({ ...d, version: DATA_VERSION, categories, transactions } as AppData));
 }

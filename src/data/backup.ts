@@ -10,6 +10,7 @@ import type { Account, AppData, Category, CategoryType, Transaction } from './ty
 import { migrate } from './migrate';
 import { normalizeBatches } from './ops';
 import { normalizeBudgets } from './budget';
+import { normalizeOwed } from './owed';
 
 export const BACKUP_FILE_VERSION = 2;
 
@@ -184,7 +185,7 @@ export function applySettingsImport(
   const settings = { ...incoming.settings };
   if (settings.defaultReimburseAccountId && !ids.has(settings.defaultReimburseAccountId)) settings.defaultReimburseAccountId = null;
   if (settings.lastUsedAccountId && !ids.has(settings.lastUsedAccountId)) settings.lastUsedAccountId = null;
-  const data = normalizeBudgets(normalizeBatches({ ...incoming, settings, transactions }));
+  const data = normalizeOwed(normalizeBudgets(normalizeBatches({ ...incoming, settings, transactions })));
   return { data, removedSelfTransfers: removed };
 }
 
