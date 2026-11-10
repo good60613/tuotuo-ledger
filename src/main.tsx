@@ -18,6 +18,8 @@ document.documentElement.style.setProperty('--bar-gap', BOTTOM_BAR.gapPx + 'px')
   const st = document.documentElement.style;
   st.setProperty('--fx-lift', String(DRAG_FX.liftScale));
   st.setProperty('--fx-tilt', DRAG_FX.tiltDeg + 'deg');
+  st.setProperty('--fx-lift-ms', DRAG_FX.liftMs + 'ms');
+  document.documentElement.classList.toggle('glass-blur', GLASS.liveBlur);
   st.setProperty('--fx-shadow', DRAG_FX.shadowPx + 'px');
   st.setProperty('--fx-glow', DRAG_FX.glowPx + 'px');
   st.setProperty('--fx-hover-glow', DRAG_FX.hoverGlowPx + 'px');

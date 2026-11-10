@@ -636,10 +636,13 @@ body {
   background: var(--gbg);
   border: 1px solid var(--gbd);
   box-shadow: var(--gsh), var(--ghi);
+}
+/* 即時背景模糊只在 config GLASS.liveBlur 開啟時才用（html.glass-blur），平常只靠半透明底＋邊框＋高光，效能便宜很多 */
+html.glass-blur .glass {
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
 }
-.glass-nav {
+html.glass-blur .glass-nav {
   -webkit-backdrop-filter: blur(var(--glass-nav-blur)) saturate(var(--glass-nav-sat));
   backdrop-filter: blur(var(--glass-nav-blur)) saturate(var(--glass-nav-sat));
 }
@@ -726,10 +729,12 @@ html.no-glass .mark-chip.glass.on { background: var(--mk); }
 .icon-btn { display: inline-flex; align-items: center; justify-content: center; }
 
 /* ---------- 2.1 F 段：拖曳光影（只用 transform／opacity／陰影） ---------- */
+/* 拿起：從正放、原大小慢慢轉到傾斜（不要一瞬間跳過去） */
+@keyframes lift-in { from { rotate: 0deg; scale: 1; } }
 /* 拿起：首頁卡片的影子（倍率由 GESTURE.liftScale 決定）傾斜、大陰影、主色發光 */
-.drag-ghost { rotate: var(--fx-tilt); box-shadow: 0 14px var(--fx-shadow) var(--shadow-lg), 0 0 var(--fx-glow) var(--glow) !important; }
+.drag-ghost { rotate: var(--fx-tilt); animation: lift-in var(--fx-lift-ms) cubic-bezier(.2, .8, .3, 1); -webkit-backdrop-filter: none !important; backdrop-filter: none !important; background: var(--card) !important; box-shadow: 0 14px var(--fx-shadow) var(--shadow-lg), 0 0 var(--fx-glow) var(--glow) !important; }
 /* 拿起：膠囊影子放大、傾斜、發出自己顏色的光 */
-.mark-ghost { scale: var(--fx-lift); rotate: var(--fx-tilt); box-shadow: 0 10px var(--fx-shadow) var(--shadow-lg), 0 0 var(--fx-glow) color-mix(in srgb, var(--mk) 60%, transparent); }
+.mark-ghost { scale: var(--fx-lift); rotate: var(--fx-tilt); animation: lift-in var(--fx-lift-ms) cubic-bezier(.2, .8, .3, 1); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: 0 10px var(--fx-shadow) var(--shadow-lg), 0 0 var(--fx-glow) color-mix(in srgb, var(--mk) 60%, transparent); }
 /* 經過目標：亮一圈（外框＋淡光暈），離開熄掉 */
 .term { transition: transform var(--fx-hover-ms), background var(--fx-hover-ms), box-shadow var(--fx-hover-ms); }
 .term.hover { box-shadow: 0 0 var(--fx-hover-glow) var(--glow); }
@@ -743,8 +748,8 @@ html.no-glass .mark-chip.glass.on { background: var(--mk); }
 @keyframes term-pop { 0% { transform: scale(1.18); } 60% { transform: scale(.96); } 100% { transform: scale(1); } }
 .term.marked { animation: term-pop var(--fx-drop-ms) ease-out; }
 @media (prefers-reduced-motion: reduce) {
-  .drag-ghost { transform: none !important; transition: none !important; rotate: none; }
-  .mark-ghost { scale: none; rotate: none; }
+  .drag-ghost { transform: none !important; transition: none !important; rotate: none; animation: none; }
+  .mark-ghost { scale: none; rotate: none; animation: none; }
   .term, .term.hover, .drop-zone, .card, .card.is-source, .card.drop-hover, .ball.drop-hover, .drop-zone.drop-hover { transform: none !important; transition: none; }
   .term.marked { animation: none; }
   .tags { transition: none; }

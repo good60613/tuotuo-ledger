@@ -255,6 +255,11 @@ export const GLASS = {
   /** 底部導覽列 */
   navBlurPx: 22,
   navSaturatePct: 170,
+  /**
+   * 即時背景模糊（backdrop-filter）。2.1.1 起預設關：玻璃後面只有平滑的背景光暈，模糊後幾乎看不出差別，
+   * 但每個玻璃元素每一格都要重算模糊，換頁、捲動時最吃效能。設 true 才開。
+   */
+  liveBlur: false,
   /** 背景光暈（radial-gradient）濃度，0～100 */
   glowPct: 55,
 } as const;
@@ -265,6 +270,8 @@ export const DRAG_FX = {
   liftScale: 1.14,
   /** 拿起時傾斜角度（度，負＝逆時針） */
   tiltDeg: -6,
+  /** 拿起時從正放慢慢轉到傾斜、放大的時間（毫秒）；太短會顯得生硬 */
+  liftMs: 220,
   /** 拿起的陰影模糊（px） */
   shadowPx: 30,
   /** 邊緣發光的模糊（px） */
