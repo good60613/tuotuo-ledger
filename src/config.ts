@@ -212,3 +212,15 @@ export const BOTTOM_BAR = {
   /** 底部導覽列高度（原本寫在 styles.css 的 --nav-h） */
   navHeightPx: 58,
 } as const;
+
+export const ICON = {
+  /** 圖示預設大小（px，24 格畫布縮放） */
+  size: 22,
+  /** 線條粗細（工單規格 1.8） */
+  stroke: 1.8,
+} as const;
+
+export const HOME_SUM = {
+  /** 首頁「本月」「今日」兩行：支出與收入之間的間距（PK 補充，先給 12px，手機看過再調） */
+  gapPx: 12,
+} as const;

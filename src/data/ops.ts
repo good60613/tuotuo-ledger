@@ -1,6 +1,7 @@
 // 所有會改動資料的操作。全部是「舊資料 → 新資料」的純函式，方便單元測試。
 import type { Account, AppData, Category, Transaction, TxType } from './types';
 import { TX_SOURCE_NO_CATEGORY } from './types';
+import { withAccountIcon } from '../categoryStyle';
 import { allBalances } from './calc';
 import { normalizeBudgets } from './budget';
 import { normalizeOwed } from './owed';
@@ -360,7 +361,8 @@ export function removeAccount(data: AppData, accountId: string, how: RemoveMode)
   })));
 }
 
-export function upsertAccount(data: AppData, acc: Account): AppData {
+export function upsertAccount(data: AppData, input: Account): AppData {
+  const acc = withAccountIcon(input); // 2.1：新帳戶沒選圖示時補種類預設
   const exists = data.accounts.some((a) => a.id === acc.id);
   return {
     ...data,

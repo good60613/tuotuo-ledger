@@ -440,7 +440,7 @@ export function SettingsPage() {
           <button class="btn" onClick={() => doExport('full')}>匯出完整備份</button>
           <button class="btn secondary" onClick={() => doExport('settings')}>只匯出設定</button>
         </div>
-        <p class="muted small">完整備份＝設定＋所有紀錄。只匯出設定＝帳戶、小帳戶、分類、備註標籤、結算日，不含紀錄。</p>
+        <p class="muted small">完整備份＝設定＋所有紀錄。只匯出設定＝帳戶、小帳戶、分類、備註標籤、結算日，不含紀錄。<br />2.1 版起的備份，舊版 App（2.0.x）讀不了；舊版的備份可以匯入新版。</p>
         <div class="btn-row">
           <button class="btn secondary" onClick={() => fileRef.current?.click()}>從備份匯入</button>
         </div>

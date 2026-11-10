@@ -6,7 +6,7 @@ import { markBudgetPaid, revertBudgetPaid, isOverdueBudget, overdueCount, budget
 import { emptyData, sampleData } from '../src/data/seed';
 import { exportJson, parseBackup } from '../src/data/backup';
 import { migrate } from '../src/data/migrate';
-import type { AppData } from '../src/data/types';
+import { DATA_VERSION, type AppData } from '../src/data/types';
 
 const NOW = new Date(2026, 10, 8, 12, 0); // 2026-11-08
 const iso = (m0: number, d: number) => new Date(2026, m0, d, 10).toISOString();
@@ -158,7 +158,7 @@ describe('資料 v4 與備份', () => {
     d = markBudgetPaid(d, [{ id: a.id, amount: 990 }], NOW);
     d = budget(d, 200, 'B').data;
     const back = parseBackup(exportJson(d));
-    expect(back.version).toBe(6);
+    expect(back.version).toBe(DATA_VERSION);
     expect(spendableTotal(back)).toBe(spendableTotal(d));
     expect(allBalances(back)).toEqual(allBalances(d));
     expect(JSON.parse(JSON.stringify(back.transactions))).toEqual(JSON.parse(JSON.stringify(d.transactions)));
@@ -168,7 +168,7 @@ describe('資料 v4 與備份', () => {
     const v3 = { ...sampleData(), version: 3 };
     const before = spendableTotal(v3 as unknown as AppData);
     const d = parseBackup(JSON.stringify(v3));
-    expect(d.version).toBe(6);
+    expect(d.version).toBe(DATA_VERSION);
     expect(spendableTotal(d)).toBe(before);
     expect(d.transactions.every((t) => !t.budget)).toBe(true);
   });

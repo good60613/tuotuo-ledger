@@ -202,7 +202,7 @@ describe('資料 v5 與舊備份', () => {
     const v4 = { ...sampleData(), version: 4 };
     const before = spendableTotal(v4 as unknown as AppData);
     const d = parseBackup(JSON.stringify(v4));
-    expect(d.version).toBe(6);
+    expect(d.version).toBe(DATA_VERSION);
     expect(spendableTotal(d)).toBe(before);
     expect(d.transactions.every((t) => !t.reimburseKind && t.type !== 'owed')).toBe(true);
     expect(d.settings.theme ?? 'light').toBe('light');
