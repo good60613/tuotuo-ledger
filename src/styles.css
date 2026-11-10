@@ -261,7 +261,8 @@ button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 
 .mark-row { display: flex; gap: 6px; overflow-x: auto; padding: 4px 12px 4px; scrollbar-width: none; touch-action: pan-x; }
 .mark-chip { flex: none; display: inline-flex; align-items: center; gap: 2px; border: 1px solid var(--mk, var(--border-strong)); border-radius: 999px; padding: 5px 10px; font-size: 13px; font-weight: 700; color: var(--mk, var(--muted)); background: var(--mk-soft, var(--fill-soft)); user-select: none; -webkit-user-select: none; white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
-.mark-chip.drag { touch-action: none; }
+/* 補強批：膠囊上也可以左右捲動；按住 DRAG_MARK.holdMs 拿起後才由程式擋掉捲動 */
+.mark-chip.drag { touch-action: pan-x; }
 .mark-chip.on { background: var(--mk); color: var(--on-color); }
 .mark-chip.chip-acc { --mk: var(--accent); --mk-soft: var(--accent-soft); }
 .mark-chip.chip-acc:disabled { opacity: .6; }

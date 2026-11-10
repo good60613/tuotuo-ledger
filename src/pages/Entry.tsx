@@ -1,6 +1,6 @@
 // 記帳頁（支出／收入）與轉帳輸入，共用同一個畫面。內含「拖拖計算機」：把標記膠囊拖到數字上拆帳。
 import { CatIcon } from '../components/CatIcon';
-import { useRef, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { getState, updateData, closeOverlay, showToast, confirmDanger, type Overlay } from '../store';
 import { addTransaction, addTransactions, updateTransaction, deleteTransaction, isLocked, isBudgetPayment, uid, OpError, type TxInput } from '../data/ops';
 import { roundAmount } from '../data/calc';
@@ -94,8 +94,25 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
   const [sheet, setSheet] = useState<null | 'account' | 'from' | 'to' | 'newCat' | 'tags'>(null);
   const saving = useRef(false);
   const exprRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<{ mark: Mark; sx: number; sy: number; active: boolean; hover: number | null; bad: boolean } | null>(null);
+  const dragRef = useRef<{
+    mark: Mark; sx: number; sy: number;
+    /** 已按住夠久、拿起了（之後才可以拖） */
+    armed: boolean;
+    active: boolean; hover: number | null; bad: boolean;
+    timer: ReturnType<typeof setTimeout> | undefined;
+  } | null>(null);
   const dragEndAt = useRef(0);
+  const markRowRef = useRef<HTMLDivElement>(null);
+  // 拿起後擋掉膠囊列的左右捲動（要用非被動監聽，preventDefault 才有效）
+  useEffect(() => {
+    const el = markRowRef.current;
+    if (!el) return;
+    const stop = (e: TouchEvent) => {
+      if (dragRef.current?.armed && e.cancelable) e.preventDefault();
+    };
+    el.addEventListener('touchmove', stop, { passive: false });
+    return () => el.removeEventListener('touchmove', stop);
+  }, [mode === 'transfer']);
 
   const isTransfer = mode === 'transfer';
   const cats = isTransfer ? [] : sortedCategories(d, mode);
@@ -218,17 +235,39 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
     return canMark(terms[best]) ? { hover: best, bad: false } : { hover: null, bad: true };
   };
 
+  // 補強批：按住 DRAG_MARK.holdMs 才拿起；還沒拿起就移動＝捲動膠囊列（交給瀏覽器）
   const onChipDown = (e: PointerEvent, m: Mark) => {
     if (!marksOn) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
-    dragRef.current = { mark: m, sx: e.clientX, sy: e.clientY, active: false, hover: null, bad: false };
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    clearTimeout(dragRef.current?.timer);
+    const el = e.currentTarget as HTMLElement;
+    const pid = e.pointerId;
+    const r: NonNullable<typeof dragRef.current> = { mark: m, sx: e.clientX, sy: e.clientY, armed: false, active: false, hover: null, bad: false, timer: undefined };
+    r.timer = setTimeout(() => {
+      if (dragRef.current !== r) return;
+      r.armed = true;
+      try {
+        el.setPointerCapture(pid);
+      } catch { /* 手指已離開 */ }
+      if (DRAG_MARK.liftVibrateMs > 0) navigator.vibrate?.(DRAG_MARK.liftVibrateMs);
+      setDrag({ mark: r.mark, x: r.sx, y: r.sy, hover: null });
+    }, DRAG_MARK.holdMs);
+    dragRef.current = r;
   };
   const onChipMove = (e: PointerEvent) => {
     const r = dragRef.current;
     if (!r) return;
+    const moved = Math.hypot(e.clientX - r.sx, e.clientY - r.sy);
+    if (!r.armed) {
+      // 還沒拿起就移動：當成捲動，放棄這次拖曳
+      if (moved >= DRAG_MARK.startMovePx) {
+        clearTimeout(r.timer);
+        dragRef.current = null;
+      }
+      return;
+    }
     if (!r.active) {
-      if (Math.hypot(e.clientX - r.sx, e.clientY - r.sy) < DRAG_MARK.startMovePx) return;
+      if (moved < DRAG_MARK.startMovePx) return;
       r.active = true;
     }
     const h = hitTest(e.clientX, e.clientY);
@@ -239,6 +278,7 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
   };
   const onChipUp = () => {
     const r = dragRef.current;
+    clearTimeout(r?.timer);
     dragRef.current = null;
     setDrag(null);
     if (!r?.active) return;
@@ -248,6 +288,7 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
     else if (r.bad) showToast('乘除裡的數字不能掛標記');
   };
   const onChipCancel = () => {
+    clearTimeout(dragRef.current?.timer);
     dragRef.current = null;
     setDrag(null);
   };
@@ -521,7 +562,7 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
       {previewLine && previewLine.text && <div class={`preview-line${previewLine.err ? ' err' : ''}`}>{previewLine.text}</div>}
 
       {!isTransfer && (
-        <div class="mark-row" data-no-swipe>
+        <div class="mark-row" data-no-swipe ref={markRowRef}>
           <button class="mark-chip chip-acc" onClick={() => !locked && setSheet('account')} disabled={locked}>
             💳 {accountId ? accountName(d, accountId) : '選帳戶'}
           </button>
