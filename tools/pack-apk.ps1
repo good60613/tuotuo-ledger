@@ -12,9 +12,24 @@ function Step($name, [scriptblock]$cmd) {
   if ($LASTEXITCODE -ne 0) { throw "$name 失敗" }
 }
 
+# 拿掉建置資料夾的「唯讀」標記：dist 是唯讀時，同步會把唯讀一起複製到 Android 的建置資料夾，
+# 下次打包就刪不掉（mergeReleaseAssets：Unable to delete directory）。只動建置產生的資料夾。
+function ClearReadOnly {
+  foreach ($p in 'dist', 'android\app\src\main\assets', 'android\app\build', 'android\build') {
+    $full = Join-Path $root $p
+    if (Test-Path $full) {
+      Get-Item $full -Force | ForEach-Object { $_.Attributes = $_.Attributes -band -bnot [IO.FileAttributes]::ReadOnly }
+      Get-ChildItem $full -Recurse -Force | Where-Object { $_.Attributes -band [IO.FileAttributes]::ReadOnly } |
+        ForEach-Object { $_.Attributes = $_.Attributes -band -bnot [IO.FileAttributes]::ReadOnly }
+    }
+  }
+}
+
 try {
+  ClearReadOnly
   Step '建置網頁' { npm run build }
   Step '同步到 Android' { npx cap sync android }
+  ClearReadOnly
   Set-Location (Join-Path $root 'android')
   # 先停掉上次留在背景的打包程式，避免它佔住暫存資料夾（mergeReleaseAssets 刪不掉）
   & .\gradlew.bat --stop | Out-Null
