@@ -34,9 +34,13 @@ export function AccountCard(p: Props) {
 
   return (
     <div class="card" ref={ref} data-drop={`account:${p.account.id}`} role="button" aria-label={p.account.name}>
-      <div class="card-name">{p.account.name}</div>
-      <div class={`card-balance${p.balance < 0 ? ' neg' : ''}`}>{money(p.balance)}</div>
-      {!!p.budget && <div class="card-budget">預算 {money(p.budget)}</div>}
+      {/* 左側圖示位（先放名稱第一個字，之後可換成真正圖示） */}
+      <div class="card-icon" aria-hidden="true">{Array.from(p.account.name)[0] ?? ''}</div>
+      <div class="card-body">
+        <div class="card-name">{p.account.name}</div>
+        <div class={`card-balance${p.balance < 0 ? ' neg' : ''}`}>{money(p.balance)}</div>
+        {!!p.budget && <div class="card-budget">預算 {money(p.budget)}</div>}
+      </div>
     </div>
   );
 }

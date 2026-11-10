@@ -7,6 +7,7 @@ import { ballDropTarget } from '../data/ops';
 import { KIND_LABEL, type Account, type AccountKind } from '../data/types';
 import { AccountCard } from '../components/AccountCard';
 import { Balls } from '../components/Balls';
+import { SideNotes, type SideNote } from '../components/SideNotes';
 import type { DropTarget } from '../gestures/cardDrag';
 import { money, mdLabel, weekday } from '../format';
 import { TxCard } from '../components/TxList';
@@ -96,6 +97,23 @@ export function HomePage() {
     }
   };
 
+  // 剩餘可用右側小字欄；之後要加「借我 600」就在這裡多 push 一列
+  const sideItems: SideNote[] = [];
+  if (budgetSum > 0) {
+    sideItems.push({
+      key: 'budget',
+      label: '預算',
+      amount: budgetSum,
+      tone: 'budget',
+      extra: overdue > 0 ? `（${overdue} 筆逾期）` : undefined,
+      extraWarn: true,
+      onClick: () => {
+        setState({ todoTab: 'budget' });
+        goPage(TODO_PAGE);
+      },
+    });
+  }
+
   const A = HOME.amount;
   const amtVars = {
     '--amt-today': `${A.todayPx}px`,
@@ -142,20 +160,12 @@ export function HomePage() {
           </div>
         </div>
         <div class="amt-left">
-          <div class="amt-label">剩餘可用</div>
-          <div class="amt-big">{money(spendableTotal(d))}</div>
-          {budgetSum > 0 && (
-            <button
-              class="amt-budget"
-              onClick={() => {
-                setState({ todoTab: 'budget' });
-                goPage(TODO_PAGE);
-              }}
-            >
-              已圈預算 <b>{money(budgetSum)}</b>
-              {overdue > 0 && <span class="overdue">（{overdue} 筆逾期）</span>}
-            </button>
-          )}
+          <div class="amt-main">
+            <div class="amt-label">剩餘可用</div>
+            <div class="amt-big">{money(spendableTotal(d))}</div>
+          </div>
+          {sideItems.length > 0 && <div class="amt-divider" />}
+          <SideNotes items={sideItems} />
         </div>
       </div>
 

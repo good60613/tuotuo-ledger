@@ -90,6 +90,15 @@ button { font: inherit; color: inherit; }
   /* 卡片上的觸控完全由程式判斷（點一下／長按／滑動），瀏覽器不自動捲動 */
   touch-action: none; border: 2px solid transparent; transition: border-color .1s, background .1s, transform .1s;
 }
+/* 卡片改左右排：左圖示位、右主體（主體吃掉剩下寬度，金額不被擠） */
+.card { flex-direction: row; align-items: stretch; justify-content: flex-start; gap: 10px; }
+.card-icon {
+  flex: none; align-self: flex-start; width: 30px; height: 30px; border-radius: 50%;
+  background: var(--line); color: var(--muted); font-size: 14px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.card-body { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; }
+.card-body .card-balance { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card-name { font-size: 15px; color: var(--muted); font-weight: 600; }
 .card-balance { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .card-balance.neg { color: var(--expense); }
@@ -120,11 +129,27 @@ body.is-dragging .card:not(.is-source) { border-style: dashed; border-color: var
 .amt-mid { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .amounts .amt-label { font-size: calc(var(--amt-label) * var(--amt-k)); }
 .amounts .amt-budget { font-size: calc(var(--amt-budget) * var(--amt-k)); }
-.amt-row { display: flex; justify-content: center; gap: var(--amt-colgap); }
-.amt-row > div { min-width: 0; }
+.amt-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--amt-colgap); }
+.amt-row > div { min-width: 0; text-align: center; }
+.amt-row .income { color: var(--income); }
+.amt-row .expense { color: var(--expense); }
 .amt-num { font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.2; white-space: nowrap; }
 .amt-today .amt-num { font-size: calc(var(--amt-today) * var(--amt-k)); }
 .amt-month .amt-num { font-size: calc(var(--amt-month) * var(--amt-k)); }
+/* 剩餘可用：大數字｜分隔線｜右側小字欄 */
+.amt-left { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.amt-main { min-width: 0; }
+.amt-divider { flex: none; width: 1px; align-self: stretch; margin: 6px 0; background: var(--line); }
+.amt-side { flex: none; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; }
+.amt-side-row { border: 0; background: none; padding: 0; font: inherit; color: var(--muted); font-size: calc(var(--amt-budget) * var(--amt-k)); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: left; }
+.amt-side-row b { font-weight: 700; }
+.amt-side-row b.tone-budget { color: var(--budget); }
+.amt-side-row b.tone-expense { color: var(--expense); }
+.amt-side-row b.tone-income { color: var(--income); }
+.amt-side-row b.tone-muted { color: var(--muted); }
+.amt-side-extra.warn { color: var(--expense); font-weight: 700; }
+button.amt-side-row { transition: transform .08s, opacity .08s; }
+button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 .amt-big { font-size: calc(var(--amt-left) * var(--amt-k)); font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.12; white-space: nowrap; }
 
 /* ---------- 疊層、提示 ---------- */
