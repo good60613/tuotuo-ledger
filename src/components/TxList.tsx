@@ -181,13 +181,13 @@ export function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { 
   if (t.reimbursable && t.reimburseKind === 'advance') {
     if (t.reimburseStatus === 'done') flag = { cls: 'done', text: '已收' };
     else {
-      flag = { cls: 'advance', text: '我付' };
+      flag = { cls: 'advance', text: '先付' };
       frame = ' tag-advance';
     }
   } else if (t.type === 'owed') {
     if (t.owedStatus === 'paid') flag = { cls: 'done', text: '已還' };
     else {
-      flag = { cls: 'owed', text: '友付' };
+      flag = { cls: 'owed', text: '先欠' };
       frame = ' tag-owed';
     }
   } else if (t.reimbursable) {
