@@ -3,7 +3,7 @@ import { matchType, matchSearch } from '../src/detailFilter';
 import { sampleData } from '../src/data/seed';
 import type { Transaction } from '../src/data/types';
 
-const base: Transaction = { id: 'x', type: 'expense', amount: 100, accountId: 'a', note: '', occurredAt: '2026-11-05T10:00:00', reimbursable: false };
+const base: Transaction = { id: 'x', type: 'expense', amount: 100, accountId: 'a', note: '', occurredAt: '2026-11-05T10:00:00', reimbursable: false, createdAt: '2026-11-05T10:00:00' };
 const tx = (p: Partial<Transaction>): Transaction => ({ ...base, ...p });
 
 describe('2.2 明細類型篩選', () => {

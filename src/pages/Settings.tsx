@@ -142,7 +142,7 @@ export function SettingsPage() {
       .then((msg) => msg && showToast(msg))
       .catch(() => showToast('匯出失敗'));
   };
-  const resetFilters = { detail: { accountId: null, categoryId: null, day: null, period: null }, statsAccountId: null, statsPeriod: null };
+  const resetFilters = { detail: { accountId: null, categoryId: null, day: null, period: null }, statsAccountId: null, statsPeriod: null, statsMode: 'month' as const, statsYear: null, statsCustom: null };
   const doImport = async (file: File) => {
     try {
       const parsed = readBackup(await file.text());

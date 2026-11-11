@@ -291,3 +291,8 @@ export const COLLAPSE_HEAD = {
   /** 小條出現／收起的動畫時間（毫秒） */
   animMs: 200,
 } as const;
+
+/** 2.2 統計頁「自訂」區間：天數在這以內用每日長條圖，超過改每月（每個結算期一根） */
+export const STATS_RANGE = {
+  dailyMaxDays: 31,
+} as const;

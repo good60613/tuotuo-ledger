@@ -70,6 +70,12 @@ export interface State {
   statsAccountId: string | null;
   /** 統計頁看的結算期；null＝目前這一期 */
   statsPeriod: string | null;
+  /** 2.2 統計頁檢視：月（預設）／年／自訂區間。只在這次使用中記住 */
+  statsMode: 'month' | 'year' | 'custom';
+  /** 年檢視看哪一年；null＝目前這一期所在的年 */
+  statsYear: number | null;
+  /** 自訂區間（兩端都含，YYYY-MM-DD） */
+  statsCustom: { from: string; to: string } | null;
   /** 跳頁時用淡入淡出（不滑動） */
   fade: boolean;
   toast: Toast | null;
@@ -93,6 +99,9 @@ let state: State = {
   detail: { accountId: null, categoryId: null, day: null },
   statsAccountId: null,
   statsPeriod: null,
+  statsMode: 'month',
+  statsYear: null,
+  statsCustom: null,
   fade: false,
   toast: null,
   dragging: false,

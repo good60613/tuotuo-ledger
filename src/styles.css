@@ -797,3 +797,6 @@ svg.icon { vertical-align: -0.2em; flex: none; }
 .cap-q { max-width: 6em; overflow: hidden; text-overflow: ellipsis; }
 .cap-search { flex: 1; min-width: 0; height: 100%; box-sizing: border-box; border: 1px solid var(--accent); border-radius: 999px; padding: 0 14px; font-size: 15px; background: var(--card); color: var(--text); outline: none; }
 .pick-group { font-size: 12px; color: var(--muted); padding: 10px 6px 2px; }
+/* 2.2 C2：統計底部「年｜‹ 月 ›｜自訂」，選中的那顆用主色 */
+.stats-bar .pill-btn.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.stats-bar .period-switch .label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
