@@ -51,7 +51,7 @@ export function OwedTab({ onBar }: { onBar?: (on: boolean) => void }) {
   return (
     <div class="todo-tab owed">
       <div class="todo-total">
-        <div class="amt-label">{tab === 'pending' ? '朋友付未還' : '已還總額'}</div>
+        <div class="amt-label">{tab === 'pending' ? '先欠未還' : '已還總額'}</div>
         <div class="amt-mid owed-color">{money(tab === 'pending' ? pendingTotal : doneTotal)}</div>
       </div>
 
@@ -144,7 +144,7 @@ async function askRevertOwed(owedId: string) {
   if (!o || !r) return;
   const v = await ask(
     '退回未還？',
-    `退回後，${accountName(d, r.accountId)} 會加回 ${money(r.amount)}，這筆朋友付回到「未還」，剩餘可用不變。`,
+    `退回後，${accountName(d, r.accountId)} 會加回 ${money(r.amount)}，這筆先欠回到「未還」，剩餘可用不變。`,
     [
       { label: '取消', value: 'no', style: 'secondary' },
       { label: '退回', value: 'yes', style: 'danger' },
@@ -166,7 +166,7 @@ function OwedDetail({ t, onClose, onPay, onRevert }: { t: Transaction; onClose: 
   const isDone = t.owedStatus === 'paid';
   const repay = isDone ? d.transactions.find((x) => x.id === t.owedPaidTxId) : undefined;
   return (
-    <Sheet title="朋友付紀錄" onClose={onClose}>
+    <Sheet title="先欠紀錄" onClose={onClose}>
       <div class="detail-head">
         <span class="tx-icon"><Icon name={c?.icon ?? '？'} size={20} /></span>
         <span class="grow detail-name">{c?.name ?? '（已刪除分類）'}</span>

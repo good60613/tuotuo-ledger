@@ -24,7 +24,7 @@ export function markOwedPaid(
   now: Date = new Date(),
   mkId: () => string = newId,
 ): AppData {
-  if (owedIds.length === 0) throw new OwedError('請先選擇朋友付紀錄');
+  if (owedIds.length === 0) throw new OwedError('請先選擇先欠紀錄');
   if (new Set(owedIds).size !== owedIds.length) throw new OwedError('同一筆不能重複還');
   const acc = data.accounts.find((a) => a.id === accountId);
   if (!acc) throw new OwedError('找不到付款帳戶');
@@ -34,7 +34,7 @@ export function markOwedPaid(
   const created: Transaction[] = [];
   for (const id of owedIds) {
     const o = data.transactions.find((t) => t.id === id);
-    if (!o || !isPendingOwed(o)) throw new OwedError('只能選還沒還的朋友付');
+    if (!o || !isPendingOwed(o)) throw new OwedError('只能選還沒還的先欠');
     const rid = mkId();
     created.push({
       id: rid,
@@ -64,7 +64,7 @@ export function markOwedPaid(
 /** 退回未還：刪掉還款那筆，朋友付回到未還 */
 export function revertOwedPaid(data: AppData, owedId: string): AppData {
   const o = data.transactions.find((t) => t.id === owedId);
-  if (!o || o.type !== 'owed' || o.owedStatus !== 'paid') throw new OwedError('這筆朋友付還沒還');
+  if (!o || o.type !== 'owed' || o.owedStatus !== 'paid') throw new OwedError('這筆先欠還沒還');
   return {
     ...data,
     transactions: data.transactions

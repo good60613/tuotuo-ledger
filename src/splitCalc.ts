@@ -17,8 +17,8 @@ import type { TxInput } from './data/ops';
 export type Mark = 'advance' | 'owed' | 'budget' | 'reimb';
 
 export const MARK_LABEL: Record<Mark, string> = {
-  advance: '我先付',
-  owed: '朋友付',
+  advance: '先付',
+  owed: '先欠',
   budget: '預算',
   reimb: '報帳',
 };

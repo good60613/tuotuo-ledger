@@ -506,7 +506,7 @@ button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 /* ---------- 待辦頁（第四批）：報帳／預算分頁 ---------- */
 .todo { display: flex; flex-direction: column; }
 .todo-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
-.todo-tabs button { flex: 1; border: 0; background: var(--card); padding: 10px; border-radius: 12px; font-size: 16px; font-weight: 700; color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 6px; }
+.todo-tabs button { flex: 1; border: 0; background: var(--card); padding: 10px; border-radius: 12px; font-size: 16px; font-weight: 700; color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; min-width: 0; }
 .todo-tabs button.on.reimb { background: var(--reimb); color: var(--on-color); }
 .todo-tabs button.on.budget { background: var(--budget); color: var(--on-color); }
 .todo-count { min-width: 20px; padding: 0 6px; border-radius: 10px; background: var(--overlay-soft); font-size: 12px; line-height: 20px; }

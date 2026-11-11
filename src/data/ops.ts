@@ -39,7 +39,7 @@ function validate(data: AppData, input: TxInput) {
   if (input.type === 'owed') {
     // 朋友付：不選帳戶、要分類、不能同時是報帳／我先付／預算
     if (!input.categoryId) throw new OpError('請選分類');
-    if (input.reimbursable || input.budget) throw new OpError('朋友付不能同時設成報帳、我先付或預算');
+    if (input.reimbursable || input.budget) throw new OpError('先欠不能同時設成報帳、先付或預算');
     return;
   }
   if (!data.accounts.some((a) => a.id === input.accountId)) throw new OpError('找不到帳戶');
@@ -150,11 +150,11 @@ export function updateTransaction(data: AppData, id: string, input: TxInput): Ap
     )
       throw new OpError(
         paidOwed
-          ? '這筆朋友付已還，要改金額請先在待辦頁退回未還'
+          ? '這筆先欠已還，要改金額請先在待辦頁退回未還'
           : paidBudget
             ? '這筆預算已付款，要改金額或帳戶，請先在待辦頁退回未付'
             : old.reimburseKind === 'advance'
-              ? '這筆我先付已收回，要改金額或帳戶，請先在待辦頁退回未收'
+              ? '這筆先付已收回，要改金額或帳戶，請先在待辦頁退回未收'
               : '這筆已報帳，要改金額或帳戶，請先在待辦頁退回待報帳',
       );
     next = { ...old, categoryId: input.categoryId, note: input.note ?? '', occurredAt: input.occurredAt };
@@ -186,11 +186,11 @@ export function deleteTransaction(data: AppData, id: string): AppData {
   if (isLocked(old))
     throw new OpError(
       old.type === 'owed'
-        ? '這筆朋友付已還，請先在待辦頁退回未還再刪除'
+        ? '這筆先欠已還，請先在待辦頁退回未還再刪除'
         : old.budget
           ? '這筆預算已付款，請先在待辦頁退回未付再刪除'
           : old.reimburseKind === 'advance'
-            ? '這筆我先付已收回，請先在待辦頁退回未收再刪除'
+            ? '這筆先付已收回，請先在待辦頁退回未收再刪除'
             : '這筆已報帳，請先在待辦頁退回待報帳再刪除',
     );
   if (old.type === 'owed_repay') throw new OpError('這筆是還朋友的款項，請在待辦頁退回未還');
@@ -223,7 +223,7 @@ export function markReimbursed(
     throw new OpError('只能選待報帳的紀錄');
   // 我先付和報帳不能混在同一批（收回的錢來源不同）
   const advance = items[0].reimburseKind === 'advance';
-  if (items.some((t) => (t.reimburseKind === 'advance') !== advance)) throw new OpError('我先付和報帳要分開結案');
+  if (items.some((t) => (t.reimburseKind === 'advance') !== advance)) throw new OpError('先付和報帳要分開結案');
   if (!data.accounts.some((a) => a.id === toAccountId)) throw new OpError('找不到入帳帳戶');
   const sum = items.reduce((s, t) => s + t.amount, 0);
   const inTx: Transaction = {
@@ -232,7 +232,7 @@ export function markReimbursed(
     amount: sum,
     accountId: toAccountId,
     toAccountId,
-    note: advance ? `我先付收回（${items.length} 筆）` : `報帳入帳（${items.length} 筆）`,
+    note: advance ? `先付收回（${items.length} 筆）` : `報帳入帳（${items.length} 筆）`,
     reimburseKind: advance ? 'advance' : undefined,
     occurredAt: now.toISOString(),
     reimbursable: false,

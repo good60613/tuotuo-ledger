@@ -6,7 +6,7 @@ export type ClaimKind = 'reimb' | 'advance';
 
 const TXT = {
   reimb: { pending: '待報帳', done: '已報帳', pendingTotal: '待報帳總額', doneTotal: '已收回總額', emptyPending: '沒有待報帳的紀錄', emptyDone: '還沒有已報帳的紀錄', pickHint: '點選要報帳的紀錄（可多筆）', revertHint: '按錯了？點一筆可整批退回待報帳', act: '已報帳', revert: '退回待報帳', title: '報帳紀錄' },
-  advance: { pending: '待收回', done: '已收回', pendingTotal: '我先付待收回', doneTotal: '已收回總額', emptyPending: '沒有待收回的款項', emptyDone: '還沒有已收回的款項', pickHint: '點選朋友還了的款項（可多筆）', revertHint: '按錯了？點一筆可整批退回待收回', act: '已收回', revert: '退回待收回', title: '我先付紀錄' },
+  advance: { pending: '待收回', done: '已收回', pendingTotal: '先付待收回', doneTotal: '已收回總額', emptyPending: '沒有待收回的款項', emptyDone: '還沒有已收回的款項', pickHint: '點選朋友還了的款項（可多筆）', revertHint: '按錯了？點一筆可整批退回待收回', act: '已收回', revert: '退回待收回', title: '先付紀錄' },
 } as const;
 import { useEffect, useState } from 'preact/hooks';
 import { useAppState, getState, updateData, showToast, PAGES } from '../store';

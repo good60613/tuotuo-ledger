@@ -340,10 +340,10 @@ export function SettingsPage() {
               onClick={() => {
                 const on = !advanceOwedOn(d.settings);
                 updateData((x) => ({ ...x, settings: { ...x.settings, advanceOwedEnabled: on } }));
-                showToast(on ? '已開啟我先付／朋友付' : '已關閉我先付／朋友付（已記的照常顯示與計算）');
+                showToast(on ? '已開啟先付／先欠' : '已關閉先付／先欠（已記的照常顯示與計算）');
               }}
             >
-              <span>我先付／朋友付</span>
+              <span>先付／先欠</span>
               <span class="muted">{advanceOwedOn(d.settings) ? '開啟' : '關閉'} ›</span>
             </button>
             <button class="setting-row" onClick={() => setView('recurring')}>

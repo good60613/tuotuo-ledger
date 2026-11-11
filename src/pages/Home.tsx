@@ -129,7 +129,7 @@ export function HomePage() {
   if (owedSum > 0) {
     sideItems.push({
       key: 'owed',
-      label: '朋友付',
+      label: '先欠',
       amount: owedSum,
       tone: 'owed',
       onClick: () => {

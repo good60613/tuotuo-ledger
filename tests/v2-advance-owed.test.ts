@@ -152,7 +152,7 @@ describe('我先付（比照報帳）', () => {
     expect(tx(d, a.id).reimburseStatus).toBe('done');
     const inTx = d.transactions.find((t) => t.type === 'reimburse_in')!;
     expect(inTx.reimburseKind).toBe('advance');
-    expect(inTx.note).toContain('我先付');
+    expect(inTx.note).toContain('先付');
     d = revertBatch(d, 'b1');
     expect(spendableTotal(d)).toBe(13404);
     expect(tx(d, a.id).reimburseStatus).toBe('pending');

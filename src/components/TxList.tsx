@@ -134,7 +134,7 @@ export function txView(data: AppData, t: Transaction) {
     cls = 'transfer';
   } else if (t.type === 'reimburse_in') {
     icon = 'undo-2';
-    title = `${t.reimburseKind === 'advance' ? '我先付收回' : '報帳入帳'} → ${accountName(data, t.toAccountId)}`;
+    title = `${t.reimburseKind === 'advance' ? '先付收回' : '報帳入帳'} → ${accountName(data, t.toAccountId)}`;
     amt = '+' + money(t.amount);
     cls = 'reimb-in';
   } else if (t.type === 'owed_repay') {
