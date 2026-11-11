@@ -784,7 +784,7 @@ svg.icon { vertical-align: -0.2em; flex: none; }
 .cap-row { flex: 1 1 0; min-width: 0; display: flex; gap: 6px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
 .cap-row::-webkit-scrollbar { display: none; }
 .cap {
-  flex: none; display: flex; align-items: center; height: 100%; box-sizing: border-box;
+  flex: 1 0 auto; justify-content: center; display: flex; align-items: center; height: 100%; box-sizing: border-box;
   border: 1px solid var(--line); background: var(--card); color: var(--text); border-radius: 999px; padding: 0 4px;
 }
 .cap button { border: 0; background: none; color: inherit; font: inherit; height: 100%; display: flex; align-items: center; gap: 4px; padding: 0 8px; }
@@ -800,3 +800,5 @@ svg.icon { vertical-align: -0.2em; flex: none; }
 /* 2.2 C2：統計底部「年｜‹ 月 ›｜自訂」，選中的那顆用主色 */
 .stats-bar .pill-btn.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .stats-bar .period-switch .label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 小條蓋在列表上：即時模糊預設關閉，底色加濃避免底下文字透出來干擾閱讀 */
+html:not(.no-glass) .collapse-bar.glass { background: color-mix(in srgb, var(--card) 88%, transparent); }
