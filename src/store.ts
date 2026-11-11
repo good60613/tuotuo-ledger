@@ -1,5 +1,6 @@
 // 全域狀態：資料（會存檔）＋畫面狀態（不存檔）。
 import { useEffect, useState } from 'preact/hooks';
+import type { TypeFilter } from './detailFilter';
 import type { AppData } from './data/types';
 import { saveData, requestPersistence, deviceStorage } from './data/storage';
 import { sampleData } from './data/seed';
@@ -35,6 +36,10 @@ export interface DetailFilter {
   day: string | null; // YYYY-MM-DD
   /** 結算期 'YYYY-MM'；null＝目前這一期（到結算日會自動換下一期） */
   period?: string | null;
+  /** 2.2 類型膠囊；null／缺值＝全部 */
+  kind?: TypeFilter | null;
+  /** 2.2 搜尋（備註、分類名稱），範圍是全部月份；空＝不搜 */
+  q?: string;
 }
 
 export interface Toast {

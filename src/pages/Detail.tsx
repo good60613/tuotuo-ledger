@@ -1,14 +1,15 @@
 import { Icon } from '../components/Icon';
-// 明細頁（右一）：時間軸列出每一筆
-import { useAppState, setState } from '../store';
+// 明細頁（右一）：時間軸列出每一筆。2.2：頂部浮動小條、底部篩選膠囊列（帳戶｜日期｜分類｜類型｜🔍）
+import { useAppState } from '../store';
 import { totals, periodKey, dayKey, touchesAccount, statEffect, kindLookup, inMainLedger } from '../data/calc';
-import { categoryDisplay } from '../selectors';
 import { Balls } from '../components/Balls';
 import { TxList } from '../components/TxList';
-import { PeriodBar } from '../components/PeriodBar';
 import { BottomBar } from '../components/BottomBar';
+import { CollapseHead } from '../components/CollapseHead';
+import { FilterBar } from '../components/FilterBar';
+import { matchSearch, matchType } from '../detailFilter';
 import { openTx, quickEntry } from '../actions';
-import { money, mdLabel } from '../format';
+import { money } from '../format';
 
 export function DetailPage() {
   const s = useAppState();
@@ -19,20 +20,21 @@ export function DetailPage() {
   const period = f.period ?? periodKey(new Date(), sd);
   const m = totals(d, { period, accountId: f.accountId });
   const kindOf = kindLookup(d.accounts);
+  // 搜尋的範圍是全部月份，不受日期膠囊限制
+  const q = (f.q ?? '').trim();
 
   const txs = d.transactions.filter(
     (t) =>
-      periodKey(t.occurredAt, sd) === period &&
+      (q ? matchSearch(d, t, q) : periodKey(t.occurredAt, sd) === period && (!f.day || dayKey(t.occurredAt) === f.day)) &&
       // 「全部帳戶」＝主帳：有碰到一般帳戶的紀錄（儲值同時出現在主帳和小帳戶子畫面）
       (f.accountId ? touchesAccount(t, f.accountId) : inMainLedger(t, kindOf)) &&
       (!f.categoryId || statEffect(t, kindOf)?.categoryId === f.categoryId) &&
-      (!f.day || dayKey(t.occurredAt) === f.day),
+      (!f.kind || matchType(t, f.kind)),
   );
-
-  const setFilter = (p: Partial<typeof f>) => setState((st) => ({ detail: { ...st.detail, ...p } }));
 
   return (
     <div class="page-pad detail has-bar">
+      <CollapseHead expense={m.expense} income={m.income} />
       <div class="month-sum">
         <div>
           <div class="amt-label">本期支出</div>
@@ -46,34 +48,13 @@ export function DetailPage() {
 
       <Balls data={d} />
 
-      {(f.categoryId || f.day) && (
-        <div class="filter-chips">
-          {f.categoryId && (
-            <button class="chip" onClick={() => setFilter({ categoryId: null })}>
-              分類：{categoryDisplay(d, f.categoryId).name} <Icon name="x" size={14} />
-            </button>
-          )}
-          {f.day && (
-            <button class="chip" onClick={() => setFilter({ day: null })}>
-              日期：{mdLabel(new Date(f.day + 'T00:00'))} <Icon name="x" size={14} />
-            </button>
-          )}
-        </div>
-      )}
-
-      <TxList data={d} txs={txs} onTap={openTx} empty="這個條件下沒有紀錄" />
+      <TxList data={d} txs={txs} onTap={openTx} empty={q ? '找不到符合的紀錄' : '這個條件下沒有紀錄'} />
 
       <button class="fab" onClick={() => quickEntry(f.accountId)} aria-label="快速記帳"><Icon name="plus" size={28} /></button>
 
       <BottomBar>
-        <PeriodBar
-          accountId={f.accountId}
-          onAccount={(id) => setFilter({ accountId: id })}
-          period={period}
-          onPeriod={(p) => setFilter({ period: p })}
-        />
+        <FilterBar f={f} period={period} />
       </BottomBar>
-
     </div>
   );
 }

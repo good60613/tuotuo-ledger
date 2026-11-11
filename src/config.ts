@@ -283,3 +283,11 @@ export const DRAG_FX = {
   /** 經過目標亮起／熄滅時間（毫秒） */
   hoverMs: 120,
 } as const;
+
+/** 2.2：明細、統計頁頂部浮動。往下捲超過 triggerPx 時，頂端出現只有本期支出／收入的小條；捲回頂端時消失 */
+export const COLLAPSE_HEAD = {
+  /** 捲動多少 px 後出現小條（大約是頂部金額區的高度） */
+  triggerPx: 96,
+  /** 小條出現／收起的動畫時間（毫秒） */
+  animMs: 200,
+} as const;

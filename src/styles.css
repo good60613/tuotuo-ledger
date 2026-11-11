@@ -765,3 +765,35 @@ svg.icon { vertical-align: -0.2em; flex: none; }
 .chip .icon, .add-row .icon, .goal-row .icon, .pill-btn .icon { margin: 0 2px; }
 .license-text { white-space: pre-wrap; font-size: 12px; line-height: 1.5; user-select: text; -webkit-user-select: text; max-height: 50vh; overflow-y: auto; margin: 0; }
 .license-row { margin-top: 12px; }
+
+/* ---------- 2.2 B1／C1：頂部浮動小條（不佔版面，出現時列表不跳） ---------- */
+.collapse-head { position: sticky; top: 0; height: 0; z-index: 7; }
+.collapse-bar {
+  position: absolute; left: 0; right: 0; top: 6px; height: 36px; border-radius: 18px;
+  display: flex; align-items: center; justify-content: space-around; font-size: 13px; color: var(--muted);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+  opacity: 0; transform: translateY(-8px); visibility: hidden; pointer-events: none;
+  transition: opacity var(--ch-ms) ease, transform var(--ch-ms) ease, visibility 0s linear var(--ch-ms);
+}
+.collapse-bar b { font-size: 15px; margin-left: 4px; }
+.collapse-bar .expense { color: var(--expense); }
+.collapse-bar .income { color: var(--income); }
+.collapse-head.on .collapse-bar { opacity: 1; transform: none; visibility: visible; transition: opacity var(--ch-ms) ease, transform var(--ch-ms) ease; }
+
+/* ---------- 2.2 B2：明細底部篩選膠囊列 ---------- */
+.cap-row { flex: 1 1 0; min-width: 0; display: flex; gap: 6px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
+.cap-row::-webkit-scrollbar { display: none; }
+.cap {
+  flex: none; display: flex; align-items: center; height: 100%; box-sizing: border-box;
+  border: 1px solid var(--line); background: var(--card); color: var(--text); border-radius: 999px; padding: 0 4px;
+}
+.cap button { border: 0; background: none; color: inherit; font: inherit; height: 100%; display: flex; align-items: center; gap: 4px; padding: 0 8px; }
+.cap .cap-main { font-size: 14px; font-weight: 600; white-space: nowrap; max-width: 9em; overflow: hidden; text-overflow: ellipsis; }
+.cap .cap-arrow { padding: 0 3px; }
+.cap .cap-arrow:disabled { opacity: .3; }
+.cap .cap-x { padding: 0 6px 0 0; opacity: .85; }
+.cap.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.cap.dim { opacity: .45; }
+.cap-q { max-width: 6em; overflow: hidden; text-overflow: ellipsis; }
+.cap-search { flex: 1; min-width: 0; height: 100%; box-sizing: border-box; border: 1px solid var(--accent); border-radius: 999px; padding: 0 14px; font-size: 15px; background: var(--card); color: var(--text); outline: none; }
+.pick-group { font-size: 12px; color: var(--muted); padding: 10px 6px 2px; }
