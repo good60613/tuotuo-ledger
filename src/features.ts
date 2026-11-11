@@ -18,3 +18,8 @@ export function advanceOwedOn(settings: Pick<Settings, 'advanceOwedEnabled'> | u
 export function glassOn(settings: Pick<Settings, 'glass'> | undefined): boolean {
   return settings?.glass !== false;
 }
+
+/** 首頁是否用明細頁（2.2，缺值＝帳戶頁） */
+export function detailHome(settings: Pick<Settings, 'homePage'> | undefined): boolean {
+  return settings?.homePage === 'detail';
+}

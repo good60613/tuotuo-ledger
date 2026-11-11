@@ -1,5 +1,5 @@
 // 設定（右二）：只放讓其他功能能運作的項目。
-import { advanceOwedOn, recurringOn, glassOn } from '../features';
+import { advanceOwedOn, recurringOn, glassOn, detailHome } from '../features';
 import { RecurringPanel } from './RecurringSettings';
 import { useRef, useState } from 'preact/hooks';
 import { useBackLayer } from '../backNav';
@@ -321,6 +321,20 @@ export function SettingsPage() {
               <span>毛玻璃效果</span>
               <span class="muted">{glassOn(d.settings) ? '開啟' : '關閉'}（手機卡頓時可關閉）</span>
             </button>
+            <div class="setting-row">
+              <span>首頁使用</span>
+              <div class="mini-seg">
+                {([['accounts', '帳戶頁'], ['detail', '明細頁']] as const).map(([k, label]) => (
+                  <button
+                    key={k}
+                    class={(detailHome(d.settings) ? 'detail' : 'accounts') === k ? 'on' : ''}
+                    onClick={() => updateData((x) => ({ ...x, settings: { ...x.settings, homePage: k } }))}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <button class="setting-row" onClick={() => setView('accounts')}><span>帳戶管理</span><span class="muted">{banks.length} 個 ›</span></button>
             <button class="setting-row" onClick={() => setView('small')}><span>小帳戶管理</span><span class="muted">電子錢包、投資標的、儲蓄目標 ›</span></button>
             <button class="setting-row" onClick={() => setView('categories')}>

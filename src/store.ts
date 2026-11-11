@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import type { TypeFilter } from './detailFilter';
 import type { AppData } from './data/types';
+import { detailHome } from './features';
 import { saveData, requestPersistence, deviceStorage } from './data/storage';
 import { sampleData } from './data/seed';
 import { TOAST_MS, TRANSITION, RECURRING_CHECK_MS } from './config';
@@ -13,7 +14,23 @@ export const PAGES = ['待辦', '統計', '首頁', '明細', '設定'] as const
 export const TODO_PAGE = 0;
 /** 待辦頁的分頁 */
 export type TodoTab = 'reimb' | 'advance' | 'owed' | 'budget';
+/** 中間那格＝首頁（開 App、返回鍵回到這裡）。裡面放哪一頁看設定「首頁使用」 */
 export const HOME_PAGE = 2;
+export type PageId = (typeof PAGES)[number];
+const DETAIL_HOME_ORDER: readonly PageId[] = ['待辦', '統計', '明細', '首頁', '設定'];
+/** 2.2 每一格放哪一頁：首頁使用明細頁時，明細移到中間、原首頁（帳戶）放第四格 */
+export function pageOrder(settings: AppData['settings']): readonly PageId[] {
+  return detailHome(settings) ? DETAIL_HOME_ORDER : PAGES;
+}
+/** 某一頁目前在第幾格 */
+export function pageIndex(id: PageId): number {
+  return pageOrder(state.data.settings).indexOf(id);
+}
+/** 導覽列上的名稱：首頁使用明細頁時，明細叫「首頁」、原首頁叫「帳戶」 */
+export function navLabel(id: PageId, settings: AppData['settings']): string {
+  if (!detailHome(settings)) return id;
+  return id === '明細' ? '首頁' : id === '首頁' ? '帳戶' : id;
+}
 
 /** 疊在主頁面上的畫面 */
 export type Overlay =

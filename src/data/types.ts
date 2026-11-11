@@ -157,6 +157,11 @@ export interface Settings {
   recurringEnabled?: boolean;
   /** 毛玻璃效果（2.1），缺值＝開啟。判斷一律用 features.ts 的 glassOn() */
   glass?: boolean;
+  /**
+   * 首頁使用（2.2）：'accounts'＝帳戶頁（預設，原本的首頁）、'detail'＝明細頁。
+   * 缺值或其他值＝帳戶頁。判斷一律用 features.ts 的 detailHome()。舊資料、舊備份不用升版
+   */
+  homePage?: 'accounts' | 'detail';
 }
 
 export type ThemeMode = 'light' | 'dark' | 'system';

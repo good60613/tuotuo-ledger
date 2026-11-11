@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'preact/hooks';
-import { useAppState, setState, openOverlay, showToast, goPage, TODO_PAGE, PAGES } from '../store';
+import { useAppState, setState, openOverlay, showToast, goPage, TODO_PAGE, PAGES, pageIndex } from '../store';
 import { allBalances, spendableTotal, totals, periodKey, dayKey, pendingBudgetByAccount, pendingBudgetTotal, pendingOwedTotal, recurringReserved } from '../data/calc';
 import { overdueCount } from '../data/budget';
 import { bankAccounts, accountName } from '../selectors';
@@ -81,7 +81,7 @@ export function HomePage() {
   // 點一下卡片：進明細頁並切到該帳戶
   const onTap = (acc: Account) => {
     setState({ detail: { accountId: acc.id, categoryId: null, day: null, period: null } });
-    goPage(PAGES.indexOf('明細'));
+    goPage(pageIndex('明細'));
   };
 
   const onDrop = (acc: Account, target: DropTarget) => {

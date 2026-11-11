@@ -3,7 +3,7 @@ import { Icon } from '../components/Icon';
 // 2.2：統計一律算全部一般帳戶（篩帳戶到明細看）；底部「年｜‹ 月 ›｜自訂」；頂部浮動小條。
 import { catBg } from '../components/CatIcon';
 import { useState } from 'preact/hooks';
-import { useAppState, setState, goPage, PAGES } from '../store';
+import { useAppState, setState, goPage, pageIndex } from '../store';
 import { BottomBar } from '../components/BottomBar';
 import { CollapseHead } from '../components/CollapseHead';
 import { Sheet } from '../components/Sheet';
@@ -18,7 +18,6 @@ import { Donut, LineChart, BarChart, PALETTE } from '../components/Charts';
 import { money } from '../format';
 import { STATS_RANGE } from '../config';
 
-const DETAIL = PAGES.indexOf('明細');
 const MONTH_ZH = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二'];
 const md = (k: string) => `${Number(k.slice(5, 7))}/${Number(k.slice(8))}`;
 
@@ -98,7 +97,7 @@ export function StatsPage() {
       period = last < current ? last : null;
     }
     setState({ detail: { accountId: null, categoryId: p.categoryId ?? null, day: p.day ?? null, period } });
-    goPage(DETAIL, true); // 淡入淡出，不用滑動
+    goPage(pageIndex('明細'), true); // 淡入淡出，不用滑動
   };
 
   // ---- 底部：年｜‹ 月 ›｜自訂 ----

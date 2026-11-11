@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'preact/hooks';
-import { PAGES, getState, goPage, useAppState, hideToast } from './store';
+import { PAGES, getState, goPage, useAppState, hideToast, pageOrder, navLabel, type PageId } from './store';
 import { attachPager } from './gestures/pager';
 import { PAGER, BOTTOM_BAR } from './config';
 import { HomePage } from './pages/Home';
@@ -15,7 +15,15 @@ import { UI_ICONS } from './icons';
 import { Icon } from './components/Icon';
 import { BlockedScreen } from './pages/BlockedScreen';
 
-const NAV_ICON = UI_ICONS;
+/** 導覽列圖示跟著顯示的名稱走（首頁使用明細頁時，中間是「首頁」、第四格是「帳戶」） */
+const navIcon = (label: string) => (label === '帳戶' ? 'wallet' : UI_ICONS[label as keyof typeof UI_ICONS]);
+const PAGE_VIEW: Record<PageId, () => preact.JSX.Element> = {
+  待辦: () => <TodoPage />,
+  統計: () => <StatsPage />,
+  首頁: () => <HomePage />,
+  明細: () => <DetailPage />,
+  設定: () => <SettingsPage />,
+};
 
 export function App() {
   const s = useAppState();
@@ -75,8 +83,8 @@ export function App() {
 
   // 目前這頁有沒有底部操作列（統計、明細、待辦）：提示條要再往上抬
   // 有疊層（記帳頁、小帳戶畫面）開著時，畫面上看不到底部操作列，提示條不用再往上抬
-  const hasBar = s.overlays.length === 0 && ['待辦', '統計', '明細'].includes(PAGES[s.page]);
-  const pages = [<TodoPage />, <StatsPage />, <HomePage />, <DetailPage />, <SettingsPage />];
+  const order = pageOrder(s.data.settings);
+  const hasBar = s.overlays.length === 0 && ['待辦', '統計', '明細'].includes(order[s.page]);
 
   return (
     <div class={`app${s.fade ? ' fading' : ''}`} style={{ '--bottom-bar-h': `${hasBar ? BOTTOM_BAR.heightPx + BOTTOM_BAR.gapPx * 2 : 0}px` }}>
@@ -89,24 +97,24 @@ export function App() {
             transition: s.fade ? 'none' : `transform ${PAGER.animMs}ms ease-out`,
           }}
         >
-          {pages.map((p, i) => (
-            <section class="page" key={i} aria-hidden={i !== s.page} data-page={PAGES[i]}>
-              {p}
+          {order.map((id, i) => (
+            <section class="page" key={id} aria-hidden={i !== s.page} data-page={id}>
+              {PAGE_VIEW[id]()}
             </section>
           ))}
         </div>
       </div>
 
       <nav class="bottom-nav glass glass-nav">
-        {PAGES.map((name, i) => (
+        {order.map((id, i) => (
           <button
-            key={name}
+            key={id}
             class={`nav-item${i === s.page ? ' active' : ''}`}
             onClick={() => goPage(i)}
             aria-current={i === s.page ? 'page' : undefined}
           >
-            <span class="nav-icon"><Icon name={NAV_ICON[name as keyof typeof UI_ICONS]} size={22} /></span>
-            <span class="nav-label">{name}</span>
+            <span class="nav-icon"><Icon name={navIcon(navLabel(id, s.data.settings))} size={22} /></span>
+            <span class="nav-label">{navLabel(id, s.data.settings)}</span>
           </button>
         ))}
       </nav>
