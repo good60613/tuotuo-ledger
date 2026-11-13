@@ -95,8 +95,12 @@ export const SNAPSHOT = {
   eventKeep: 5,
 } as const;
 
-/** 「已記一筆」提示停留多久（可按復原） */
+/** 「已記一筆」提示停留多久（可按復原）；倒數線也是跑這麼久 */
 export const TOAST_MS = 4000;
+/** 提示膠囊（2.3）：淡出往下滑走的時間、手指往下滑多少算滑掉（像素）、彈簧滑入的時間 */
+export const TOAST_EXIT_MS = 260;
+export const TOAST_SWIPE_PX = 36;
+export const TOAST_IN_MS = 420;
 
 /** 首頁版面（第三批第 3 項） */
 export const HOME = {

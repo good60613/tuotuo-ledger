@@ -5,13 +5,15 @@ import { installClickGuard } from './gestures/guard';
 import { installNativeBackButton, openEntryFromWidget } from './backNav';
 import { installWidgetSync } from './widget';
 import './styles.css';
-import { BOTTOM_BAR, TIMELINE, GLASS, HOME, DRAG_FX } from './config';
+import { BOTTOM_BAR, TIMELINE, GLASS, HOME, DRAG_FX, TOAST_IN_MS, TOAST_EXIT_MS } from './config';
 import { applyCachedTheme } from './theme';
 
 // 第一個畫面前先套顏色（上次存的外觀，沒有就亮色），讀到設定後由 App 再套正確模式
 applyCachedTheme();
 // 底部操作列、導覽列尺寸從設定檔套到畫面（CSS 變數）
 document.documentElement.style.setProperty('--nav-h', BOTTOM_BAR.navHeightPx + 'px');
+document.documentElement.style.setProperty('--toast-in-ms', TOAST_IN_MS + 'ms');
+document.documentElement.style.setProperty('--toast-out-ms', TOAST_EXIT_MS + 'ms');
 document.documentElement.style.setProperty('--bar-h', BOTTOM_BAR.heightPx + 'px');
 document.documentElement.style.setProperty('--bar-gap', BOTTOM_BAR.gapPx + 'px');
 {

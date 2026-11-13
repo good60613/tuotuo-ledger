@@ -5,7 +5,7 @@ import type { AppData } from './data/types';
 import { detailHome } from './features';
 import { saveData, requestPersistence, deviceStorage } from './data/storage';
 import { sampleData } from './data/seed';
-import { TOAST_MS, TRANSITION, RECURRING_CHECK_MS } from './config';
+import { TOAST_MS, TOAST_EXIT_MS, TRANSITION, RECURRING_CHECK_MS } from './config';
 import { postDueRecurring } from './data/recurring';
 import { boot, ensureDailySnapshot, loadSnapshotData, replaceWithSnapshot, type BlockReason } from './data/boot';
 import type { SnapshotReason } from './data/snapshots';
@@ -59,10 +59,27 @@ export interface DetailFilter {
   q?: string;
 }
 
+/** 提示膠囊（2.3）左邊的分類圖示與「已記 醫療 −$450」三段字；沒給＝只顯示 text */
+export interface ToastRich {
+  icon: string;
+  /** 分類顏色底（沒有＝灰底） */
+  bg?: string;
+  fg?: string;
+  verb: string;
+  title: string;
+  /** 金額字串，例如 −$450 */
+  amt: string;
+  /** 金額顏色：expense／income／transfer */
+  cls: string;
+}
+
 export interface Toast {
   id: number;
   text: string;
   undo?: () => void;
+  rich?: ToastRich;
+  /** 時間到了、正在淡出往下滑走（這時不能再按復原） */
+  leaving?: boolean;
 }
 
 export interface DialogButton {
@@ -174,16 +191,35 @@ export function useAppState(): State {
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
+let toastExitTimer: ReturnType<typeof setTimeout> | undefined;
 let toastSeq = 0;
-export function showToast(text: string, undo?: () => void) {
+/**
+ * 提示膠囊（2.3 新樣式）。TOAST_MS 後開始淡出往下滑走，再過 TOAST_EXIT_MS 才真的拿掉。
+ * undo：有給就會出現〔復原〕和倒數線；rich：有給就顯示分類圖示與「已記 醫療 −$450」。
+ */
+export function showToast(text: string, undo?: () => void, rich?: ToastRich) {
   clearTimeout(toastTimer);
+  clearTimeout(toastExitTimer);
   const id = ++toastSeq;
-  setState({ toast: { id, text, undo } });
-  toastTimer = setTimeout(() => {
-    if (state.toast?.id === id) setState({ toast: null });
-  }, TOAST_MS);
+  setState({ toast: { id, text, undo, rich } });
+  toastTimer = setTimeout(() => dismissToast(id), TOAST_MS);
 }
-export const hideToast = () => setState({ toast: null });
+/** 淡出往下滑走（手指往下滑掉、時間到都走這裡）。id 給了就只收那一則 */
+export function dismissToast(id?: number) {
+  const t = state.toast;
+  if (!t || t.leaving || (id !== undefined && t.id !== id)) return;
+  clearTimeout(toastTimer);
+  setState({ toast: { ...t, leaving: true } });
+  toastExitTimer = setTimeout(() => {
+    if (state.toast?.id === t.id) setState({ toast: null });
+  }, TOAST_EXIT_MS);
+}
+/** 立刻拿掉（按了復原） */
+export const hideToast = () => {
+  clearTimeout(toastTimer);
+  clearTimeout(toastExitTimer);
+  setState({ toast: null });
+};
 
 /** 跳出選擇視窗，回傳按下的按鈕 value；按背景關閉回傳 null */
 export function ask(title: string, body: string | undefined, buttons: DialogButton[]): Promise<string | null> {

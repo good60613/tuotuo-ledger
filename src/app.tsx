@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'preact/hooks';
-import { PAGES, getState, goPage, useAppState, hideToast, pageOrder, navLabel, type PageId } from './store';
+import { PAGES, getState, goPage, useAppState, pageOrder, navLabel, type PageId } from './store';
+import { ToastHost } from './components/ToastHost';
 import { attachPager } from './gestures/pager';
 import { PAGER, BOTTOM_BAR } from './config';
 import { HomePage } from './pages/Home';
@@ -77,7 +78,7 @@ export function App() {
       <div class="app">
         <BlockedScreen />
         <DialogHost />
-        {s.toast && <div class="toast" role="status"><span>{s.toast.text}</span></div>}
+        <ToastHost toast={s.toast} lift={false} />
       </div>
     );
 
@@ -85,6 +86,10 @@ export function App() {
   // 有疊層（記帳頁、小帳戶畫面）開著時，畫面上看不到底部操作列，提示條不用再往上抬
   const order = pageOrder(s.data.settings);
   const hasBar = s.overlays.length === 0 && ['待辦', '統計', '明細'].includes(order[s.page]);
+
+  // 提示膠囊要躲開右下角的「＋」：明細頁、小帳戶子畫面（都有＋）時再往上抬
+  const topOverlay = s.overlays[s.overlays.length - 1];
+  const toastLift = topOverlay ? topOverlay.kind === 'sub' : order[s.page] === '明細';
 
   return (
     <div class={`app${s.fade ? ' fading' : ''}`} style={{ '--bottom-bar-h': `${hasBar ? BOTTOM_BAR.heightPx + BOTTOM_BAR.gapPx * 2 : 0}px` }}>
@@ -122,23 +127,7 @@ export function App() {
       <OverlayHost />
       <DialogHost />
 
-      {s.toast && (
-        <div class="toast" role="status">
-          <span>{s.toast.text}</span>
-          {s.toast.undo && (
-            <button
-              class="toast-undo"
-              onClick={() => {
-                const u = s.toast?.undo;
-                hideToast();
-                u?.();
-              }}
-            >
-              復原
-            </button>
-          )}
-        </div>
-      )}
+      <ToastHost toast={s.toast} lift={toastLift} />
     </div>
   );
 }

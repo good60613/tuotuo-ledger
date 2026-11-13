@@ -11,6 +11,7 @@ import { accountName, categoryOf } from '../selectors';
 import { sortedCategories, suggestedNotes } from '../data/notes';
 import { Calculator } from '../components/Calculator';
 import { AccountPicker } from '../components/AccountPicker';
+import { toastRich } from '../toastInfo';
 import { CategoryForm, TagManager } from '../components/Editors';
 import { useAppState } from '../store';
 import { ENTRY_ROW, DRAG_MARK, GESTURE } from '../config';
@@ -375,7 +376,7 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
         showToast('已轉帳一筆', () => {
           updateData((x) => deleteTransaction(x, r.id));
           showToast('已復原');
-        });
+        }, toastRich('已轉帳', r.data, r.data.transactions.filter((t) => t.id === r.id)));
       } catch (e) {
         saving.current = false;
         showToast(e instanceof OpError ? e.message : '存檔失敗');
@@ -406,7 +407,7 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
       showToast(r.ids.length === 1 ? '已記一筆' : `已記 ${r.ids.length} 筆`, () => {
         updateData((x) => r.ids.reduce((acc, id) => deleteTransaction(acc, id), x));
         showToast('已復原');
-      });
+      }, toastRich('已記', r.data, r.data.transactions.filter((t) => r.ids.includes(t.id))));
     } catch (e) {
       saving.current = false;
       showToast(e instanceof OpError ? e.message : '存檔失敗');

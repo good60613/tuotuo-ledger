@@ -167,12 +167,33 @@ button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 .btn-row.three .btn { min-width: 0; padding-left: 6px; padding-right: 6px; }
 .btn:disabled { opacity: .4; }
 
-.toast {
-  position: absolute; left: 12px; right: 12px; bottom: calc(var(--nav-h) + var(--nav-gap) + 14px + env(safe-area-inset-bottom));
-  background: var(--inverse); color: var(--on-inverse); border-radius: 12px; padding: 12px 14px; display: flex;
-  align-items: center; justify-content: space-between; z-index: 200; box-shadow: 0 6px 18px var(--shadow-lg);
+/* 提示膠囊（2.3）：浮在畫面上的圓角膠囊，底色＝主題色的淺色版（亮色藍、暗色金，跟著主題色變） */
+.toast-capsule {
+  position: absolute; left: 16px; right: 16px; z-index: 200;
+  bottom: calc(var(--nav-h) + var(--nav-gap) + 14px + var(--bottom-bar-h, 0px) + env(safe-area-inset-bottom));
+  display: flex; align-items: center; gap: 10px; padding: 9px 10px 11px 12px; border-radius: 999px; overflow: hidden;
+  background: color-mix(in srgb, var(--accent) 16%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  color: var(--text); touch-action: none;
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--accent) 24%, transparent), 0 2px 6px var(--shadow-xs);
+  animation: toast-spring var(--toast-in-ms, 420ms) cubic-bezier(.34, 1.56, .64, 1);
 }
-.toast-undo { background: none; border: 1px solid var(--inverse-line); color: var(--inverse-accent); border-radius: 8px; padding: 6px 12px; font-weight: 700; }
+/* 明細頁、小帳戶子畫面右下角有「＋」（58px）：往上抬，不蓋住它 */
+.toast-capsule.lift { bottom: calc(var(--nav-h) + var(--nav-gap) + 14px + var(--bottom-bar-h, 0px) + 58px + 16px + env(safe-area-inset-bottom)); }
+.toast-capsule.leaving { animation: toast-out var(--toast-out-ms, 260ms) ease-in forwards; pointer-events: none; }
+.toast-capsule.dragging { animation: none; }
+.toast-icon { width: 30px; height: 30px; flex: none; border-radius: 50%; background: var(--fill-soft); display: flex; align-items: center; justify-content: center; }
+.toast-text { flex: 1 1 auto; min-width: 0; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.toast-title { font-weight: 600; }
+.toast-amt { font-weight: 700; font-variant-numeric: tabular-nums; }
+.toast-amt.transfer { color: var(--transfer); }
+.toast-undo { flex: none; border: 0; background: var(--accent); color: var(--on-accent); border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 700; }
+.toast-undo:disabled { opacity: .5; }
+/* 倒數線：從滿到空＝還剩多久可以復原 */
+.toast-timer { position: absolute; left: 18px; right: 18px; bottom: 4px; height: 2px; border-radius: 1px; background: var(--accent); opacity: .7; transform-origin: left center; animation: toast-timer linear forwards; }
+@keyframes toast-spring { from { transform: translateY(70px) scale(.96); opacity: 0; } 55% { opacity: 1; } }
+@keyframes toast-out { to { transform: translateY(48px); opacity: 0; } }
+@keyframes toast-timer { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 
 /* ---------- 底部選單、對話框 ---------- */
 .sheet-backdrop, .dialog-backdrop { position: absolute; inset: 0; background: var(--backdrop); z-index: 120; display: flex; }
@@ -538,14 +559,12 @@ button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 .drop-zone { transition: transform .1s, background .1s, color .1s; }
 .home-zones .drop-zone { animation: zone-fade .15s ease-out; }
 @keyframes zone-fade { from { opacity: 0; transform: scale(.96); } }
-/* 提示條滑入 */
-.toast { animation: toast-in .18s ease-out; }
-@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
 /* 空狀態：字小一點、行距鬆一點 */
 .empty-list, .empty { line-height: 1.6; font-size: 14px; }
 /* 使用者設定減少動態時，關掉這些小動畫 */
 @media (prefers-reduced-motion: reduce) {
-  .toast, .home-zones .drop-zone, .drop-zone { animation: none; transition: none; }
+  .toast-capsule, .home-zones .drop-zone, .drop-zone { animation: none; transition: none; }
+  .toast-capsule.leaving { opacity: 0; }
 }
 
 /* ---------- 第五批：單手操作版面（只看的在上、要按的在下） ---------- */
@@ -565,8 +584,7 @@ button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 /* 「＋」浮在操作列上方：黏在操作列頂端再往上留一點 */
 .detail .fab { bottom: calc(var(--bar-h) + var(--bar-gap) * 2 + 8px); }
 .detail .fab { margin-bottom: 8px; }
-/* 提示條浮在操作列上方（--bottom-bar-h 由 app.tsx 依目前頁面設定） */
-.toast { bottom: calc(var(--nav-h) + var(--nav-gap) + 14px + var(--bottom-bar-h, 0px) + env(safe-area-inset-bottom)); }
+/* 提示膠囊浮在操作列上方（--bottom-bar-h 由 app.tsx 依目前頁面設定），見前面的 .toast-capsule */
 
 /* 待辦頁（第五批）：總額在最上、清單在中間可捲動、控制項由下往上＝切換列→未付／已付→多選列 */
 .page-pad.todo { height: 100%; padding-bottom: 0; overflow: hidden; }
