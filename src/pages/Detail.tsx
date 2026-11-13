@@ -10,6 +10,8 @@ import { FilterBar } from '../components/FilterBar';
 import { matchSearch, matchType } from '../detailFilter';
 import { openTx, quickEntry } from '../actions';
 import { money } from '../format';
+import { prevBalances } from '../data/prevBalance';
+import { prevBalanceOn } from '../features';
 
 export function DetailPage() {
   const s = useAppState();
@@ -48,7 +50,7 @@ export function DetailPage() {
 
       <Balls data={d} />
 
-      <TxList data={d} txs={txs} onTap={openTx} empty={q ? '找不到符合的紀錄' : '這個條件下沒有紀錄'} />
+      <TxList data={d} txs={txs} onTap={openTx} prevBal={prevBalanceOn(d.settings) ? prevBalances(d) : null} empty={q ? '找不到符合的紀錄' : '這個條件下沒有紀錄'} />
 
       <button class="fab" onClick={() => quickEntry(f.accountId)} aria-label="快速記帳"><Icon name="plus" size={28} /></button>
 

@@ -11,6 +11,7 @@ import { GESTURE } from '../config';
 import { vibrate } from '../gestures/haptics';
 import { blockClicks } from '../gestures/guard';
 import { displayExpr } from '../calcExpr';
+import { prevBalanceOf, type PrevBalanceTable } from '../data/prevBalance';
 
 interface Props {
   data: AppData;
@@ -21,6 +22,8 @@ interface Props {
   empty?: string;
   /** 長按一筆（待辦頁用來進入多選） */
   onLongPress?: (t: Transaction) => void;
+  /** 2.3 記帳前餘額查表（明細頁給；不給＝不顯示） */
+  prevBal?: PrevBalanceTable | null;
 }
 
 /** 長按判斷：時間與移動門檻沿用 config.ts 的手勢設定 */
@@ -58,8 +61,9 @@ function longPressHandlers(t: Transaction, cb?: (t: Transaction) => void) {
   };
 }
 
-export function TxList({ data, txs, onTap, selected, empty, onLongPress }: Props) {
-  const sorted = [...txs].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
+export function TxList({ data, txs, onTap, selected, empty, onLongPress, prevBal }: Props) {
+  // 同一時間的兩筆：後記的在上面（和「記帳前餘額」的先後一致）
+  const sorted = [...txs].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt) || b.createdAt.localeCompare(a.createdAt));
   if (sorted.length === 0) return <div class="empty-list">{empty ?? '沒有紀錄'}</div>;
 
   const kindOf = kindLookup(data.accounts);
@@ -102,7 +106,7 @@ export function TxList({ data, txs, onTap, selected, empty, onLongPress }: Props
                     {mark && <span class="tl-hour">{String(h).padStart(2, '0')}:00</span>}
                     <span class="tl-dot" />
                   </div>
-                  <TxCard data={data} t={t} onTap={onTap} selected={selected?.has(t.id)} selectable={!!selected} onLongPress={onLongPress} />
+                  <TxCard data={data} t={t} onTap={onTap} selected={selected?.has(t.id)} selectable={!!selected} onLongPress={onLongPress} prevBal={prevBal} />
                 </div>
               );
             })}
@@ -171,9 +175,11 @@ export function txView(data: AppData, t: Transaction) {
   return { icon, title, amt, cls, bg, fg, acc, catName };
 }
 
-export function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { data: AppData; t: Transaction; onTap: (t: Transaction) => void; selected?: boolean; selectable: boolean; onLongPress?: (t: Transaction) => void }) {
+export function TxCard({ data, t, onTap, selected, selectable, onLongPress, prevBal }: { data: AppData; t: Transaction; onTap: (t: Transaction) => void; selected?: boolean; selectable: boolean; onLongPress?: (t: Transaction) => void; prevBal?: PrevBalanceTable | null }) {
   const d = new Date(t.occurredAt);
   const { icon, title, amt, cls, bg, fg, acc } = txView(data, t);
+  // 記帳前餘額：轉帳那列沒有帳戶欄位，這版先不顯示；不動餘額的（未付預算、先欠）查不到＝不顯示
+  const prev = prevBal && acc && t.type !== 'transfer' ? prevBalanceOf(prevBal, t.id, acc.id) : undefined;
   // 報帳／預算標示：未結案＝彩色外框＋「報」「預」；結案＝拿掉外框，留淺色「已報」「已付」。色弱靠小字辨識
   let flag: { cls: string; text: string } | null = null;
   let frame = '';
@@ -214,7 +220,7 @@ export function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { 
         </span>
         <span class="tx-sub">
           {hm(d)}
-          {t.type !== 'transfer' && acc && <> · <Icon name={ACCOUNT_KIND_ICON[acc.kind]} size={12} class="sub-kind-icon" /> {acc.name}</>}
+          {t.type !== 'transfer' && acc && <> · <Icon name={ACCOUNT_KIND_ICON[acc.kind]} size={12} class="sub-kind-icon" /> {acc.name}{prev !== undefined && <span class="tx-prev">{money(prev)}</span>}</>}
           {t.type === 'adjust' && <span class="badge calib">不計收支</span>}
           {t.type === 'owed' && <> · 別人先付</>}
           {t.recurringId && <> · 定期</>}

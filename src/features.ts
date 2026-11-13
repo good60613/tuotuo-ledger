@@ -19,6 +19,11 @@ export function glassOn(settings: Pick<Settings, 'glass'> | undefined): boolean 
   return settings?.glass !== false;
 }
 
+/** 明細是否顯示「記帳前餘額」（2.3，缺值＝開啟） */
+export function prevBalanceOn(settings: Pick<Settings, 'showPrevBalance'> | undefined): boolean {
+  return settings?.showPrevBalance !== false;
+}
+
 /** 首頁是否用明細頁（2.2，缺值＝帳戶頁） */
 export function detailHome(settings: Pick<Settings, 'homePage'> | undefined): boolean {
   return settings?.homePage === 'detail';

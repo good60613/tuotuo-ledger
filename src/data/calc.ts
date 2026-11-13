@@ -28,8 +28,8 @@ export const TOPUP_CAT_PREFIX = '__topup:';
 
 // ---------------- 餘額 ----------------
 
-/** 一筆紀錄對各帳戶餘額的影響 */
-function balanceDeltas(t: Transaction): [string | undefined, number][] {
+/** 一筆紀錄對各帳戶餘額的影響（2.3：前餘額查表也用它，確保和帳戶餘額同一套算法） */
+export function balanceDeltas(t: Transaction): [string | undefined, number][] {
   switch (t.type) {
     case 'income':
       return [[t.accountId, t.amount]];

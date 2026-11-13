@@ -1,5 +1,5 @@
 // 設定（右二）：只放讓其他功能能運作的項目。
-import { advanceOwedOn, recurringOn, glassOn, detailHome } from '../features';
+import { advanceOwedOn, recurringOn, glassOn, detailHome, prevBalanceOn } from '../features';
 import { RecurringPanel } from './RecurringSettings';
 import { useRef, useState } from 'preact/hooks';
 import { useBackLayer } from '../backNav';
@@ -320,6 +320,16 @@ export function SettingsPage() {
             >
               <span>毛玻璃效果</span>
               <span class="muted">{glassOn(d.settings) ? '開啟' : '關閉'}（手機卡頓時可關閉）</span>
+            </button>
+            <button
+              class="setting-row"
+              onClick={() => {
+                const on = !prevBalanceOn(d.settings);
+                updateData((x) => ({ ...x, settings: { ...x.settings, showPrevBalance: on } }));
+              }}
+            >
+              <span>明細顯示記帳前餘額</span>
+              <span class="muted">{prevBalanceOn(d.settings) ? '開啟' : '關閉'}</span>
             </button>
             <div class="setting-row">
               <span>首頁使用</span>

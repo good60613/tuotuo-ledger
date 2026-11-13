@@ -162,6 +162,8 @@ export interface Settings {
    * 缺值或其他值＝帳戶頁。判斷一律用 features.ts 的 detailHome()。舊資料、舊備份不用升版
    */
   homePage?: 'accounts' | 'detail';
+  /** 明細顯示記帳前餘額（2.3），缺值＝開啟。判斷一律用 features.ts 的 prevBalanceOn()。舊資料、舊備份不用升版 */
+  showPrevBalance?: boolean;
 }
 
 export type ThemeMode = 'light' | 'dark' | 'system';
