@@ -827,3 +827,7 @@ html:not(.no-glass) .collapse-bar.glass { background: color-mix(in srgb, var(--c
 
 /* 2.3 明細：帳戶名稱右邊的「記帳前餘額」灰色小字 */
 .tx-prev { color: var(--faint); margin-left: 4px; font-variant-numeric: tabular-nums; }
+
+/* 2.3 編輯畫面上方的提示條：右邊放小按鈕（來自預算：退回未付） */
+.notice-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.notice-btn { border: 1px solid currentColor; background: none; color: inherit; border-radius: 999px; padding: 3px 12px; font-size: 13px; font-weight: 700; }

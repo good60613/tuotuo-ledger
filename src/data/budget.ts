@@ -75,6 +75,23 @@ export function revertBudgetPaid(data: AppData, budgetId: string): AppData {
 }
 
 /**
+ * 復原「退回未付」（2.3）：把剛刪掉的那筆付款支出原樣放回去，預算回到已付。
+ * 預算已經不是未付（被別的操作動過）或付款那筆的 id 已被佔用時，不做任何事。
+ */
+export function restoreBudgetPaid(data: AppData, budgetId: string, pay: Transaction): AppData {
+  const b = data.transactions.find((t) => t.id === budgetId);
+  if (!b || !isPendingBudget(b) || data.transactions.some((t) => t.id === pay.id)) return data;
+  if (!data.accounts.some((a) => a.id === pay.accountId)) return data;
+  return {
+    ...data,
+    transactions: [
+      ...data.transactions.map((t) => (t.id === budgetId ? { ...t, budgetStatus: 'paid' as const, budgetPaidTxId: pay.id } : t)),
+      pay,
+    ],
+  };
+}
+
+/**
  * 確保預算和付款那筆一定對得上（匯入備份、刪帳戶／分類後都會跑）：
  * - 已付但付款那筆不見了 → 回到未付（避免錢「付了」卻沒扣）
  * - 付款那筆指向的預算不見了 → 變回一般支出

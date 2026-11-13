@@ -116,9 +116,17 @@ export function addTransactions(data: AppData, inputs: TxInput[], mkId: () => st
   };
 }
 
-/** 已報帳（done）、已付（paid）預算的紀錄，金額、帳戶、類型、報帳／預算不能改，要先在待辦頁退回 */
+/**
+ * 已報帳（done）、已還的先欠，金額、帳戶、類型、報帳／預算不能改，要先在待辦頁退回。
+ * 2.3：已付款的預算不再鎖定，編輯它＝直接改實際付款那筆（見 isPaidBudget、updatePaidBudget）。
+ */
 export function isLocked(t: Transaction): boolean {
-  return t.reimburseStatus === 'done' || (!!t.budget && t.budgetStatus === 'paid') || (t.type === 'owed' && t.owedStatus === 'paid');
+  return t.reimburseStatus === 'done' || (t.type === 'owed' && t.owedStatus === 'paid');
+}
+
+/** 已付款的預算紀錄（預算那一列；實際扣款的是另一列付款支出） */
+export function isPaidBudget(t: Transaction): boolean {
+  return t.type === 'expense' && !!t.budget && t.budgetStatus === 'paid';
 }
 
 /** 預算付款時新增的那筆支出 */
@@ -126,22 +134,44 @@ export function isBudgetPayment(t: Transaction): boolean {
   return !!t.budgetOfId;
 }
 
+/**
+ * 2.3：編輯已付款的預算＝直接改「實際付款」那一筆（金額、帳戶、日期、分類、備註），帳戶餘額照新內容算，
+ * 預算的已用金額（讀付款那筆的金額）跟著變。預算那一列自己的金額（當初圈的預算）不動，只同步分類與備註，
+ * 兩列看起來才一致。類型不能改（要改請先退回未付）。
+ */
+function updatePaidBudget(data: AppData, budgetRec: Transaction, input: TxInput): AppData {
+  const pay = data.transactions.find((t) => t.id === budgetRec.budgetPaidTxId);
+  if (!pay || pay.budgetOfId !== budgetRec.id) throw new OpError('找不到這筆預算的付款紀錄，請先在待辦頁退回未付');
+  if (input.type !== 'expense' || input.reimbursable) throw new OpError('這筆來自預算，要改類型請先退回未付');
+  const plain: TxInput = { ...input, budget: false, reimbursable: false, reimburseKind: undefined };
+  validate(data, plain);
+  const nextPay: Transaction = { ...build(plain, pay.id, pay.createdAt), budgetOfId: budgetRec.id };
+  if (input.calcExpr === undefined && input.amount === pay.amount) {
+    nextPay.calcExpr = pay.calcExpr;
+    nextPay.calcTerm = pay.calcTerm;
+  }
+  return {
+    ...data,
+    transactions: data.transactions.map((t) =>
+      t.id === pay.id ? nextPay : t.id === budgetRec.id ? { ...t, categoryId: input.categoryId, note: input.note ?? '' } : t,
+    ),
+  };
+}
+
 export function updateTransaction(data: AppData, id: string, input: TxInput): AppData {
   const old = data.transactions.find((t) => t.id === id);
   if (!old) throw new OpError('找不到這筆紀錄');
+  if (isPaidBudget(old)) return updatePaidBudget(data, old, input);
   if (old.type === 'reimburse_in') throw new OpError('報帳入帳請用「退回待報帳」處理');
   if (old.type === 'adjust' || old.type === 'valuation') throw new OpError('調整、市值紀錄不能編輯，只能刪除後重新校正');
   if (old.type === 'owed_repay') throw new OpError('這筆是還朋友的款項，要改請在待辦頁退回未還');
   validate(data, input);
   let next: Transaction;
   if (isLocked(old)) {
-    const paidBudget = !!old.budget;
     const paidOwed = old.type === 'owed';
     const sameMark = paidOwed
       ? !input.reimbursable && !input.budget
-      : paidBudget
-        ? input.budget !== false && !input.reimbursable
-        : input.reimbursable !== false && !input.budget && (input.reimburseKind === 'advance') === (old.reimburseKind === 'advance');
+      : input.reimbursable !== false && !input.budget && (input.reimburseKind === 'advance') === (old.reimburseKind === 'advance');
     if (
       input.amount !== old.amount ||
       (!paidOwed && input.accountId !== old.accountId) ||
@@ -151,11 +181,9 @@ export function updateTransaction(data: AppData, id: string, input: TxInput): Ap
       throw new OpError(
         paidOwed
           ? '這筆先欠已還，要改金額請先在待辦頁退回未還'
-          : paidBudget
-            ? '這筆預算已付款，要改金額或帳戶，請先在待辦頁退回未付'
-            : old.reimburseKind === 'advance'
-              ? '這筆先付已收回，要改金額或帳戶，請先在待辦頁退回未收'
-              : '這筆已報帳，要改金額或帳戶，請先在待辦頁退回待報帳',
+          : old.reimburseKind === 'advance'
+            ? '這筆先付已收回，要改金額或帳戶，請先在待辦頁退回未收'
+            : '這筆已報帳，要改金額或帳戶，請先在待辦頁退回待報帳',
       );
     next = { ...old, categoryId: input.categoryId, note: input.note ?? '', occurredAt: input.occurredAt };
   } else if (isBudgetPayment(old)) {
@@ -163,6 +191,13 @@ export function updateTransaction(data: AppData, id: string, input: TxInput): Ap
     if (input.type !== 'expense' || input.reimbursable || input.budget)
       throw new OpError('這筆是預算付款，要改類型請先在待辦頁退回未付');
     next = { ...build(input, old.id, old.createdAt), budgetOfId: old.budgetOfId };
+    // 預算那一列的分類、備註一起同步（兩列看起來一致）
+    return {
+      ...data,
+      transactions: data.transactions.map((t) =>
+        t.id === id ? next : t.id === old.budgetOfId && isPaidBudget(t) ? { ...t, categoryId: input.categoryId, note: input.note ?? '' } : t,
+      ),
+    };
   } else {
     next = build(input, old.id, old.createdAt);
     // 編輯時不重新拆帳：拆帳群組保留；金額沒改才保留原本的算式（改了金額，舊算式就對不上了）
@@ -183,13 +218,12 @@ export function updateTransaction(data: AppData, id: string, input: TxInput): Ap
 export function deleteTransaction(data: AppData, id: string): AppData {
   const old = data.transactions.find((t) => t.id === id);
   if (!old) return data;
+  if (isPaidBudget(old)) throw new OpError('這筆預算已付款，請先退回未付再刪除');
   if (isLocked(old))
     throw new OpError(
       old.type === 'owed'
         ? '這筆先欠已還，請先在待辦頁退回未還再刪除'
-        : old.budget
-          ? '這筆預算已付款，請先在待辦頁退回未付再刪除'
-          : old.reimburseKind === 'advance'
+        : old.reimburseKind === 'advance'
             ? '這筆先付已收回，請先在待辦頁退回未收再刪除'
             : '這筆已報帳，請先在待辦頁退回待報帳再刪除',
     );

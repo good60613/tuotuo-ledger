@@ -172,6 +172,7 @@ function BudgetDetail({ t, onClose, onPay, onRevert }: { t: Transaction; onClose
         <span class="budget-color">{isPaid ? '已付' : overdue ? '未付（已過結算期）' : '未付'}</span>
       </div>
       {pay && <div class="kv"><span>實際付款</span><span>{money(pay.amount)}（{ymd(new Date(pay.occurredAt))}）</span></div>}
+      {pay && pay.accountId !== t.accountId && <div class="kv"><span>付款帳戶</span><span>{accountName(d, pay.accountId)}</span></div>}
       {t.note && <div class="kv-note">{t.note}</div>}
       <div class="dialog-btns">
         <button

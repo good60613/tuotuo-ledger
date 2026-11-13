@@ -97,11 +97,14 @@ describe('已支付', () => {
     expect(totals(d, { period: per }).expense).toBe(1300);
   });
 
-  it('已付的預算鎖住：不能改金額、不能刪；付款那筆不能直接刪', () => {
+  it('已付的預算（2.3 起可直接編輯）：改的是付款那筆；類型不能改、不能刪；付款那筆不能直接刪', () => {
     const { data: d0, id } = budget(base());
     const d = markBudgetPaid(d0, [{ id, amount: 1000 }], NOW, () => 'P1');
+    // 2.3：改金額 → 改到付款那筆，不再擋
+    const dAmt = updateTransaction(d, id, { type: 'expense', amount: 500, accountId: 'A', categoryId: 'c-e1', occurredAt: NOW.toISOString(), budget: true });
+    expect(tx(dAmt, 'P1')?.amount).toBe(500);
     expect(() =>
-      updateTransaction(d, id, { type: 'expense', amount: 500, accountId: 'A', categoryId: 'c-e1', occurredAt: NOW.toISOString(), budget: true }),
+      updateTransaction(d, id, { type: 'income', amount: 500, accountId: 'A', categoryId: 'c-i1', occurredAt: NOW.toISOString() }),
     ).toThrow(OpError);
     expect(() => deleteTransaction(d, id)).toThrow(OpError);
     expect(() => deleteTransaction(d, 'P1')).toThrow(OpError);

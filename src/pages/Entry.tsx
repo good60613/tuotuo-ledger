@@ -4,7 +4,8 @@ import { Icon } from '../components/Icon';
 import { CAPSULE_ICONS, UI_ICONS } from '../icons';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { getState, updateData, closeOverlay, showToast, confirmDanger, type Overlay } from '../store';
-import { addTransaction, addTransactions, updateTransaction, deleteTransaction, isLocked, isBudgetPayment, uid, OpError, type TxInput } from '../data/ops';
+import { addTransaction, addTransactions, updateTransaction, deleteTransaction, isLocked, isBudgetPayment, isPaidBudget, uid, OpError, type TxInput } from '../data/ops';
+import { revertBudgetPaid, restoreBudgetPaid } from '../data/budget';
 import { roundAmount } from '../data/calc';
 import { pressKey, evaluate, hasOperator, numberToExpr, type CalcKey } from '../calcExpr';
 import { accountName, categoryOf } from '../selectors';
@@ -76,24 +77,31 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
   const editing = o.txId ? d.transactions.find((t) => t.id === o.txId) : undefined;
   const locked = editing ? isLocked(editing) : false;
   const isPay = editing ? isBudgetPayment(editing) : false;
+  // 2.3：已付款的預算可以直接編輯。編輯它＝改實際付款那一筆，所以畫面上的金額、帳戶、日期、算式都從付款那筆帶出來
+  const paidB = editing ? isPaidBudget(editing) : false;
+  const payRec = paidB ? d.transactions.find((t) => t.id === editing!.budgetPaidTxId) : undefined;
+  const src = payRec ?? editing;
+  // 來自預算的兩列（預算那列、付款那列）：類型、標記不能改，要改請先退回未付
+  const fromBudget = paidB || isPay;
+  const budgetId = paidB ? editing?.id : editing?.budgetOfId;
 
   const initMode: Mode = editing ? (editing.type === 'owed' ? 'expense' : (editing.type as Mode)) : o.mode;
   const [mode, setMode] = useState<Mode>(initMode);
-  const [accountId, setAccountId] = useState<string | null>(editing ? editing.accountId || null : o.accountId);
+  const [accountId, setAccountId] = useState<string | null>(src ? src.accountId || null : o.accountId);
   const [toAccountId, setToAccountId] = useState<string | null>(editing?.toAccountId ?? o.toAccountId ?? null);
   // 新記帳：預設選分類格左上第一個
   const [catId, setCatId] = useState<string | null>(
     editing ? editing.categoryId ?? null : initMode !== 'transfer' ? sortedCategories(d, initMode)[0]?.id ?? null : null,
   );
   const [expr, setExpr] = useState(() => {
-    if (!editing) return '';
-    const ce = editing.calcExpr;
+    if (!src) return '';
+    const ce = src.calcExpr;
     // 算式只在「整筆金額＝算式結果」時沿用；拆帳出來的一部分只顯示自己的金額
-    if (ce && editing.calcTerm === undefined && evaluate(ce) !== null && roundAmount(evaluate(ce)!) === editing.amount) return ce;
-    return numberToExpr(editing.amount);
+    if (ce && src.calcTerm === undefined && evaluate(ce) !== null && roundAmount(evaluate(ce)!) === src.amount) return ce;
+    return numberToExpr(src.amount);
   });
   const [note, setNote] = useState(editing?.note ?? '');
-  const [when, setWhen] = useState(editing ? toLocalInput(editing.occurredAt) : toLocalInput(new Date().toISOString()));
+  const [when, setWhen] = useState(src ? toLocalInput(src.occurredAt) : toLocalInput(new Date().toISOString()));
   const [marks, setMarks] = useState<Marks>({});
   const [sel, setSel] = useState<number | null>(null);
   const [editMark, setEditMark] = useState<Mark | null>(editing ? recordMark(editing) : null);
@@ -155,18 +163,17 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
   };
 
   const lockedText = (act: string) => {
-    if (isPay) return '這筆是預算付款，不能改成預算或報帳';
+    if (fromBudget) return '這筆來自預算，要改類型請先退回未付';
     if (editing?.type === 'owed') return `這筆先欠已還，${act}請先在待辦頁退回未還`;
-    if (editing?.budget) return `這筆預算已付款，${act}請先在待辦頁退回未付`;
     if (editing?.reimburseKind === 'advance') return `這筆先付已收回，${act}請先在待辦頁退回`;
     return `這筆已報帳，${act}請先在待辦頁退回待報帳`;
   };
-  const lockedHint = () => showToast(isPay ? lockedText('') : lockedText('不能再改標記，要改'));
+  const lockedHint = () => showToast(fromBudget ? lockedText('') : lockedText('不能再改標記，要改'));
 
   // 換帳戶：已掛預算卻換到非一般帳戶 → 自動取消預算並提示
   const pickAccount = (id: string | null) => {
     setAccountId(id);
-    if (bankOnly(id)) return;
+    if (bankOnly(id) || paidB) return;
     if (editMark === 'budget') {
       setEditMark(null);
       showToast('預算只能掛在一般帳戶，已取消預算');
@@ -212,7 +219,7 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
   const onChipTap = (m: Mark) => {
     if (performance.now() - dragEndAt.current < 400) return;
     if (editing) {
-      if (locked || isPay) return lockedHint();
+      if (locked || fromBudget) return lockedHint();
       if (editMark === m) return setEditMark(null);
       if (m === 'budget' && !bankOnly(accountId)) return showToast('預算只能掛在一般帳戶');
       setEditMark(m);
@@ -414,10 +421,31 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
     }
   };
 
+  /** 退回未付（2.3）：不再跳確認框，直接退回、關掉編輯畫面，用新提示給〔復原〕 */
+  const onRevertBudget = () => {
+    if (!budgetId || saving.current) return;
+    const before = getState().data;
+    const b = before.transactions.find((t) => t.id === budgetId);
+    const pay = b ? before.transactions.find((t) => t.id === b.budgetPaidTxId) : undefined;
+    if (!b || !pay) return showToast('找不到這筆預算的付款紀錄');
+    saving.current = true;
+    try {
+      updateData((x) => revertBudgetPaid(x, budgetId));
+    } catch (e) {
+      saving.current = false;
+      return showToast(e instanceof Error ? e.message : '退回失敗');
+    }
+    closeOverlay();
+    showToast('已退回未付', () => {
+      updateData((x) => restoreBudgetPaid(x, budgetId, pay));
+      showToast('已復原');
+    });
+  };
+
   const onDelete = async () => {
     if (!editing) return;
-    if (isPay) {
-      showToast('這筆是預算付款，請先在待辦頁退回未付再刪除');
+    if (fromBudget) {
+      showToast('這筆來自預算，請先退回未付再刪除');
       return;
     }
     if (locked) {
@@ -487,9 +515,9 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
       <div class="entry-top">
         <button class="icon-btn" onClick={closeOverlay} aria-label="返回"><Icon name={UI_ICONS['關閉']} /></button>
         <div class="seg">
-          <button class={mode === 'expense' ? 'on expense' : ''} onClick={() => switchMode('expense')} disabled={locked}>支出</button>
-          <button class={mode === 'income' ? 'on income' : ''} onClick={() => switchMode('income')} disabled={locked}>收入</button>
-          <button class={mode === 'transfer' ? 'on transfer' : ''} onClick={() => switchMode('transfer')} disabled={locked}>轉帳</button>
+          <button class={mode === 'expense' ? 'on expense' : ''} onClick={() => switchMode('expense')} disabled={locked || fromBudget}>支出</button>
+          <button class={mode === 'income' ? 'on income' : ''} onClick={() => switchMode('income')} disabled={locked || fromBudget}>收入</button>
+          <button class={mode === 'transfer' ? 'on transfer' : ''} onClick={() => switchMode('transfer')} disabled={locked || fromBudget}>轉帳</button>
         </div>
         {editing ? (
           <button class="icon-btn danger" onClick={onDelete} aria-label="刪除"><Icon name={UI_ICONS['刪除']} /></button>
@@ -499,6 +527,12 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
       </div>
 
       {locked && <div class="notice">{lockedText('要改金額或帳戶')}</div>}
+      {fromBudget && (
+        <div class="notice notice-row">
+          <span>這筆來自預算</span>
+          <button class="notice-btn" onClick={onRevertBudget}>退回未付</button>
+        </div>
+      )}
 
       {isTransfer ? (
         <div class="transfer-box">
