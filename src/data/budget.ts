@@ -1,6 +1,6 @@
 // 預算（第四批第 3 段，PK 2026-11-08 定案）。
 // - 記預算：帳戶不扣、不算當月支出；剩餘可用扣掉未付預算（見 calc.ts）。
-// - 已支付：當天新增一筆真正的支出（金額可改成實際付款金額），帳戶扣款、算當月支出，預算改成已付。
+// - 已支付：當天新增一筆真正的支出（金額可改成實際付款金額；2.3 起帳戶也可以改），帳戶扣款、算當月支出，預算改成已付。
 //   只有「未付」的預算能付款，所以同一筆預算不會扣兩次。
 // - 退回未付：刪掉付款時新增的那筆支出（錢加回帳戶），預算回到未付。
 // - 逾期：預算日期所在的結算期已經結束還沒付，保留並提醒，不自動延期。
@@ -17,6 +17,8 @@ export interface BudgetPay {
   id: string;
   /** 實際付款金額（整數元，大於 0） */
   amount: number;
+  /** 2.3：改從別的帳戶付。不給＝預算原本的帳戶。任何帳戶都可以（和一般記帳一樣） */
+  accountId?: string;
 }
 
 /** 整批「已支付」。now＝付款日（當天） */
@@ -31,13 +33,15 @@ export function markBudgetPaid(data: AppData, pays: BudgetPay[], now: Date = new
     const b = data.transactions.find((t) => t.id === p.id);
     if (!b || !isPendingBudget(b)) throw new BudgetError('只能選未付的預算');
     if (!(p.amount > 0) || !Number.isInteger(p.amount)) throw new BudgetError('付款金額必須大於 0');
-    if (!data.accounts.some((a) => a.id === b.accountId)) throw new BudgetError('找不到這筆預算的帳戶');
+    const payAccountId = p.accountId ?? b.accountId;
+    if (!data.accounts.some((a) => a.id === payAccountId))
+      throw new BudgetError(p.accountId ? '找不到付款帳戶' : '找不到這筆預算的帳戶');
     const id = mkId();
     created.push({
       id,
       type: 'expense',
       amount: p.amount,
-      accountId: b.accountId,
+      accountId: payAccountId,
       categoryId: b.categoryId,
       note: b.note,
       occurredAt: nowIso,

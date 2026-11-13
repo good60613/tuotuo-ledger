@@ -10,6 +10,7 @@ import { accountName, categoryOf } from '../selectors';
 import { TxList } from '../components/TxList';
 import { BottomBar } from '../components/BottomBar';
 import { Sheet } from '../components/Sheet';
+import { AccountPicker } from '../components/AccountPicker';
 import { openTx } from '../actions';
 import { money, hm } from '../format';
 
@@ -199,7 +200,11 @@ function PayConfirm({ ids, onClose, onDone }: { ids: string[]; onClose: () => vo
   const [amounts, setAmounts] = useState<Record<string, string>>(() =>
     Object.fromEntries(items.map((t) => [t.id, String(t.amount)])),
   );
-  const parsed = items.map((t) => ({ id: t.id, amount: Math.round(Number(amounts[t.id])) }));
+  // 2.3：每一列可以改從哪個帳戶付（預設＝預算原本的帳戶）
+  const [accs, setAccs] = useState<Record<string, string>>({});
+  const [pickFor, setPickFor] = useState<string | null>(null);
+  const accOf = (t: Transaction) => (d.accounts.some((a) => a.id === accs[t.id]) ? accs[t.id] : t.accountId);
+  const parsed = items.map((t) => ({ id: t.id, amount: Math.round(Number(amounts[t.id])), accountId: accOf(t) }));
   const valid = parsed.every((p) => Number.isFinite(p.amount) && p.amount > 0);
   const total = valid ? parsed.reduce((a, p) => a + p.amount, 0) : 0;
 
@@ -216,16 +221,21 @@ function PayConfirm({ ids, onClose, onDone }: { ids: string[]; onClose: () => vo
 
   return (
     <Sheet title="確定已經付款了嗎？" onClose={onClose}>
-      <div class="muted">付款日是今天。實際金額跟預算不同時，直接改金額，帳戶會照實際金額扣款。</div>
+      <div class="muted">付款日是今天。實際金額跟預算不同時，直接改金額，帳戶會照實際金額扣款；也可以點帳戶改從別的帳戶付。</div>
       <div class="pay-list">
         {items.map((t) => {
           const c = categoryOf(d, t.categoryId);
           return (
-            <label class="pay-row" key={t.id}>
+            <div class="pay-row" key={t.id}>
               <span class="grow">
                 {c?.name ?? '（已刪除分類）'}
                 {t.note ? `・${t.note}` : ''}
-                <span class="muted small">　{accountName(d, t.accountId)}・預算 {money(t.amount)}</span>
+                <span class="muted small">
+                  　<button class={`pay-acc${accOf(t) !== t.accountId ? ' changed' : ''}`} onClick={() => setPickFor(t.id)}>
+                    {accountName(d, accOf(t))} <Icon name="chevron-down" size={12} />
+                  </button>
+                  ・預算 {money(t.amount)}
+                </span>
               </span>
               <input
                 class="pay-input"
@@ -236,7 +246,7 @@ function PayConfirm({ ids, onClose, onDone }: { ids: string[]; onClose: () => vo
                   setAmounts((a) => ({ ...a, [t.id]: v }));
                 }}
               />
-            </label>
+            </div>
           );
         })}
       </div>
@@ -248,6 +258,14 @@ function PayConfirm({ ids, onClose, onDone }: { ids: string[]; onClose: () => vo
         <button class="btn secondary" onClick={onClose}>取消</button>
         <button class="btn budget-btn" disabled={!valid} onClick={confirm}>確認已支付</button>
       </div>
+      {pickFor && (
+        <AccountPicker
+          title="從哪個帳戶付"
+          value={accOf(items.find((t) => t.id === pickFor)!)}
+          onPick={(id) => id && setAccs((a) => ({ ...a, [pickFor]: id }))}
+          onClose={() => setPickFor(null)}
+        />
+      )}
     </Sheet>
   );
 }
