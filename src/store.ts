@@ -101,6 +101,8 @@ export interface State {
   page: number;
   overlays: Overlay[];
   detail: DetailFilter;
+  /** 2.3：通知欄「搜尋」按鈕要求明細頁直接打開搜尋；每按一次加 1，明細頁看到變動就打開 */
+  searchRequest: number;
   statsAccountId: string | null;
   /** 統計頁看的結算期；null＝目前這一期 */
   statsPeriod: string | null;
@@ -131,6 +133,7 @@ let state: State = {
   page: HOME_PAGE,
   overlays: [],
   detail: { accountId: null, categoryId: null, day: null },
+  searchRequest: 0,
   statsAccountId: null,
   statsPeriod: null,
   statsMode: 'month',

@@ -24,6 +24,16 @@ export function prevBalanceOn(settings: Pick<Settings, 'showPrevBalance'> | unde
   return settings?.showPrevBalance !== false;
 }
 
+/** 通知欄快捷列是否開啟（2.3，缺值＝關閉） */
+export function notifBarOn(settings: Pick<Settings, 'notifBar'> | undefined): boolean {
+  return settings?.notifBar === true;
+}
+
+/** 鎖定畫面是否隱藏通知欄上的金額（2.3，缺值＝隱藏） */
+export function notifHideLockOn(settings: Pick<Settings, 'notifHideOnLock'> | undefined): boolean {
+  return settings?.notifHideOnLock !== false;
+}
+
 /** 首頁是否用明細頁（2.2，缺值＝帳戶頁） */
 export function detailHome(settings: Pick<Settings, 'homePage'> | undefined): boolean {
   return settings?.homePage === 'detail';

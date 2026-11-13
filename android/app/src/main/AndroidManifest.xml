@@ -37,6 +37,19 @@
                 android:resource="@xml/widget_ledger_info" />
         </receiver>
 
+        <!-- 通知欄快捷列（2.3）：開機、更新後、午夜、改時間時重新發出 -->
+        <receiver
+            android:name=".QuickBarReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="tw.pk.ledger.BAR_MIDNIGHT" />
+            </intent-filter>
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -53,4 +66,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- 2.3：點小工具條碼複製載具時輕震動一下 -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- 2.3：通知欄快捷列（Android 13 以上要使用者允許通知；開機後重新發出） -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 </manifest>

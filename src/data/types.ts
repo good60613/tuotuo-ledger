@@ -164,6 +164,10 @@ export interface Settings {
   homePage?: 'accounts' | 'detail';
   /** 明細顯示記帳前餘額（2.3），缺值＝開啟。判斷一律用 features.ts 的 prevBalanceOn()。舊資料、舊備份不用升版 */
   showPrevBalance?: boolean;
+  /** 通知欄快捷列（2.3），缺值＝關閉。判斷一律用 features.ts 的 notifBarOn()。舊資料、舊備份不用升版 */
+  notifBar?: boolean;
+  /** 鎖定畫面隱藏金額（2.3），缺值＝開啟。判斷一律用 features.ts 的 notifHideLockOn() */
+  notifHideOnLock?: boolean;
 }
 
 export type ThemeMode = 'light' | 'dark' | 'system';

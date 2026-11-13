@@ -7,8 +7,9 @@
 // 4. 不在首頁 → 回首頁
 // 5. 在首頁、什麼都沒開 → 離開 App
 import { useEffect, useRef } from 'preact/hooks';
-import { getState, closeDialog, closeOverlay, goPage, HOME_PAGE } from './store';
+import { getState, setState, closeDialog, closeOverlay, goPage, pageOrder, HOME_PAGE } from './store';
 import { quickEntry } from './actions';
+import type { NavTarget } from './widget';
 
 interface Layer {
   id: number;
@@ -84,11 +85,12 @@ export async function goHomeFromWidget(wait = (ms: number) => new Promise((r) =>
 }
 
 /**
- * 點了桌面小工具（條碼區以外，2.3）：開「新增記帳」（支出分頁）。
+ * 從桌面小工具（條碼區以外）、通知欄的按鈕點進來（2.3）：
+ * - entry：開「新增記帳」（支出分頁）；todo／detail：換到待辦頁／明細頁；search：明細頁並直接打開搜尋。
  * 先等資料讀好（冷啟動時網頁剛載入）；確認視窗、選單、其他疊層照 goHomeFromWidget 的規矩收掉。
- * 記帳頁已經開著（可能打到一半）就保留，不再多開一個。
+ * 記帳頁已經開著（可能打到一半）就保留（不清掉、不再多開一個）。
  */
-export async function openEntryFromWidget(wait = (ms: number) => new Promise((r) => setTimeout(r, ms))) {
+export async function navFromNative(target: NavTarget, wait = (ms: number) => new Promise((r) => setTimeout(r, ms))) {
   for (let i = 0; i < 100 && !(getState().ready && !getState().blocked); i++) {
     if (getState().blocked) return;
     await wait(100);
@@ -96,7 +98,13 @@ export async function openEntryFromWidget(wait = (ms: number) => new Promise((r)
   if (!getState().ready || getState().blocked) return;
   await goHomeFromWidget(wait);
   const s = getState();
-  if (s.overlays[s.overlays.length - 1]?.kind !== 'entry') quickEntry(null);
+  if (target === 'entry') {
+    if (s.overlays[s.overlays.length - 1]?.kind !== 'entry') quickEntry(null);
+    return;
+  }
+  const page = pageOrder(s.data.settings).indexOf(target === 'todo' ? '待辦' : '明細');
+  if (page >= 0) goPage(page);
+  if (target === 'search') setState((x) => ({ searchRequest: x.searchRequest + 1 }));
 }
 
 /** 測試用：清掉所有登記 */

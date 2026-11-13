@@ -1,5 +1,6 @@
 // 設定（右二）：只放讓其他功能能運作的項目。
-import { advanceOwedOn, recurringOn, glassOn, detailHome, prevBalanceOn } from '../features';
+import { advanceOwedOn, recurringOn, glassOn, detailHome, prevBalanceOn, notifBarOn, notifHideLockOn } from '../features';
+import { requestNotifPermission } from '../widget';
 import { RecurringPanel } from './RecurringSettings';
 import { useRef, useState } from 'preact/hooks';
 import { useBackLayer } from '../backNav';
@@ -330,6 +331,31 @@ export function SettingsPage() {
             >
               <span>明細顯示記帳前餘額</span>
               <span class="muted">{prevBalanceOn(d.settings) ? '開啟' : '關閉'}</span>
+            </button>
+            <button
+              class="setting-row"
+              onClick={async () => {
+                const on = !notifBarOn(d.settings);
+                // 打開時 Android 13 以上要先向使用者要通知權限；被拒絕就維持關閉並說明原因
+                if (on && !(await requestNotifPermission())) {
+                  showToast('沒有通知權限，快捷列無法顯示。要用的話，請到手機設定 → 應用程式 → 拖拖記帳 → 通知，允許通知');
+                  return;
+                }
+                updateData((x) => ({ ...x, settings: { ...x.settings, notifBar: on } }));
+              }}
+            >
+              <span>通知欄快捷列</span>
+              <span class="muted">{notifBarOn(d.settings) ? '開啟' : '關閉'}（剩餘可用、今日收支與快捷按鈕）</span>
+            </button>
+            <button
+              class="setting-row"
+              onClick={() => {
+                const on = !notifHideLockOn(d.settings);
+                updateData((x) => ({ ...x, settings: { ...x.settings, notifHideOnLock: on } }));
+              }}
+            >
+              <span>鎖定畫面隱藏金額</span>
+              <span class="muted">{notifHideLockOn(d.settings) ? '開啟' : '關閉'}（只影響通知欄快捷列）</span>
             </button>
             <div class="setting-row">
               <span>首頁使用</span>

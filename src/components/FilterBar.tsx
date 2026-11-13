@@ -1,6 +1,6 @@
 // 明細頁底部篩選膠囊列（2.2 B2）：帳戶｜日期｜分類｜類型｜🔍。
 // 有套用的膠囊變藍底、顯示目前選擇並帶 ×。一排放不下時可左右滑（這時才擋住左右換頁）。
-import { useLayoutEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { ComponentChildren } from 'preact';
 import { useAppState, setState, type DetailFilter } from '../store';
 import { Icon } from './Icon';
@@ -29,10 +29,15 @@ function Cap({ on, onTap, onClear, children }: { on: boolean; onTap: () => void;
 }
 
 export function FilterBar({ f, period }: { f: DetailFilter; period: string }) {
-  const d = useAppState().data;
+  const st0 = useAppState();
+  const d = st0.data;
   const set = (p: Partial<DetailFilter>) => setState((st) => ({ detail: { ...st.detail, ...p } }));
   const [sheet, setSheet] = useState<null | 'acc' | 'period' | 'cat' | 'kind'>(null);
   const [searching, setSearching] = useState(false);
+  // 通知欄「搜尋」：要求直接打開搜尋（每次要求 searchRequest 加 1）
+  useEffect(() => {
+    if (st0.searchRequest > 0) setSearching(true);
+  }, [st0.searchRequest]);
   const current = periodKey(new Date(), d.settings.settleDay);
   const go = (p: string) => set({ period: p === current ? null : p, day: null });
   const q = f.q ?? '';

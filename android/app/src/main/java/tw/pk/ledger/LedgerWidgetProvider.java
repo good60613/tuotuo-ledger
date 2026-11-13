@@ -39,7 +39,7 @@ import org.json.JSONObject;
 public class LedgerWidgetProvider extends AppWidgetProvider {
 
     /** 點小工具其他地方：開 App 的新增記帳（2.3；以前是回首頁） */
-    static final String EXTRA_FROM_WIDGET = "tw.pk.ledger.FROM_WIDGET";
+    static final String EXTRA_NAV = "tw.pk.ledger.NAV";
     /** 點條碼區：複製載具碼 */
     static final String ACTION_COPY_CARRIER = "tw.pk.ledger.COPY_CARRIER";
     private static final String PREFS = "ledger_widget";
@@ -107,7 +107,7 @@ public class LedgerWidgetProvider extends AppWidgetProvider {
         Intent open = new Intent(ctx, MainActivity.class);
         open.setAction(Intent.ACTION_MAIN);
         open.addCategory(Intent.CATEGORY_LAUNCHER);
-        open.putExtra(EXTRA_FROM_WIDGET, true);
+        open.putExtra(EXTRA_NAV, "entry");
         open.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent pi = PendingIntent.getActivity(ctx, 0, open,
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
