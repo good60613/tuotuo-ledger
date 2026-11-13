@@ -6,7 +6,7 @@ import { code39Widths } from '../src/data/carrier';
 import { money } from '../src/format';
 import { CARRIER } from '../src/config';
 import { getState, setState, HOME_PAGE, PAGES } from '../src/store';
-import { goHomeFromWidget, pushBackLayer, _resetBackLayers } from '../src/backNav';
+import { goHomeFromWidget, openEntryFromWidget, pushBackLayer, _resetBackLayers } from '../src/backNav';
 
 describe('小工具的數字', () => {
   it('和首頁同一套算法（剩餘可用、今日支出、本期支出）', () => {
@@ -72,5 +72,34 @@ describe('點小工具回首頁（記帳頁保留）', () => {
     await goHomeFromWidget(noWait);
     expect(getState().overlays.length).toBe(0);
     expect(getState().page).toBe(HOME_PAGE);
+  });
+});
+
+describe('2.3 點小工具開新增記帳', () => {
+  const noWait = () => Promise.resolve();
+  beforeEach(() => {
+    _resetBackLayers();
+    setState({ dialog: null, overlays: [], page: HOME_PAGE, ready: true, blocked: null });
+  });
+
+  it('沒開東西：開支出分頁的記帳畫面', async () => {
+    setState({ page: PAGES.indexOf('明細') });
+    await openEntryFromWidget(noWait);
+    const top = getState().overlays[getState().overlays.length - 1];
+    expect(top.kind).toBe('entry');
+    expect((top as { mode: string }).mode).toBe('expense');
+  });
+
+  it('記帳頁已經開著：保留，不再多開一個', async () => {
+    setState({ overlays: [{ kind: 'entry', mode: 'income', accountId: null }] });
+    await openEntryFromWidget(noWait);
+    expect(getState().overlays.length).toBe(1);
+    expect((getState().overlays[0] as { mode: string }).mode).toBe('income');
+  });
+
+  it('資料在保護狀態（讀不到）時不開', async () => {
+    setState({ blocked: { reason: 'read', message: 'x' } as never });
+    await openEntryFromWidget(noWait);
+    expect(getState().overlays.length).toBe(0);
   });
 });

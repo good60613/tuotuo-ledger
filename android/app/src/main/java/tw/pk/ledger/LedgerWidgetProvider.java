@@ -3,6 +3,8 @@ package tw.pk.ledger;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -12,9 +14,13 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.view.View;
 import android.widget.RemoteViews;
+import android.widget.Toast;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -24,14 +30,18 @@ import org.json.JSONObject;
 /**
  * 桌面小工具 3×2（第七批）。
  * 上半：手機載具條碼（粗細條紋由網頁端算好，這裡只畫）；未設定時顯示提示。
- * 下半：剩餘可用（大）、今日支出、本月支出；角落 App 圖示。點任何地方打開 App 首頁。
+ * 下半：剩餘可用（大）、今日支出、本月支出；角落 App 圖示。
+ * 2.3：點條碼區＝把載具碼（含開頭的「/」）複製到剪貼簿＋輕震動，不開 App；點其他地方＝打開 App 的新增記帳畫面（支出）。
  * 數字由網頁端用首頁同一套算法算好、格式化後送來（LedgerWidgetPlugin），這裡不做任何計算，
  * 只判斷「過期」：今天不是那份數字的日期 → 今日支出顯示 0；到了下一期 → 本月顯示「—」。
  * 外觀數值：res/values/widget_dimens.xml、res/values/widget_colors.xml。
  */
 public class LedgerWidgetProvider extends AppWidgetProvider {
 
+    /** 點小工具其他地方：開 App 的新增記帳（2.3；以前是回首頁） */
     static final String EXTRA_FROM_WIDGET = "tw.pk.ledger.FROM_WIDGET";
+    /** 點條碼區：複製載具碼 */
+    static final String ACTION_COPY_CARRIER = "tw.pk.ledger.COPY_CARRIER";
     private static final String PREFS = "ledger_widget";
     private static final String KEY = "snapshot";
 
@@ -44,6 +54,39 @@ public class LedgerWidgetProvider extends AppWidgetProvider {
         AppWidgetManager mgr = AppWidgetManager.getInstance(ctx);
         int[] ids = mgr.getAppWidgetIds(new ComponentName(ctx, LedgerWidgetProvider.class));
         for (int id : ids) render(ctx, mgr, id);
+    }
+
+    @Override
+    public void onReceive(Context ctx, Intent intent) {
+        if (intent != null && ACTION_COPY_CARRIER.equals(intent.getAction())) {
+            copyCarrier(ctx);
+            return;
+        }
+        super.onReceive(ctx, intent);
+    }
+
+    /** 把載具碼（含開頭的「/」）放進剪貼簿，輕震動一下。Android 13 以上系統自己會提示，12 以下才補一個小提示 */
+    private static void copyCarrier(Context ctx) {
+        JSONObject s = readSnapshot(ctx);
+        String carrier = s == null ? "" : s.optString("carrier", "");
+        if (carrier.isEmpty()) return;
+        ClipboardManager cm = (ClipboardManager) ctx.getSystemService(Context.CLIPBOARD_SERVICE);
+        if (cm == null) return;
+        cm.setPrimaryClip(ClipData.newPlainText(ctx.getString(R.string.widget_code_desc), carrier));
+        buzz(ctx);
+        if (Build.VERSION.SDK_INT < 33) {
+            Toast.makeText(ctx, ctx.getString(R.string.widget_copied), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private static void buzz(Context ctx) {
+        try {
+            Vibrator vib = (Vibrator) ctx.getSystemService(Context.VIBRATOR_SERVICE);
+            if (vib == null || !vib.hasVibrator()) return;
+            vib.vibrate(VibrationEffect.createOneShot(25, VibrationEffect.DEFAULT_AMPLITUDE));
+        } catch (Exception ignored) {
+            // 震動失敗不影響複製
+        }
     }
 
     @Override
@@ -60,7 +103,7 @@ public class LedgerWidgetProvider extends AppWidgetProvider {
         RemoteViews v = new RemoteViews(ctx.getPackageName(), R.layout.widget_ledger);
         Resources res = ctx.getResources();
 
-        // 點任何地方：打開 App（App 已在背景時，MainActivity 會叫網頁端回首頁）
+        // 點其他地方：打開 App 的新增記帳（App 已在背景時，MainActivity 會叫網頁端開記帳畫面）
         Intent open = new Intent(ctx, MainActivity.class);
         open.setAction(Intent.ACTION_MAIN);
         open.addCategory(Intent.CATEGORY_LAUNCHER);
@@ -69,6 +112,12 @@ public class LedgerWidgetProvider extends AppWidgetProvider {
         PendingIntent pi = PendingIntent.getActivity(ctx, 0, open,
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         v.setOnClickPendingIntent(R.id.widget_root, pi);
+
+        // 點條碼區：複製載具碼（交給自己的接收器，不開 App）
+        Intent copy = new Intent(ctx, LedgerWidgetProvider.class);
+        copy.setAction(ACTION_COPY_CARRIER);
+        v.setOnClickPendingIntent(R.id.widget_code_box,
+            PendingIntent.getBroadcast(ctx, 1, copy, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
 
         JSONObject s = readSnapshot(ctx);
         if (s == null) {

@@ -2,7 +2,7 @@ import { render } from 'preact';
 import { App } from './app';
 import { initStore, getState, subscribeState } from './store';
 import { installClickGuard } from './gestures/guard';
-import { installNativeBackButton, goHomeFromWidget } from './backNav';
+import { installNativeBackButton, openEntryFromWidget } from './backNav';
 import { installWidgetSync } from './widget';
 import './styles.css';
 import { BOTTOM_BAR, TIMELINE, GLASS, HOME, DRAG_FX } from './config';
@@ -42,11 +42,11 @@ document.documentElement.style.setProperty('--tl-tail-detail', TIMELINE.tailDeta
 installClickGuard();
 initStore();
 void installNativeBackButton();
-// 桌面小工具：資料一變就把數字送過去；點小工具回首頁
+// 桌面小工具：資料一變就把數字送過去；點小工具開新增記帳（點條碼區是複製載具，由原生處理）
 void installWidgetSync(
   // 保護狀態（讀不到資料）時不送數字給小工具
   () => (getState().ready && !getState().blocked ? getState().data : null),
   subscribeState,
-  () => void goHomeFromWidget(),
+  () => void openEntryFromWidget(),
 );
 render(<App />, document.getElementById('app')!);

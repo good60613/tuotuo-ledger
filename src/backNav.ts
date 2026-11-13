@@ -8,6 +8,7 @@
 // 5. 在首頁、什麼都沒開 → 離開 App
 import { useEffect, useRef } from 'preact/hooks';
 import { getState, closeDialog, closeOverlay, goPage, HOME_PAGE } from './store';
+import { quickEntry } from './actions';
 
 interface Layer {
   id: number;
@@ -80,6 +81,22 @@ export async function goHomeFromWidget(wait = (ms: number) => new Promise((r) =>
   }
   // 記帳頁保留時，底下的頁面也先切回首頁（存完或關掉記帳頁就看到首頁）
   if (getState().page !== HOME_PAGE) goPage(HOME_PAGE);
+}
+
+/**
+ * 點了桌面小工具（條碼區以外，2.3）：開「新增記帳」（支出分頁）。
+ * 先等資料讀好（冷啟動時網頁剛載入）；確認視窗、選單、其他疊層照 goHomeFromWidget 的規矩收掉。
+ * 記帳頁已經開著（可能打到一半）就保留，不再多開一個。
+ */
+export async function openEntryFromWidget(wait = (ms: number) => new Promise((r) => setTimeout(r, ms))) {
+  for (let i = 0; i < 100 && !(getState().ready && !getState().blocked); i++) {
+    if (getState().blocked) return;
+    await wait(100);
+  }
+  if (!getState().ready || getState().blocked) return;
+  await goHomeFromWidget(wait);
+  const s = getState();
+  if (s.overlays[s.overlays.length - 1]?.kind !== 'entry') quickEntry(null);
 }
 
 /** 測試用：清掉所有登記 */

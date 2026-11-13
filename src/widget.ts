@@ -60,7 +60,9 @@ export function widgetSnapshot(d: AppData, now: Date = new Date()): WidgetSnapsh
 
 interface LedgerWidgetPlugin {
   update(opts: { json: string }): Promise<void>;
-  addListener(event: 'openHome', fn: () => void): Promise<PluginListenerHandle>;
+  /** 2.3：App 冷啟動時，領走「點小工具要開記帳」的要求 */
+  takePending(): Promise<{ entry: boolean }>;
+  addListener(event: 'openEntry', fn: () => void): Promise<PluginListenerHandle>;
 }
 const LedgerWidget = registerPlugin<LedgerWidgetPlugin>('LedgerWidget');
 
@@ -69,12 +71,12 @@ const LedgerWidget = registerPlugin<LedgerWidgetPlugin>('LedgerWidget');
  * - getData：讀目前資料；subscribe：資料存放處的「看門員」，資料換了就通知（記帳、修改、刪除、匯入、校正、讀檔都會經過）。
  * - App 從背景回到前景也重送一次（可能已經跨日）。
  * - 內容沒變不送；連續變動等 WIDGET.debounceMs 內沒有新變動才送。
- * - onOpenHome：點了小工具時要做的事（回首頁）。
+ * - onOpenEntry：點了小工具（條碼區以外）時要做的事（2.3：開新增記帳，支出分頁）。
  */
 export async function installWidgetSync(
   getData: () => AppData | null,
   subscribe: (fn: () => void) => void,
-  onOpenHome: () => void,
+  onOpenEntry: () => void,
 ) {
   const { Capacitor } = await import('@capacitor/core');
   if (!Capacitor.isNativePlatform()) return;
@@ -102,6 +104,8 @@ export async function installWidgetSync(
   });
   const { App } = await import('@capacitor/app');
   await App.addListener('resume', () => push());
-  await LedgerWidget.addListener('openHome', onOpenHome);
+  await LedgerWidget.addListener('openEntry', onOpenEntry);
+  // 冷啟動點小工具：事件發生時網頁還沒準備好，這裡補領
+  LedgerWidget.takePending().then((r) => r.entry && onOpenEntry()).catch(() => {});
   push(true);
 }

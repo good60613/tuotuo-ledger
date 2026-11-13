@@ -11,14 +11,21 @@ public class MainActivity extends BridgeActivity {
         // 自寫的小工具橋接（第七批）要在 super.onCreate 之前登記
         registerPlugin(LedgerWidgetPlugin.class);
         super.onCreate(savedInstanceState);
+        // 2.3：冷啟動時點小工具 → 先記著，網頁端準備好後會來領。系統還原畫面時不重複處理
+        if (savedInstanceState == null) handleWidgetIntent(getIntent());
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        // App 在背景時點了小工具：通知網頁端回首頁（第一次打開本來就在首頁，不用處理）
+        // App 在背景時點了小工具：通知網頁端開新增記帳
+        handleWidgetIntent(intent);
+    }
+
+    private void handleWidgetIntent(Intent intent) {
         if (intent != null && intent.getBooleanExtra(LedgerWidgetProvider.EXTRA_FROM_WIDGET, false)) {
-            LedgerWidgetPlugin.notifyOpenHome();
+            intent.removeExtra(LedgerWidgetProvider.EXTRA_FROM_WIDGET);
+            LedgerWidgetPlugin.notifyOpenEntry();
         }
     }
 }
