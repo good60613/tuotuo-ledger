@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 通知欄快捷列的顏色（淺色）。
+     不用 ?android:attr/textColorPrimary：通知畫面是在 App 的佈景裡畫的，App 佈景是淺色系，
+     在深色通知欄裡會變成深灰字貼深色底（2.3 實測看不清楚）。改成自己指定，淺色／深色各一份。 -->
+<resources>
+    <color name="nb_text_primary">#FF212121</color>
+    <color name="nb_text_secondary">#FF616161</color>
+    <color name="nb_expense">#FFD64545</color>
+    <color name="nb_income">#FF14996A</color>
+</resources>

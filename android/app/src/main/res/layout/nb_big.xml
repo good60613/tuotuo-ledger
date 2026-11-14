@@ -24,13 +24,13 @@
                 android:layout_width="22dp"
                 android:layout_height="22dp"
                 android:src="@drawable/ic_nb_todo"
-                android:tint="?android:attr/textColorPrimary"
+                android:tint="@color/nb_text_primary"
                 android:contentDescription="@string/nb_todo" />
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/nb_todo"
-                android:textColor="?android:attr/textColorSecondary"
+                android:textColor="@color/nb_text_secondary"
                 android:textSize="11sp" />
         </LinearLayout>
 
@@ -45,13 +45,13 @@
                 android:layout_width="22dp"
                 android:layout_height="22dp"
                 android:src="@drawable/ic_nb_list"
-                android:tint="?android:attr/textColorPrimary"
+                android:tint="@color/nb_text_primary"
                 android:contentDescription="@string/nb_detail" />
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/nb_detail"
-                android:textColor="?android:attr/textColorSecondary"
+                android:textColor="@color/nb_text_secondary"
                 android:textSize="11sp" />
         </LinearLayout>
 
@@ -66,13 +66,13 @@
                 android:layout_width="22dp"
                 android:layout_height="22dp"
                 android:src="@drawable/ic_nb_search"
-                android:tint="?android:attr/textColorPrimary"
+                android:tint="@color/nb_text_primary"
                 android:contentDescription="@string/nb_search" />
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/nb_search"
-                android:textColor="?android:attr/textColorSecondary"
+                android:textColor="@color/nb_text_secondary"
                 android:textSize="11sp" />
         </LinearLayout>
 
@@ -87,13 +87,13 @@
                 android:layout_width="22dp"
                 android:layout_height="22dp"
                 android:src="@drawable/ic_nb_plus"
-                android:tint="?android:attr/textColorPrimary"
+                android:tint="@color/nb_text_primary"
                 android:contentDescription="@string/nb_entry" />
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/nb_entry"
-                android:textColor="?android:attr/textColorSecondary"
+                android:textColor="@color/nb_text_secondary"
                 android:textSize="11sp" />
         </LinearLayout>
     </LinearLayout>

@@ -16,16 +16,31 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/nb_left"
-            android:textColor="?android:attr/textColorSecondary"
+            android:textColor="@color/nb_text_secondary"
             android:textSize="11sp" />
-        <TextView
-            android:id="@+id/nb_left"
+        <!-- 剩餘可用：平常用主要文字色；負數時改顯示紅色那顆（兩顆疊在一起，程式只切換顯示）。
+             顏色全部由資源決定，系統切換淺色／深色時會跟著換 -->
+        <FrameLayout
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:maxLines="1" />
+            android:layout_height="wrap_content">
+            <TextView
+                android:id="@+id/nb_left"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/nb_text_primary"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:maxLines="1" />
+            <TextView
+                android:id="@+id/nb_left_neg"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                android:textColor="@color/nb_expense"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:maxLines="1" />
+        </FrameLayout>
     </LinearLayout>
 
     <LinearLayout
@@ -37,13 +52,13 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/nb_expense"
-            android:textColor="?android:attr/textColorSecondary"
+            android:textColor="@color/nb_text_secondary"
             android:textSize="11sp" />
         <TextView
             android:id="@+id/nb_expense"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="#D64545"
+            android:textColor="@color/nb_expense"
             android:textSize="16sp"
             android:textStyle="bold"
             android:maxLines="1" />
@@ -58,13 +73,13 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/nb_income"
-            android:textColor="?android:attr/textColorSecondary"
+            android:textColor="@color/nb_text_secondary"
             android:textSize="11sp" />
         <TextView
             android:id="@+id/nb_income"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="#14996A"
+            android:textColor="@color/nb_income"
             android:textSize="16sp"
             android:textStyle="bold"
             android:maxLines="1" />

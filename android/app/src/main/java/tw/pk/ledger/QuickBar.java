@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.view.View;
 import android.widget.RemoteViews;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
@@ -26,6 +27,8 @@ import org.json.JSONObject;
  * - 數字由網頁端用首頁同一套算法算好送來（LedgerWidgetPlugin.updateBar），這裡不做任何計算，
  *   只判斷「跨日」：今天不是那份數字的日期 → 今日支出、今日收入顯示 0。午夜用 AlarmManager 叫醒一次重畫。
  * - 縮起來只看得到第一排數字；展開才有第二排按鈕（Android 縮起來的通知高度有限）。
+ * - 顏色全部放在 res/values/notification_colors.xml（深色模式另有 values-night 一份），版面不用 ?android:attr：
+ *   通知是在 App 的淺色佈景裡畫的，用系統文字色在深色通知欄會變成深灰字貼深色底。
  * - 鎖定畫面隱藏金額開啟時，鎖定畫面只顯示「拖拖記帳　已隱藏金額」，沒有任何數字。
  */
 final class QuickBar {
@@ -106,16 +109,16 @@ final class QuickBar {
         String today = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
         boolean dayStale = !today.equals(s.optString("day", ""));
         String zero = s.optString("zero", "$0");
-        v.setTextViewText(R.id.nb_left, s.optString("left", "—"));
-        // 負數才改成紅色；其餘沿用版面裡的主要文字色
-        if (s.optBoolean("leftNeg", false)) v.setTextColor(R.id.nb_left, 0xFFD64545);
+        String left = s.optString("left", "—");
+        // 負數：改顯示紅色那顆（顏色在 res/values*/notification_colors.xml，深色模式用較亮的紅）；
+        // 不在這裡設色，系統切換淺色／深色時顏色才會自己跟著換
+        boolean neg = s.optBoolean("leftNeg", false);
+        v.setTextViewText(R.id.nb_left, left);
+        v.setTextViewText(R.id.nb_left_neg, left);
+        v.setViewVisibility(R.id.nb_left, neg ? View.GONE : View.VISIBLE);
+        v.setViewVisibility(R.id.nb_left_neg, neg ? View.VISIBLE : View.GONE);
         v.setTextViewText(R.id.nb_expense, dayStale ? zero : s.optString("todayExpense", "—"));
         v.setTextViewText(R.id.nb_income, dayStale ? zero : s.optString("todayIncome", "—"));
-    }
-
-    /** 剩餘可用不是負數時，沿用版面裡的主要文字色（不另外設色），所以這裡不用動它 */
-    private static int resolvePrimary(RemoteViews v) {
-        return 0;
     }
 
     private static void post(Context ctx, JSONObject s) {
