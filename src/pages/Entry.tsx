@@ -19,6 +19,7 @@ import { ENTRY_ROW, DRAG_MARK, GESTURE } from '../config';
 import { toLocalInput, fromLocalInput, money } from '../format';
 import { advanceOwedOn } from '../features';
 import { blockClicks } from '../gestures/guard';
+import { useNoteKeyboard } from '../noteKeyboard';
 import {
   parseTerms, canMark, reconcileMarks, splitPlan, splitInputs, previewText, MARK_LABEL,
   type Mark, type Marks,
@@ -106,6 +107,9 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
   const [sel, setSel] = useState<number | null>(null);
   const [editMark, setEditMark] = useState<Mark | null>(editing ? recordMark(editing) : null);
   const [noteFocus, setNoteFocus] = useState(false);
+  // 2.3.1：備註輸入時，系統鍵盤取代計算機鍵盤（分類區、輸入列的行為見 noteKeyboard.ts）
+  const noteRef = useRef<HTMLInputElement>(null);
+  const kb = useNoteKeyboard(noteRef);
   const [drag, setDrag] = useState<DragView | null>(null);
   const [sheet, setSheet] = useState<null | 'account' | 'from' | 'to' | 'newCat' | 'tags'>(null);
   const saving = useRef(false);
@@ -591,14 +595,29 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
           )}
         </div>
         <input
+          ref={noteRef}
           class="note-input"
           style={{ flexGrow: row[1] }}
           value={note}
           maxLength={40}
           placeholder="備註"
+          enterkeyhint="done"
           onInput={(e) => setNote(e.currentTarget.value)}
-          onFocus={() => setNoteFocus(true)}
-          onBlur={() => setNoteFocus(false)}
+          onFocus={() => {
+            setNoteFocus(true);
+            kb.onFocus();
+          }}
+          onBlur={() => {
+            setNoteFocus(false);
+            kb.onBlur();
+          }}
+          // 鍵盤上的完成鈕：只收鍵盤（回到計算機），不存檔
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              e.currentTarget.blur();
+            }
+          }}
         />
       </div>
 
@@ -633,7 +652,12 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
         <button class="tag more" onClick={() => setSheet('tags')}>更多…</button>
       </div>
 
-      <Calculator onKey={onKey} onOk={onOk} okLabel="OK" okDisabled={!valid || value === null} />
+      {/* 備註輸入時計算機讓位給系統鍵盤：holdHide＝看不見但先佔著位置，等視窗變矮才真的拿掉；holdShow／hidden＝不顯示（鍵盤收起、視窗變高後才放回來） */}
+      {(kb.phase === 'show' || kb.phase === 'holdHide') && (
+        <div class={`calc-slot${kb.phase === 'holdHide' ? ' hold' : ''}`}>
+          <Calculator onKey={onKey} onOk={onOk} okLabel="OK" okDisabled={!valid || value === null} />
+        </div>
+      )}
 
       {drag && (
         <div class={`mark-ghost mk-${drag.mark}`} style={{ left: `${drag.x}px`, top: `${drag.y + DRAG_MARK.ghostOffsetY}px` }}>

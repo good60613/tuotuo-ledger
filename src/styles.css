@@ -301,6 +301,9 @@ button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 .tag.on { border-color: var(--accent); color: var(--accent); }
 .tag.more { color: var(--muted); }
 
+/* 記帳頁：備註輸入時計算機的外框（看不見但先佔位，見 noteKeyboard.ts） */
+.calc-slot { flex: none; }
+.calc-slot.hold { visibility: hidden; }
 .calc { display: grid; grid-template-columns: repeat(5, 1fr); grid-auto-rows: var(--calc-row, 52px); gap: var(--calc-gap, 1px); background: var(--line); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
 .calc-key { border: 0; background: var(--key); font-size: 22px; font-variant-numeric: tabular-nums; }
 .calc-key:active { background: var(--key-press); }
