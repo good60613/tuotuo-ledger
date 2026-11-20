@@ -323,11 +323,11 @@ export function HomePage() {
           </div>
           {!lifting && (
             <div class="quote-row">
+              <img class="quote-logo" src={logo} alt="" />
+              <span class="quote-text">{quote}</span>
               <button class="quote-quick" onClick={() => quickEntry(null)}>
                 <Icon name="plus" size={16} /> 快速記一筆
               </button>
-              <img class="quote-logo" src={logo} alt="" />
-              <span class="quote-text">{quote}</span>
             </div>
           )}
         </div>
