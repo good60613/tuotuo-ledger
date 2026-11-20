@@ -79,6 +79,33 @@ public class LedgerWidgetPlugin extends Plugin {
         call.resolve(r);
     }
 
+    /**
+     * 2.5：換手機桌面的 App 圖示。AndroidManifest 裡每種圖示是一個「入口別名」（activity-alias），
+     * 打開選中的那個、關掉其他的。DONT_KILL_APP＝不強制關 App（但有些手機桌面還是會重整、把舊圖示從桌面拿掉）。
+     */
+    @PluginMethod
+    public void setAppIcon(PluginCall call) {
+        String name = call.getString("name", "original");
+        String[] all = { "original", "cry", "happy", "shock", "cool", "love", "note" };
+        boolean known = false;
+        for (String n : all) if (n.equals(name)) known = true;
+        if (!known) {
+            call.reject("不認識的圖示：" + name);
+            return;
+        }
+        android.content.pm.PackageManager pm = getContext().getPackageManager();
+        String pkg = getContext().getPackageName();
+        // 先打開新的，再關舊的：中間不會出現「桌面上一個圖示都沒有」
+        pm.setComponentEnabledSetting(new android.content.ComponentName(pkg, pkg + ".Icon_" + name),
+            android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED, android.content.pm.PackageManager.DONT_KILL_APP);
+        for (String n : all) {
+            if (n.equals(name)) continue;
+            pm.setComponentEnabledSetting(new android.content.ComponentName(pkg, pkg + ".Icon_" + n),
+                android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED, android.content.pm.PackageManager.DONT_KILL_APP);
+        }
+        call.resolve();
+    }
+
     /** 網頁端準備好後呼叫：有沒有「還沒處理的要求」（領走就清掉） */
     @PluginMethod
     public void takePending(PluginCall call) {

@@ -1,8 +1,34 @@
 // 設定（右二）：只放讓其他功能能運作的項目。
 import { advanceOwedOn, recurringOn, glassOn, detailHome, prevBalanceOn, notifBarOn, notifHideLockOn, entryAccountMode } from '../features';
-import { requestNotifPermission } from '../widget';
+import { requestNotifPermission, isNative, setAppIcon } from '../widget';
 import { RecurringPanel } from './RecurringSettings';
-import { useRef, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
+import { COINS, coinLabel, type CoinId } from '../coins';
+
+/** 2.5 拖拖硬幣：一排可點的硬幣（auto＝多一個「跟著心情」） */
+function CoinRow({ label, value, onPick, auto, note }: { label: string; value: string; onPick: (v: string) => void; auto?: boolean; note?: string }) {
+  return (
+    <div class="setting-row coin-row">
+      <div class="coin-row-head">
+        <span>{label}</span>
+        <span class="muted small">{value === 'auto' ? '跟著心情換' : coinLabel(value as CoinId)}</span>
+      </div>
+      <div class="coin-strip">
+        {auto && (
+          <button class={`coin-opt auto${value === 'auto' ? ' on' : ''}`} onClick={() => onPick('auto')}>
+            自動
+          </button>
+        )}
+        {COINS.map((c) => (
+          <button key={c.id} class={`coin-opt${value === c.id ? ' on' : ''}`} onClick={() => onPick(c.id)} aria-label={c.label}>
+            <img src={c.src} alt="" />
+          </button>
+        ))}
+      </div>
+      {note && <span class="muted small">{note}</span>}
+    </div>
+  );
+}
 import { useBackLayer } from '../backNav';
 import { PAGES } from '../store';
 import { useAppState, getState, updateData, showToast, ask, confirmDanger, setState, replaceData } from '../store';
@@ -70,6 +96,11 @@ export function SettingsPage() {
   useBackLayer(s.page === PAGES.indexOf('設定') && view !== 'menu', () => setView('menu'));
   const [catType, setCatType] = useState<CategoryType>('expense');
   const fileRef = useRef<HTMLInputElement>(null);
+  // App 圖示只有 APK 版能換
+  const [native, setNative] = useState(false);
+  useEffect(() => {
+    isNative().then(setNative);
+  }, []);
 
   const sortAccounts = (ids: string[]) => updateData((x) => ({ ...x, accounts: reorder(x.accounts, ids) }));
   const sortCategories = (ids: string[]) => updateData((x) => ({ ...x, categories: reorder(x.categories, ids) }));
@@ -342,6 +373,34 @@ export function SettingsPage() {
               <span>記帳預設帳戶</span>
               <span class="muted">{entryAccountMode(d.settings) === 'last' ? '上一筆用的帳戶' : '第一個帳戶'}</span>
             </button>
+            <CoinRow
+              label="首頁小語圖示"
+              auto
+              value={d.settings.coinHome ?? 'auto'}
+              onPick={(v) => updateData((x) => ({ ...x, settings: { ...x.settings, coinHome: v } }))}
+            />
+            <CoinRow
+              label="桌面小工具圖示"
+              auto
+              value={d.settings.coinWidget ?? 'auto'}
+              onPick={(v) => updateData((x) => ({ ...x, settings: { ...x.settings, coinWidget: v } }))}
+            />
+            {native && (
+              <CoinRow
+                label="手機桌面 App 圖示"
+                note="換了之後，有些手機會把桌面上的舊圖示拿掉，要從 App 列表再拖一次到桌面"
+                value={d.settings.appIcon ?? 'original'}
+                onPick={async (v) => {
+                  if (v === (d.settings.appIcon ?? 'original')) return;
+                  if (!(await setAppIcon(v))) {
+                    showToast('換圖示失敗');
+                    return;
+                  }
+                  updateData((x) => ({ ...x, settings: { ...x.settings, appIcon: v } }));
+                  showToast(`App 圖示換成「${coinLabel(v as CoinId)}」`);
+                }}
+              />
+            )}
             <button
               class="setting-row"
               onClick={async () => {

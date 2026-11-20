@@ -13,8 +13,8 @@ import type { DropTarget } from '../gestures/cardDrag';
 import { money, mdLabel, weekday } from '../format';
 import { TxCard } from '../components/TxList';
 import { openTx, quickEntry } from '../actions';
-import { pickQuote } from '../quotes';
-import logo from '../assets/logo.png';
+import { pickQuoteMood } from '../quotes';
+import { coinSrc, resolveCoin, type CoinPick } from '../coins';
 import { HOME, HOME_SUM, BOTTOM_BAR } from '../config';
 import { Icon } from '../components/Icon';
 import type { Transaction } from '../data/types';
@@ -43,9 +43,9 @@ export function HomePage() {
 
   // 2.4 拖拖小語：每次回到首頁（換頁回來、關掉記帳頁等畫面回來）換一句
   const onHome = s.page === pageIndex('首頁') && s.overlays.length === 0;
-  const [quote, setQuote] = useState(() => pickQuote(d));
+  const [quote, setQuote] = useState(() => pickQuoteMood(d));
   useEffect(() => {
-    if (onHome) setQuote(pickQuote(getState().data));
+    if (onHome) setQuote(pickQuoteMood(getState().data));
   }, [onHome]);
 
   const ballFirst = (kind: string) => ballDropTarget(d, kind as AccountKind);
@@ -346,8 +346,8 @@ export function HomePage() {
           </div>
           {!lifting && (
             <div class="quote-row">
-              <img class="quote-logo" src={logo} alt="" />
-              <span class="quote-text">{quote}</span>
+              <img class="quote-logo" src={coinSrc(resolveCoin(d.settings.coinHome as CoinPick | undefined, quote.mood))} alt="" />
+              <span class="quote-text">{quote.text}</span>
               <button class="quote-quick" onClick={() => quickEntry(null)}>
                 <Icon name="plus" size={16} /> 記一筆
               </button>

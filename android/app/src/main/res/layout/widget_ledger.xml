@@ -93,6 +93,8 @@
             android:gravity="end">
 
             <ImageView
+                android:id="@+id/widget_icon"
+                android:scaleType="fitCenter"
                 android:layout_width="@dimen/widget_icon"
                 android:layout_height="@dimen/widget_icon"
                 android:layout_marginBottom="@dimen/widget_icon_gap"

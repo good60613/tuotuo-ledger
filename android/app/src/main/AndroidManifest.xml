@@ -16,13 +16,38 @@
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTask"
             android:exported="true">
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-
+            <!-- 2.5：桌面圖示改由下面的「入口別名」提供（可在設定裡換圖示），這裡不再放 LAUNCHER -->
         </activity>
+
+        <!-- 2.5 手機桌面 App 圖示：每種圖示一個入口別名，同時只開一個（LedgerWidgetPlugin.setAppIcon 切換）。預設開原版 -->
+        <activity-alias android:name=".Icon_original" android:targetActivity=".MainActivity" android:enabled="true" android:exported="true"
+            android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:label="@string/title_activity_main">
+            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
+        </activity-alias>
+        <activity-alias android:name=".Icon_cry" android:targetActivity=".MainActivity" android:enabled="false" android:exported="true"
+            android:icon="@mipmap/ic_launcher_cry" android:roundIcon="@mipmap/ic_launcher_cry" android:label="@string/title_activity_main">
+            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
+        </activity-alias>
+        <activity-alias android:name=".Icon_happy" android:targetActivity=".MainActivity" android:enabled="false" android:exported="true"
+            android:icon="@mipmap/ic_launcher_happy" android:roundIcon="@mipmap/ic_launcher_happy" android:label="@string/title_activity_main">
+            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
+        </activity-alias>
+        <activity-alias android:name=".Icon_shock" android:targetActivity=".MainActivity" android:enabled="false" android:exported="true"
+            android:icon="@mipmap/ic_launcher_shock" android:roundIcon="@mipmap/ic_launcher_shock" android:label="@string/title_activity_main">
+            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
+        </activity-alias>
+        <activity-alias android:name=".Icon_cool" android:targetActivity=".MainActivity" android:enabled="false" android:exported="true"
+            android:icon="@mipmap/ic_launcher_cool" android:roundIcon="@mipmap/ic_launcher_cool" android:label="@string/title_activity_main">
+            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
+        </activity-alias>
+        <activity-alias android:name=".Icon_love" android:targetActivity=".MainActivity" android:enabled="false" android:exported="true"
+            android:icon="@mipmap/ic_launcher_love" android:roundIcon="@mipmap/ic_launcher_love" android:label="@string/title_activity_main">
+            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
+        </activity-alias>
+        <activity-alias android:name=".Icon_note" android:targetActivity=".MainActivity" android:enabled="false" android:exported="true"
+            android:icon="@mipmap/ic_launcher_note" android:roundIcon="@mipmap/ic_launcher_note" android:label="@string/title_activity_main">
+            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
+        </activity-alias>
 
         <!-- 桌面小工具（第七批） -->
         <receiver

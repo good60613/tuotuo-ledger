@@ -166,6 +166,11 @@ export interface Settings {
   showPrevBalance?: boolean;
   /** 記帳預設帳戶（2.5）：'last'＝上一筆用的帳戶、'first'＝第一個帳戶；缺值＝'last'。判斷一律用 features.ts 的 entryAccountMode()。舊資料、舊備份不用升版 */
   entryAccount?: 'last' | 'first';
+  /** 拖拖硬幣（2.5）：首頁小語旁、桌面小工具的圖示；缺值或 'auto'＝跟著心情換。值見 src/coins.ts。舊資料、舊備份不用升版 */
+  coinHome?: string;
+  coinWidget?: string;
+  /** 手機桌面 App 圖示（2.5）；缺值＝'original'。只是記住選了哪個，真正切換在 Android 端 */
+  appIcon?: string;
   /** 通知欄快捷列（2.3），缺值＝關閉。判斷一律用 features.ts 的 notifBarOn()。舊資料、舊備份不用升版 */
   notifBar?: boolean;
   /** 鎖定畫面隱藏金額（2.3），缺值＝開啟。判斷一律用 features.ts 的 notifHideLockOn() */

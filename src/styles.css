@@ -419,6 +419,14 @@ button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 .kind-title { font-weight: 700; font-size: 14px; padding-top: 6px; }
 .setting-row { display: flex; justify-content: space-between; width: 100%; border: 0; background: none; padding: 14px 0; font-size: 15px; border-bottom: 1px solid var(--line); }
 .setting-row:last-child { border-bottom: 0; }
+/* 2.5 拖拖硬幣選擇列 */
+.setting-row.coin-row { flex-direction: column; gap: 8px; }
+.coin-row-head { display: flex; justify-content: space-between; align-items: center; }
+.coin-strip { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px; }
+.coin-strip::-webkit-scrollbar { display: none; }
+.coin-opt { flex: none; width: 44px; height: 44px; padding: 3px; border-radius: 12px; border: 2px solid transparent; background: var(--line); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--muted); }
+.coin-opt img { width: 100%; height: 100%; object-fit: contain; }
+.coin-opt.on { border-color: var(--accent); background: var(--card); color: var(--text); }
 .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
 .btn-row .btn { flex: 1; }
 
@@ -854,7 +862,7 @@ html:not(.no-glass) .collapse-bar.glass { background: color-mix(in srgb, var(--c
 .quote-row { flex: none; height: var(--quote-row); display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--line); }
 .quote-quick { flex: none; display: flex; align-items: center; gap: 4px; border: 0; border-radius: 999px; background: var(--accent); color: var(--on-accent); padding: 6px 12px; font-size: 13px; font-weight: 700; }
 .quote-quick:active { opacity: .85; }
-.quote-logo { flex: none; width: 26px; height: 26px; border-radius: 50%; }
+.quote-logo { flex: none; width: 32px; height: 32px; object-fit: contain; }
 .quote-text { flex: 1; min-width: 0; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ===== 2.5 儲蓄：轉移、還差多少 ===== */

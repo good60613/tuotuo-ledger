@@ -8,6 +8,7 @@ import type { AppData } from './data/types';
 import { allBalances, totals, periodKey, dayKey } from './data/calc';
 import { QUOTE } from './config';
 import { money } from './format';
+import type { Mood } from './coins';
 
 // 2.5 改寫：口吻是 logo 那枚被捏的哭哭硬幣（「我」＝硬幣）；每句 12 字以內（不含帳戶名、金額），小語列放得下不被切。
 export const QUOTES = {
@@ -41,6 +42,41 @@ export const QUOTES = {
     '花錢前想想我',
   ],
 };
+
+/** 每組句子配哪個表情（首頁小語旁的硬幣、小工具「跟著心情」時用） */
+const POOL_MOOD: Record<keyof typeof QUOTES, Mood> = {
+  lowBalance: 'cry',
+  remind: 'shock',
+  overspend: 'cry',
+  payday: 'happy',
+  streak: 'cool',
+  zeroSpend: 'happy',
+  monthEnd: 'cry',
+  monthStart: 'happy',
+  positive: 'cool',
+  morning: 'happy',
+  lunch: 'note',
+  lateNight: 'shock',
+  monday: 'cool',
+  friday: 'shock',
+  weekend: 'happy',
+  general: 'note',
+};
+/** 一般句逐句配表情（沒列到的用 note） */
+const GENERAL_MOOD: Record<string, Mood> = {
+  '有記就是贏！': 'cool',
+  '慢慢來，比較快': 'cool',
+  '今天也辛苦了': 'love',
+  '拖拖在這裡陪你': 'love',
+  '記帳的人最可愛': 'love',
+  '我會乖乖待著': 'love',
+  '輕一點，別捏我': 'shock',
+  '花錢前想想我': 'cry',
+};
+const MOOD_OF = new Map<string, Mood>();
+for (const k of Object.keys(QUOTES) as (keyof typeof QUOTES)[]) for (const s of QUOTES[k]) MOOD_OF.set(s, GENERAL_MOOD[s] ?? POOL_MOOD[k]);
+/** 句子（還沒換數字的原句）配的表情 */
+export const moodOf = (template: string): Mood => MOOD_OF.get(template) ?? 'note';
 
 type Vars = { 帳戶?: string; 金額?: number; 天數?: number };
 interface Hit {
@@ -126,19 +162,28 @@ function fill(s: string, v?: Vars): string {
 }
 
 let last = '';
-/** 挑一句：有情境時 situationalChance 出情境句（最優先那種 topChance，其餘平均分），其他出一般句；不跟上一次同一句 */
-export function pickQuote(data: AppData, now = new Date(), rand = Math.random): string {
+/** 挑一句＋表情：有情境時 situationalChance 出情境句（最優先那種 topChance，其餘平均分），其他出一般句；不跟上一次同一句 */
+export function pickQuoteMood(data: AppData, now = new Date(), rand = Math.random): { text: string; mood: Mood } {
   const hits = situations(data, now);
   let hit: Hit = { pool: QUOTES.general };
   if (hits.length && rand() < QUOTE.situationalChance) {
     const r = rand();
     hit = hits.length === 1 || r < QUOTE.topChance ? hits[0] : hits[1 + Math.floor(((r - QUOTE.topChance) / (1 - QUOTE.topChance)) * (hits.length - 1))] ?? hits[0];
   }
-  const all = hit.pool.map((s) => fill(s, hit.vars));
+  const all = hit.pool.map((s) => ({ s, text: fill(s, hit.vars) }));
   // 情境只有一句、上次剛好出過：改出一般句，避免連續兩次同一句
-  const left = all.filter((s) => s !== last);
-  const pool = left.length ? left : QUOTES.general.filter((s) => s !== last);
-  const q = pool[Math.floor(rand() * pool.length)] ?? QUOTES.general[0];
-  last = q;
-  return q;
+  const left = all.filter((x) => x.text !== last);
+  const pool = left.length ? left : QUOTES.general.filter((s) => s !== last).map((s) => ({ s, text: s }));
+  const q = pool[Math.floor(rand() * pool.length)] ?? { s: QUOTES.general[0], text: QUOTES.general[0] };
+  last = q.text;
+  return { text: q.text, mood: moodOf(q.s) };
 }
+export const pickQuote = (data: AppData, now = new Date(), rand = Math.random): string => pickQuoteMood(data, now, rand).text;
+
+/** 小工具「跟著心情」：看資料本身的情況（不看時段），最優先那種的表情；沒有就是 note */
+export function dataMood(data: AppData, now = new Date()): Mood {
+  const h = situations(data, now).find((x) => x.pool !== QUOTES.remind && MOOD_OF.has(x.pool[0]) && !isTimePool(x.pool));
+  return h ? moodOf(h.pool[0]) : 'note';
+}
+const TIME_POOLS = new Set([...QUOTES.morning, ...QUOTES.lunch, ...QUOTES.lateNight, ...QUOTES.monday, ...QUOTES.friday, ...QUOTES.weekend]);
+const isTimePool = (p: string[]) => p.every((s) => TIME_POOLS.has(s));

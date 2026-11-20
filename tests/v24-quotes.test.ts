@@ -46,6 +46,20 @@ describe('拖拖小語', () => {
     }
   });
 
+  it('2.5 表情：快見底＝哭哭；小工具跟著心情、可固定', async () => {
+    const { pickQuoteMood, dataMood, moodOf } = await import('../src/quotes');
+    const { widgetSnapshot } = await import('../src/widget');
+    const d = base();
+    d.accounts.push({ id: 'B', name: 'LINE Bank', kind: 'bank', initialBalance: 80, order: 1 });
+    expect(pickQuoteMood(d, at(2026, 10, 18), () => 0).mood).toBe('cry');
+    expect(dataMood(d, at(2026, 10, 18))).toBe('cry');
+    expect(widgetSnapshot(d, at(2026, 10, 18)).coin).toBe('cry');
+    d.settings.coinWidget = 'love';
+    expect(widgetSnapshot(d, at(2026, 10, 18)).coin).toBe('love');
+    // 每一句都有配表情
+    for (const k of Object.keys(QUOTES) as (keyof typeof QUOTES)[]) for (const s of QUOTES[k]) expect(moodOf(s)).toMatch(/^(cry|happy|shock|cool|love|note)$/);
+  });
+
   it('月底、晚上沒記帳', () => {
     const d = base();
     expect(situations(d, at(2026, 10, 29)).some((h) => h.pool === QUOTES.monthEnd)).toBe(true);

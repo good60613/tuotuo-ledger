@@ -158,7 +158,23 @@ public class LedgerWidgetProvider extends AppWidgetProvider {
         v.setTextViewText(R.id.widget_month, periodStale ? "—" : s.optString("monthExpense", "—"));
         v.setViewVisibility(R.id.widget_stale, (dayStale || periodStale) ? View.VISIBLE : View.GONE);
 
+        // 2.5：角落硬幣（網頁端依設定／心情決定是哪一張）
+        v.setImageViewResource(R.id.widget_icon, coinRes(s.optString("coin", "original")));
+
         mgr.updateAppWidget(id, v);
+    }
+
+    /** 2.5：硬幣名稱 → 圖檔（res/drawable-nodpi/coin_*.png）；不認識的用原版 App 圖示 */
+    private static int coinRes(String coin) {
+        switch (coin) {
+            case "cry": return R.drawable.coin_cry;
+            case "happy": return R.drawable.coin_happy;
+            case "shock": return R.drawable.coin_shock;
+            case "cool": return R.drawable.coin_cool;
+            case "love": return R.drawable.coin_love;
+            case "note": return R.drawable.coin_note;
+            default: return R.mipmap.ic_launcher_round;
+        }
     }
 
     private static JSONObject readSnapshot(Context ctx) {

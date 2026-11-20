@@ -12,6 +12,8 @@ import type { AppData } from './data/types';
 import { money } from './format';
 import { CARRIER, WIDGET } from './config';
 import { notifBarOn, notifHideLockOn } from './features';
+import { resolveCoin, type CoinPick } from './coins';
+import { dataMood } from './quotes';
 
 export interface WidgetSnapshot {
   /** 資料格式版本（原生端看到不認識的版本就顯示「點開更新」） */
@@ -36,6 +38,8 @@ export interface WidgetSnapshot {
   carrier: string;
   /** 載具條碼：條、空交錯的寬度（細＝1），以條開頭；沒設定或格式錯＝空陣列 */
   bars: number[];
+  /** 2.5：角落硬幣圖示（cry/happy/shock/cool/love/note/original）；舊版原生端沒這欄就用 App 圖示 */
+  coin: string;
 }
 
 /** 算出小工具要顯示的內容（純函式，測試會拿來和首頁的算法比對） */
@@ -56,6 +60,7 @@ export function widgetSnapshot(d: AppData, now: Date = new Date()): WidgetSnapsh
     periodEnd: dayKey(periodRange(pk, sd).end),
     carrier,
     bars: (carrier && code39Widths(carrier, CARRIER.wideRatio)) || [],
+    coin: resolveCoin(d.settings.coinWidget as CoinPick | undefined, dataMood(d, now)),
   };
 }
 
@@ -107,6 +112,8 @@ interface LedgerWidgetPlugin {
   requestNotifPermission(): Promise<{ granted: boolean }>;
   /** 2.3：App 冷啟動時，領走「從小工具、通知欄點進來」要去哪（沒有＝null） */
   takePending(): Promise<{ target: NavTarget | null }>;
+  /** 2.5：換手機桌面的 App 圖示（original／cry／happy…）；部分桌面程式會把舊圖示從桌面拿掉 */
+  setAppIcon(opts: { name: string }): Promise<void>;
   addListener(event: 'openNav', fn: (e: { target: NavTarget }) => void): Promise<PluginListenerHandle>;
 }
 const LedgerWidget = registerPlugin<LedgerWidgetPlugin>('LedgerWidget');
@@ -118,6 +125,28 @@ export async function requestNotifPermission(): Promise<boolean> {
     if (!Capacitor.isNativePlatform()) return true;
     return (await LedgerWidget.requestNotifPermission()).granted;
   } catch {
+    return false;
+  }
+}
+
+/** 是不是 APK 版（App 圖示只有 APK 版能換） */
+export async function isNative(): Promise<boolean> {
+  try {
+    const { Capacitor } = await import('@capacitor/core');
+    return Capacitor.isNativePlatform();
+  } catch {
+    return false;
+  }
+}
+
+/** 換手機桌面的 App 圖示；成功回傳 true（網頁版直接回 false） */
+export async function setAppIcon(name: string): Promise<boolean> {
+  if (!(await isNative())) return false;
+  try {
+    await LedgerWidget.setAppIcon({ name });
+    return true;
+  } catch (e) {
+    console.error('換 App 圖示失敗', e);
     return false;
   }
 }
