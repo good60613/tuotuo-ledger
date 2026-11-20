@@ -119,6 +119,11 @@ export const HOME = {
   recentGapPx: 4,
   /** 最近紀錄固定顯示幾筆（貼在導覽列上方；螢幕太矮時自動少顯示） */
   recentCount: 6,
+  /** 2.5：最近紀錄框內可以上下滑，最多往下看幾筆（再舊的去明細頁） */
+  recentMax: 30,
+  /** 2.5：拿起帳戶卡時，手指靠近紀錄框上下緣多少 px 內會自動捲動、每格捲多少 px */
+  recentEdgePx: 28,
+  recentScrollPx: 6,
   /** 最近紀錄卡：標題列高度、上下內距（算能放幾筆用） */
   recentHeadPx: 40,
   recentPadPx: 8,
@@ -310,7 +315,9 @@ export const STATS_RANGE = {
 /** 2.4 拖拖小語（句子在 src/quotes.ts） */
 export const QUOTE = {
   /** 有情境符合時，出情境句的機率（其他時候出一般句） */
-  situationalChance: 0.7,
+  situationalChance: 0.6,
+  /** 同時符合好幾種情境時：最優先那種出現的機率，剩下的平均分給其他符合的情境 */
+  topChance: 0.6,
   /** 帳戶餘額低於這個數字算「快見底」（餘額 0 的帳戶不算） */
   lowBalance: 100,
   /** 今天或昨天單筆收入達到這個數字算「發薪」 */

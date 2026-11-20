@@ -74,10 +74,33 @@ export function HomePage() {
     if (cardsRef.current) ro.observe(cardsRef.current);
     return () => ro.disconnect();
   }, [banks.length, scrollable]);
-  const recent = recentTxs(d.transactions, recentN);
-
-  // 拿起時：支出／收入放置區縮成一排放上面（球不能記帳，就不出現），下面紀錄少放幾筆，空出位置
-  const liftRows = liftBall ? recent.length : Math.max(0, recent.length - Math.ceil(Math.max(0, HOME.liftZonePx - HOME.quoteRowPx) / HOME.recentRowPx));
+  // 2.5：框內可以上下滑，最多 recentMax 筆；框的高度固定是 recentN 筆（拿起時放置區佔小語列的位置，高度不變）
+  const recent = recentTxs(d.transactions, HOME.recentMax);
+  const listRef = useRef<HTMLDivElement>(null);
+  // 回到首頁時捲回最上面（新記的那筆在最上面）
+  useEffect(() => {
+    if (onHome && listRef.current) listRef.current.scrollTop = 0;
+  }, [onHome]);
+  // 拿起帳戶卡／球時：手指靠近紀錄框上下緣就自動捲動，才拖得到框外的紀錄
+  useEffect(() => {
+    if (!lifting) return;
+    let y = -1, x = -1, raf = 0;
+    const mv = (e: PointerEvent) => { x = e.clientX; y = e.clientY; };
+    const tick = () => {
+      const el = listRef.current;
+      if (el && y >= 0) {
+        const r = el.getBoundingClientRect();
+        if (x >= r.left && x <= r.right) {
+          if (y >= r.top - HOME.recentEdgePx && y < r.top + HOME.recentEdgePx) el.scrollTop -= HOME.recentScrollPx;
+          else if (y > r.bottom - HOME.recentEdgePx && y <= r.bottom + HOME.recentEdgePx) el.scrollTop += HOME.recentScrollPx;
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    window.addEventListener('pointermove', mv);
+    raf = requestAnimationFrame(tick);
+    return () => { window.removeEventListener('pointermove', mv); cancelAnimationFrame(raf); };
+  }, [lifting]);
 
   const hint = (() => {
     if (!lifting) return '';
@@ -300,7 +323,7 @@ export function HomePage() {
           ) : (
             <div class="recent-head">
               <b>最近紀錄</b>
-              {recent.length > 0 && <span class="muted small">最近 {recent.length} 筆</span>}
+              {recent.length > recentN && <span class="muted small">滑動看更多</span>}
             </div>
           )}
           {lifting && !liftBall && (
@@ -313,8 +336,8 @@ export function HomePage() {
               </div>
             </div>
           )}
-          <div class="recent-list">
-            {(lifting ? recent.slice(0, liftRows) : recent).map((x) => (
+          <div class="recent-list" ref={listRef} style={{ maxHeight: `${recentN * HOME.recentRowPx}px` }}>
+            {recent.map((x) => (
               <div key={x.id} class={`recent-slot${canReassign(x) ? '' : ' no-drop'}`} data-drop={canReassign(x) ? `tx:${x.id}` : undefined}>
                 <TxCard data={d} t={x} onTap={openTx} selectable={false} withDay />
               </div>
@@ -326,7 +349,7 @@ export function HomePage() {
               <img class="quote-logo" src={logo} alt="" />
               <span class="quote-text">{quote}</span>
               <button class="quote-quick" onClick={() => quickEntry(null)}>
-                <Icon name="plus" size={16} /> 快速記一筆
+                <Icon name="plus" size={16} /> 記一筆
               </button>
             </div>
           )}

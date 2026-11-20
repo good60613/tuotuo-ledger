@@ -836,7 +836,10 @@ html:not(.no-glass) .collapse-bar.glass { background: color-mix(in srgb, var(--c
 .notice-btn { border: 1px solid currentColor; background: none; color: inherit; border-radius: 999px; padding: 3px 12px; font-size: 13px; font-weight: 700; }
 
 /* ===== 2.4 首頁最近紀錄：用明細頁的紀錄列、固定列高（最後一列不會被切到）、最底下拖拖小語列 ===== */
-.home-recent .recent-list { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+/* 2.5：框內可上下滑（高度＝固定筆數，由 Home.tsx 給 max-height） */
+.home-recent .recent-list { flex: 0 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; scrollbar-width: none; display: flex; flex-direction: column; }
+.home-recent .recent-list::-webkit-scrollbar { display: none; }
+.home-recent .quote-row { margin-top: auto; }
 .home-recent .recent-slot { flex: none; height: var(--recent-row); display: flex; align-items: center; border-radius: var(--radius); }
 .home-recent .recent-slot .tx-card { flex: 1 1 auto; height: 54px; margin: 0; padding-top: 6px; padding-bottom: 6px; transition: opacity .12s, border-color .12s, background .12s, box-shadow .12s; }
 .home-recent .recent-slot .tx-sub { flex-wrap: nowrap; white-space: nowrap; overflow: hidden; }

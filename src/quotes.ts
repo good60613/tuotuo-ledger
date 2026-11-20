@@ -1,4 +1,4 @@
-// 2.4 拖拖小語：首頁最近紀錄最底下那一句。
+// 2.4 拖拖小語：首頁最近紀錄最底下那一句（情境由上往下＝優先順序）。
 // PK 要增刪句子只改這個檔的 QUOTES；挑選規則在下面 pickQuote（數值在 config.ts 的 QUOTE）。
 // 句子裡可以用 {帳戶} {金額} {天數}，會換成實際數字。
 //
@@ -9,32 +9,36 @@ import { allBalances, totals, periodKey, dayKey } from './data/calc';
 import { QUOTE } from './config';
 import { money } from './format';
 
+// 2.5 改寫：口吻是 logo 那枚被捏的哭哭硬幣（「我」＝硬幣）；每句 12 字以內（不含帳戶名、金額），小語列放得下不被切。
 export const QUOTES = {
-  lowBalance: ['{帳戶} 只剩 {金額}，該補血了', '{帳戶} 快見底了'],
-  payday: ['發薪快樂！先存一點再說', '有錢進帳，先別急著花'],
-  monthEnd: ['月底了，撐住', '月底倒數，荷包加油'],
-  monthStart: ['新的月份，帳本重新開始', '新月份，新的開始'],
-  remind: ['今天的帳記了嗎？拖一下就好', '睡前記一筆，明天不會忘'],
-  zeroSpend: ['今天還是零支出，保持住！', '錢包今天很安靜'],
-  overspend: ['這個月花得比賺得多，注意一下'],
-  positive: ['這個月還是正的，穩！'],
-  streak: ['已經連續記帳 {天數} 天了', '連續 {天數} 天，拖拖替你驕傲'],
-  morning: ['早安，今天也好好記帳'],
-  lunch: ['午餐記了嗎？'],
-  lateNight: ['這麼晚還在看帳，早點睡'],
-  monday: ['週一了，荷包重新出發'],
-  friday: ['週末前，小心手滑'],
-  weekend: ['週末快樂，花錢也記得記'],
+  lowBalance: ['{帳戶} 只剩 {金額}，好餓…', '{帳戶} 快見底了，嗚嗚', '{帳戶} 需要補血！'],
+  remind: ['今天還沒記帳喔～', '睡前拖一下就好', '今天的錢去哪了呢？'],
+  overspend: ['這個月花太多了，好痛', '別再捏我了啦…', '花的比賺的多耶…'],
+  payday: ['有錢進來了！先存一點？', '發薪啦～我在轉圈圈', '先存起來，別急著花我'],
+  streak: ['連續記帳 {天數} 天！', '第 {天數} 天了，好棒', '{天數} 天都沒忘記我'],
+  zeroSpend: ['今天零支出，好乖！', '今天沒被捏，開心～', '錢包今天好安靜'],
+  monthEnd: ['月底了，再撐一下下', '月底了，捏緊我一點', '最後幾天，一起撐住'],
+  monthStart: ['新的月份，重新出發！', '新月份，錢包回血囉'],
+  positive: ['這個月還是正的，穩！', '我有長胖一點點了'],
+  morning: ['早安！今天也拖一下', '早安，我醒來了'],
+  lunch: ['午餐吃什麼？記一下', '午餐記了嗎？'],
+  lateNight: ['這麼晚了，快去睡', '我也想睡了…'],
+  monday: ['週一了，一起加油', '週一，荷包重新出發'],
+  friday: ['週末前，手別太滑', '週五了，先別衝動'],
+  weekend: ['週末愉快，記得記帳', '出去玩也要記得我'],
   general: [
     '每一筆都算數',
-    '記帳不是為了省錢，是為了知道錢去哪',
-    '拖一下，帳就記好了',
-    '小錢也是錢',
-    '有記就是贏',
+    '小錢也是錢喔',
+    '有記就是贏！',
+    '拖一下就記好了',
     '今天也辛苦了',
     '慢慢來，比較快',
     '拖拖在這裡陪你',
-    '錢不會自己跑掉，是你帶它出門的',
+    '輕一點，別捏我',
+    '知道錢去哪就好',
+    '記帳的人最可愛',
+    '我會乖乖待著',
+    '花錢前想想我',
   ],
 };
 
@@ -74,29 +78,31 @@ export function situations(data: AppData, now = new Date()): Hit[] {
     .sort((x, y) => x.b - y.b)[0];
   if (low) hits.push({ pool: QUOTES.lowBalance, vars: { 帳戶: low.a.name, 金額: low.b } });
 
-  // 4. 今天或昨天有一筆大收入
+  // 晚上還沒記任何一筆
+  const hasToday = data.transactions.some((x) => dayKey(x.occurredAt) === today);
+  if (now.getHours() >= QUOTE.remindHour && !hasToday) hits.push({ pool: QUOTES.remind });
+
+  // 本月花的比賺的多
+  if (m.expense > m.income) hits.push({ pool: QUOTES.overspend });
+
+  // 今天或昨天有一筆大收入
   if (data.transactions.some((x) => x.type === 'income' && x.amount >= QUOTE.bigIncome && [today, yest].includes(dayKey(x.occurredAt))))
     hits.push({ pool: QUOTES.payday });
 
-  // 5、6. 月底、月初（月曆的月份）
+  // 連續記帳
+  const s = streakDays(data, now);
+  if (s >= QUOTE.streakMin) hits.push({ pool: QUOTES.streak, vars: { 天數: s } });
+
+  // 今天零支出
+  if (t.expense === 0) hits.push({ pool: QUOTES.zeroSpend });
+
+  // 月底、月初（月曆的月份）
   const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   if (now.getDate() > lastDay - QUOTE.monthEndDays) hits.push({ pool: QUOTES.monthEnd });
   if (now.getDate() <= QUOTE.monthStartDays) hits.push({ pool: QUOTES.monthStart });
 
-  // 7. 晚上還沒記任何一筆
-  const hasToday = data.transactions.some((x) => dayKey(x.occurredAt) === today);
-  if (now.getHours() >= QUOTE.remindHour && !hasToday) hits.push({ pool: QUOTES.remind });
-
-  // 8. 今天零支出
-  if (t.expense === 0) hits.push({ pool: QUOTES.zeroSpend });
-
-  // 9、10. 本月收支
-  if (m.expense > m.income) hits.push({ pool: QUOTES.overspend });
-  else if (m.income > m.expense) hits.push({ pool: QUOTES.positive });
-
-  // 11. 連續記帳
-  const s = streakDays(data, now);
-  if (s >= QUOTE.streakMin) hits.push({ pool: QUOTES.streak, vars: { 天數: s } });
+  // 本月收入比支出多
+  if (m.income > m.expense) hits.push({ pool: QUOTES.positive });
 
   // 12. 時段、星期（同一級，全部放進同一池）
   const h = now.getHours();
@@ -120,10 +126,14 @@ function fill(s: string, v?: Vars): string {
 }
 
 let last = '';
-/** 挑一句：有情境約 70% 出最優先情境的句子，其他出一般句；不跟上一次同一句 */
+/** 挑一句：有情境時 situationalChance 出情境句（最優先那種 topChance，其餘平均分），其他出一般句；不跟上一次同一句 */
 export function pickQuote(data: AppData, now = new Date(), rand = Math.random): string {
   const hits = situations(data, now);
-  const hit: Hit = hits.length && rand() < QUOTE.situationalChance ? hits[0] : { pool: QUOTES.general };
+  let hit: Hit = { pool: QUOTES.general };
+  if (hits.length && rand() < QUOTE.situationalChance) {
+    const r = rand();
+    hit = hits.length === 1 || r < QUOTE.topChance ? hits[0] : hits[1 + Math.floor(((r - QUOTE.topChance) / (1 - QUOTE.topChance)) * (hits.length - 1))] ?? hits[0];
+  }
   const all = hit.pool.map((s) => fill(s, hit.vars));
   // 情境只有一句、上次剛好出過：改出一般句，避免連續兩次同一句
   const left = all.filter((s) => s !== last);

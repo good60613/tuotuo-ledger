@@ -26,7 +26,7 @@ describe('拖拖小語', () => {
     d.accounts.push({ id: 'B', name: 'LINE Bank', kind: 'bank', initialBalance: 80, order: 1 });
     const h = situations(d, at(2026, 10, 18))[0];
     expect(h.pool).toBe(QUOTES.lowBalance);
-    expect(pickQuote(d, at(2026, 10, 18), () => 0)).toBe('LINE Bank 只剩 $80，該補血了');
+    expect(pickQuote(d, at(2026, 10, 18), () => 0)).toBe('LINE Bank 只剩 $80，好餓…');
   });
 
   it('餘額 0 的帳戶不算快見底', () => {
