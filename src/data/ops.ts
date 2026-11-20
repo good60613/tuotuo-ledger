@@ -90,7 +90,8 @@ export function addTransaction(data: AppData, input: TxInput, id = uid('t')): { 
     data: {
       ...data,
       transactions: [...data.transactions, tx],
-      settings: input.type === 'owed' ? data.settings : { ...data.settings, lastUsedAccountId: input.accountId },
+      // 2.5：「上一筆用的帳戶」只記記帳頁記的（投資、儲蓄子畫面記的有 source，不算）
+      settings: input.type === 'owed' || input.source ? data.settings : { ...data.settings, lastUsedAccountId: input.accountId },
     },
   };
 }

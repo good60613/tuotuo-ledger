@@ -5,6 +5,7 @@ import { batchItems, revertBatch, deleteTransaction } from './data/ops';
 import { accountName } from './selectors';
 import { money } from './format';
 import { bankAccounts } from './selectors';
+import { entryAccountMode } from './features';
 
 /** 點明細的一筆 */
 export function openTx(t: Transaction) {
@@ -50,13 +51,16 @@ export async function askRevertBatch(batchId: string) {
   showToast(`已退回 ${items.length} 筆到${st}`);
 }
 
-/** 快速記帳：帳戶預設為指定帳戶，否則用上次使用的帳戶，再否則第一個一般帳戶 */
+/**
+ * 快速記帳：帳戶預設為指定帳戶，否則依設定「記帳預設帳戶」（2.5）：上一筆用的帳戶（預設）或第一個帳戶；
+ * 都沒有就第一個一般帳戶。
+ */
 export function quickEntry(accountId: string | null) {
   const d = getState().data;
   const exists = (id: string | null) => !!id && d.accounts.some((a) => a.id === id);
   const acc = exists(accountId)
     ? accountId
-    : exists(d.settings.lastUsedAccountId)
+    : entryAccountMode(d.settings) === 'last' && exists(d.settings.lastUsedAccountId)
       ? d.settings.lastUsedAccountId
       : bankAccounts(d)[0]?.id ?? d.accounts[0]?.id ?? null;
   openOverlay({ kind: 'entry', mode: 'expense', accountId: acc });

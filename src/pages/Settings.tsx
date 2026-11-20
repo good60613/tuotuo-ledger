@@ -1,5 +1,5 @@
-// 設定（右二）：只放讓其他功能能運作的項目。
-import { advanceOwedOn, recurringOn, glassOn, detailHome, prevBalanceOn, notifBarOn, notifHideLockOn } from '../features';
+﻿// 設定（右二）：只放讓其他功能能運作的項目。
+import { advanceOwedOn, recurringOn, glassOn, detailHome, prevBalanceOn, notifBarOn, notifHideLockOn, entryAccountMode } from '../features';
 import { requestNotifPermission } from '../widget';
 import { RecurringPanel } from './RecurringSettings';
 import { useRef, useState } from 'preact/hooks';
@@ -331,6 +331,16 @@ export function SettingsPage() {
             >
               <span>明細顯示記帳前餘額</span>
               <span class="muted">{prevBalanceOn(d.settings) ? '開啟' : '關閉'}</span>
+            </button>
+            <button
+              class="setting-row"
+              onClick={() => {
+                const next = entryAccountMode(d.settings) === 'last' ? 'first' : 'last';
+                updateData((x) => ({ ...x, settings: { ...x.settings, entryAccount: next } }));
+              }}
+            >
+              <span>記帳預設帳戶</span>
+              <span class="muted">{entryAccountMode(d.settings) === 'last' ? '上一筆用的帳戶' : '第一個帳戶'}</span>
             </button>
             <button
               class="setting-row"

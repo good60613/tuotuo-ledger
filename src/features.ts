@@ -38,3 +38,8 @@ export function notifHideLockOn(settings: Pick<Settings, 'notifHideOnLock'> | un
 export function detailHome(settings: Pick<Settings, 'homePage'> | undefined): boolean {
   return settings?.homePage === 'detail';
 }
+
+/** 記帳預設帳戶（2.5，缺值＝上一筆用的帳戶） */
+export function entryAccountMode(settings: Pick<Settings, 'entryAccount'> | undefined): 'last' | 'first' {
+  return settings?.entryAccount === 'first' ? 'first' : 'last';
+}

@@ -877,3 +877,14 @@ html:not(.no-glass) .collapse-bar.glass { background: color-mix(in srgb, var(--c
 .multi-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; padding: 0 4px; }
 .multi-bar .btn { flex: none; }
 @media (prefers-reduced-motion: reduce) { .tx-card, .tx-trash { transition: none; } }
+
+/* ===== 2.5 提示條〔長按刪除〕：按住時底色從左往右填滿；手指按著時倒數線暫停 ===== */
+.toast-hold { position: relative; overflow: hidden; flex: none; border: 1.5px solid var(--expense); background: var(--card); color: var(--expense); border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 700; touch-action: none; user-select: none; -webkit-user-select: none; }
+.toast-hold-fill { position: absolute; inset: 0; background: var(--expense); transform-origin: left center; transform: scaleX(0); }
+.toast-hold.holding .toast-hold-fill { animation: hold-fill var(--hold-ms) linear forwards; }
+.toast-hold.holding .toast-hold-label { animation: hold-label var(--hold-ms) step-end forwards; }
+@keyframes hold-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes hold-label { 50% { color: var(--on-color); } 100% { color: var(--on-color); } }
+.toast-hold-label { position: relative; }
+.toast-capsule.held .toast-timer { animation-play-state: paused; }
+.toast-hold:disabled { opacity: .5; }

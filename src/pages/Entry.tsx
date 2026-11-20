@@ -1,9 +1,10 @@
-// 記帳頁（支出／收入）與轉帳輸入，共用同一個畫面。內含「拖拖計算機」：把標記膠囊拖到數字上拆帳。
+﻿// 記帳頁（支出／收入）與轉帳輸入，共用同一個畫面。內含「拖拖計算機」：把標記膠囊拖到數字上拆帳。
 import { CatIcon } from '../components/CatIcon';
 import { Icon } from '../components/Icon';
 import { CAPSULE_ICONS, UI_ICONS } from '../icons';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { getState, updateData, closeOverlay, showToast, confirmDanger, type Overlay } from '../store';
+import { getState, updateData, closeOverlay, showToast, showHoldToast, confirmDanger, type Overlay } from '../store';
+import { deleteMany, restoreDeleted } from '../data/txMove';
 import { addTransaction, addTransactions, updateTransaction, deleteTransaction, isLocked, isBudgetPayment, isPaidBudget, uid, OpError, type TxInput } from '../data/ops';
 import { revertBudgetPaid, restoreBudgetPaid } from '../data/budget';
 import { roundAmount } from '../data/calc';
@@ -105,6 +106,8 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
   const [when, setWhen] = useState(src ? toLocalInput(src.occurredAt) : toLocalInput(new Date().toISOString()));
   const [marks, setMarks] = useState<Marks>({});
   const [sel, setSel] = useState<number | null>(null);
+  /** 2.5：先點膠囊（還沒打數字時）＝選好標記，之後打的數字（沒有自己標記的）都套用它 */
+  const [pickMark, setPickMark] = useState<Mark | null>(null);
   const [editMark, setEditMark] = useState<Mark | null>(editing ? recordMark(editing) : null);
   const [noteFocus, setNoteFocus] = useState(false);
   // 2.3.1：備註輸入時，系統鍵盤取代計算機鍵盤（分類區、輸入列的行為見 noteKeyboard.ts）
@@ -145,8 +148,13 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
   const marksOn = !editing && mode === 'expense';
   const bankOnly = (id: string | null) => !id || d.accounts.find((a) => a.id === id)?.kind === 'bank';
 
+  // 2.5：先點的膠囊套到每個可掛標記、還沒有自己標記的數字上（實際存檔、預覽、顯示都用這份）
+  const effMarks: Marks = marksOn && pickMark
+    ? ({ ...Object.fromEntries(terms.filter((t) => canMark(t) && !marks[t.index]).map((t) => [t.index, pickMark])), ...marks } as Marks)
+    : marks;
+
   // 新記帳的拆帳計畫
-  const plan = marksOn || mode === 'income' ? splitPlan(clean, marksOn ? marks : {}) : null;
+  const plan = marksOn || mode === 'income' ? splitPlan(clean, marksOn ? effMarks : {}) : null;
   const needAccount = plan && plan.ok ? plan.general > 0 || plan.parts.some((p) => p.mark !== 'owed') : true;
 
   let valid: boolean;
@@ -159,6 +167,7 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
     setMode(m);
     setMarks({});
     setSel(null);
+    setPickMark(null);
     if (m !== 'expense') setEditMark(null);
     if (m !== 'transfer') {
       // 分類各自獨立，換模式要選新模式的第一個（編輯舊紀錄則只在型別不符時重選）
@@ -178,6 +187,10 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
   const pickAccount = (id: string | null) => {
     setAccountId(id);
     if (bankOnly(id) || paidB) return;
+    if (pickMark === 'budget') {
+      setPickMark(null);
+      showToast('預算只能掛在一般帳戶，已取消預算');
+    }
     if (editMark === 'budget') {
       setEditMark(null);
       showToast('預算只能掛在一般帳戶，已取消預算');
@@ -206,6 +219,14 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
 
   const onTermTap = (i: number) => {
     if (!marksOn) return;
+    // 2.5：先點了膠囊、再點某個數字＝只把標記掛在這個數字上
+    if (pickMark && !marks[i]) {
+      if (!canMark(terms[i])) return showToast('乘除裡的數字不能掛標記');
+      setMarks((x) => ({ ...x, [i]: pickMark }));
+      setPickMark(null);
+      setSel(null);
+      return;
+    }
     const m = marks[i];
     if (m) {
       setMarks((x) => {
@@ -231,8 +252,15 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
     }
     if (!marksOn) return;
     if (sel !== null) return applyMark(sel, m, true);
+    if (pickMark === m) return setPickMark(null);
     if (terms.length === 1) return applyMark(0, m, true);
-    showToast('把膠囊拖到數字上，或先點數字再點膠囊');
+    // 2.5：還沒打數字就點膠囊＝先選好標記（亮起來），打完數字按 OK 就套用
+    if (terms.length === 0) {
+      if (m === 'budget' && !bankOnly(accountId)) return showToast('預算只能掛在一般帳戶');
+      setPickMark(m);
+      return;
+    }
+    showToast('把膠囊拖到數字上，或先點膠囊／數字都可以');
   };
 
   // ---- 拖曳標記膠囊 ----
@@ -384,17 +412,14 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
         });
         updateData(() => r.data);
         closeOverlay();
-        showToast('已轉帳一筆', () => {
-          updateData((x) => deleteTransaction(x, r.id));
-          showToast('已復原');
-        }, toastRich('已轉帳', r.data, r.data.transactions.filter((t) => t.id === r.id)));
+        showHoldToast('已轉帳一筆', () => holdDelete([r.id]), toastRich('已轉帳', r.data, r.data.transactions.filter((t) => t.id === r.id)));
       } catch (e) {
         saving.current = false;
         showToast(e instanceof OpError ? e.message : '存檔失敗');
       }
       return;
     }
-    const p = splitPlan(clean, marksOn ? marks : {});
+    const p = splitPlan(clean, marksOn ? effMarks : {});
     if (!p.ok) return showToast(p.error);
     let inputs: TxInput[];
     try {
@@ -415,14 +440,22 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
       const r = addTransactions(getState().data, inputs);
       updateData(() => r.data);
       closeOverlay();
-      showToast(r.ids.length === 1 ? '已記一筆' : `已記 ${r.ids.length} 筆`, () => {
-        updateData((x) => r.ids.reduce((acc, id) => deleteTransaction(acc, id), x));
-        showToast('已復原');
-      }, toastRich('已記', r.data, r.data.transactions.filter((t) => r.ids.includes(t.id))));
+      showHoldToast(r.ids.length === 1 ? '已記一筆' : `已記 ${r.ids.length} 筆`, () => holdDelete(r.ids), toastRich('已記', r.data, r.data.transactions.filter((t) => r.ids.includes(t.id))));
     } catch (e) {
       saving.current = false;
       showToast(e instanceof OpError ? e.message : '存檔失敗');
     }
+  };
+
+  /** 2.5：提示條〔長按刪除〕按滿：刪掉剛記的那幾筆，再給「已刪除｜復原」（普通點一下就救回來） */
+  const holdDelete = (ids: string[]) => {
+    const r = deleteMany(getState().data, ids);
+    if (r.deleted.length === 0) return showToast(r.skipped[0]?.reason ?? '找不到這筆紀錄');
+    updateData(() => r.data);
+    showToast('已刪除', () => {
+      updateData((x) => restoreDeleted(x, r.deleted));
+      showToast('已復原');
+    });
   };
 
   /** 退回未付（2.3）：不再跳確認框，直接退回、關掉編輯畫面，用新提示給〔復原〕 */
@@ -478,7 +511,7 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
     let pos = 0;
     for (const t of terms) {
       if (t.start > pos) out.push(<span class="op" key={`o${t.index}`}>{expr.slice(pos, t.start)}</span>);
-      const m = marksOn ? marks[t.index] : undefined;
+      const m = marksOn ? effMarks[t.index] : undefined;
       const cls = [
         'term',
         m ? `marked mk-${m}` : '',
@@ -506,9 +539,9 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
     if (showAO || editMark === 'owed') chipMarks.push('owed');
     chipMarks.push('budget', 'reimb');
   }
-  const activeOf = (m: Mark) => (editing ? editMark === m : Object.values(marks).includes(m));
+  const activeOf = (m: Mark) => (editing ? editMark === m : pickMark === m || Object.values(effMarks).includes(m));
 
-  const previewLine = marksOn && Object.keys(marks).length > 0 && plan
+  const previewLine = marksOn && Object.keys(effMarks).length > 0 && plan
     ? plan.ok
       ? { text: previewText(plan, cat?.name ?? '一般', money), err: false }
       : { text: plan.error, err: true }

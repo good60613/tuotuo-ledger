@@ -1,4 +1,4 @@
-// 資料型別：欄位照「工單/施工工單.md」的〈資料結構與計算規則〉。
+﻿// 資料型別：欄位照「工單/施工工單.md」的〈資料結構與計算規則〉。
 import type { CategoryColorKey } from '../categoryStyle';
 
 /** bank＝一般帳戶（首頁卡片）；其餘為五顆小帳戶球的類型 */
@@ -164,6 +164,8 @@ export interface Settings {
   homePage?: 'accounts' | 'detail';
   /** 明細顯示記帳前餘額（2.3），缺值＝開啟。判斷一律用 features.ts 的 prevBalanceOn()。舊資料、舊備份不用升版 */
   showPrevBalance?: boolean;
+  /** 記帳預設帳戶（2.5）：'last'＝上一筆用的帳戶、'first'＝第一個帳戶；缺值＝'last'。判斷一律用 features.ts 的 entryAccountMode()。舊資料、舊備份不用升版 */
+  entryAccount?: 'last' | 'first';
   /** 通知欄快捷列（2.3），缺值＝關閉。判斷一律用 features.ts 的 notifBarOn()。舊資料、舊備份不用升版 */
   notifBar?: boolean;
   /** 鎖定畫面隱藏金額（2.3），缺值＝開啟。判斷一律用 features.ts 的 notifHideLockOn() */

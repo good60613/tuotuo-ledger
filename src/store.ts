@@ -1,4 +1,4 @@
-// 全域狀態：資料（會存檔）＋畫面狀態（不存檔）。
+﻿// 全域狀態：資料（會存檔）＋畫面狀態（不存檔）。
 import { useEffect, useState } from 'preact/hooks';
 import type { TypeFilter } from './detailFilter';
 import type { AppData } from './data/types';
@@ -77,6 +77,8 @@ export interface Toast {
   id: number;
   text: string;
   undo?: () => void;
+  /** 2.5：〔長按刪除〕：按住 HOLD_DELETE_MS 才執行（記完一筆的提示條用，取代〔復原〕） */
+  hold?: () => void;
   rich?: ToastRich;
   /** 時間到了、正在淡出往下滑走（這時不能再按復原） */
   leaving?: boolean;
@@ -196,6 +198,9 @@ export function useAppState(): State {
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
 let toastExitTimer: ReturnType<typeof setTimeout> | undefined;
 let toastSeq = 0;
+/** 目前這則預計什麼時候開始淡出（手指按住時暫停用） */
+let toastDeadline = 0;
+let toastPausedLeft = 0;
 /**
  * 提示膠囊（2.3 新樣式）。TOAST_MS 後開始淡出往下滑走，再過 TOAST_EXIT_MS 才真的拿掉。
  * undo：有給就會出現〔復原〕和倒數線；rich：有給就顯示分類圖示與「已記 醫療 −$450」。
@@ -205,7 +210,33 @@ export function showToast(text: string, undo?: () => void, rich?: ToastRich) {
   clearTimeout(toastExitTimer);
   const id = ++toastSeq;
   setState({ toast: { id, text, undo, rich } });
+  toastDeadline = performance.now() + TOAST_MS;
   toastTimer = setTimeout(() => dismissToast(id), TOAST_MS);
+}
+
+/** 2.5：記完一筆的提示條：右邊是〔長按刪除〕（按住 HOLD_DELETE_MS 才刪） */
+export function showHoldToast(text: string, hold: () => void, rich?: ToastRich) {
+  clearTimeout(toastTimer);
+  clearTimeout(toastExitTimer);
+  const id = ++toastSeq;
+  setState({ toast: { id, text, hold, rich } });
+  toastDeadline = performance.now() + TOAST_MS;
+  toastTimer = setTimeout(() => dismissToast(id), TOAST_MS);
+}
+
+/** 2.5：手指按在提示條上：先不要自動消失 */
+export function pauseToast(id: number) {
+  if (state.toast?.id !== id || state.toast.leaving) return;
+  clearTimeout(toastTimer);
+  toastPausedLeft = Math.max(0, toastDeadline - performance.now());
+}
+/** 手指放開：把剩下的時間走完（至少留一點時間讓人看到） */
+export function resumeToast(id: number) {
+  if (state.toast?.id !== id || state.toast.leaving) return;
+  clearTimeout(toastTimer);
+  const left = Math.max(toastPausedLeft, 1200);
+  toastDeadline = performance.now() + left;
+  toastTimer = setTimeout(() => dismissToast(id), left);
 }
 /** 淡出往下滑走（手指往下滑掉、時間到都走這裡）。id 給了就只收那一則 */
 export function dismissToast(id?: number) {
