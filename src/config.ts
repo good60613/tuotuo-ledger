@@ -323,3 +323,21 @@ export const QUOTE = {
   monthEndDays: 3,
   monthStartDays: 3,
 } as const;
+/** 2.5 明細頁拖曳換位置／拖去刪除（長按、移動門檻沿用 GESTURE） */
+export const TX_DRAG = {
+  /** 垃圾桶大小、離畫面底部多高（要在底部篩選列上方） */
+  trashSizePx: 64,
+  trashBottomPx: 96,
+  /** 手指在垃圾桶外圍多少像素內也算放在垃圾桶上 */
+  trashHitPadPx: 12,
+  /** 拖到畫面上下邊緣這麼近就自動捲動；每一格捲多少 */
+  edgePx: 70,
+  scrollSpeedPx: 12,
+  /** 下緣自動捲動區要扣掉底部篩選列的高度 */
+  bottomInsetPx: 150,
+  /** 插入線左邊空出時間軸那一欄 */
+  lineInsetPx: 44,
+} as const;
+
+/** 2.5 記帳後提示條「長按刪除」：要按住多久才刪 */
+export const HOLD_DELETE_MS = 1500;

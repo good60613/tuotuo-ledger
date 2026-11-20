@@ -12,6 +12,8 @@ import { vibrate } from '../gestures/haptics';
 import { blockClicks } from '../gestures/guard';
 import { displayExpr } from '../calcExpr';
 import { prevBalanceOf, type PrevBalanceTable } from '../data/prevBalance';
+import { useEffect, useRef } from 'preact/hooks';
+import { attachTxDrag, type TxDragOptions } from '../gestures/txDrag';
 
 interface Props {
   data: AppData;
@@ -24,6 +26,8 @@ interface Props {
   onLongPress?: (t: Transaction) => void;
   /** 2.3 記帳前餘額查表（明細頁給；不給＝不顯示） */
   prevBal?: PrevBalanceTable | null;
+  /** 2.5 明細頁：長按拖曳換位置／拖去刪除／長按放開進多選（不給＝沒有這些手勢） */
+  drag?: TxDragOptions;
 }
 
 /** 長按判斷：時間與移動門檻沿用 config.ts 的手勢設定 */
@@ -61,7 +65,25 @@ function longPressHandlers(t: Transaction, cb?: (t: Transaction) => void) {
   };
 }
 
-export function TxList({ data, txs, onTap, selected, empty, onLongPress, prevBal }: Props) {
+export function TxList({ data, txs, onTap, selected, empty, onLongPress, prevBal, drag }: Props) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef(drag);
+  dragRef.current = drag;
+  const hasDrag = !!drag;
+  const hasRows = txs.length > 0;
+  useEffect(() => {
+    if (!hasDrag || !hasRows || !rootRef.current) return;
+    // 用 ref 拿最新的設定，手勢只需要掛一次
+    return attachTxDrag(rootRef.current, {
+      canDrag: (id) => dragRef.current?.canDrag(id) ?? false,
+      onPick: (id) => dragRef.current?.onPick(id),
+      onLift: () => dragRef.current?.onLift(),
+      onEnd: () => dragRef.current?.onEnd(),
+      onDrop: (id, s) => dragRef.current?.onDrop(id, s),
+      onTrash: (id) => dragRef.current?.onTrash(id),
+      onCantDrag: (id) => dragRef.current?.onCantDrag(id),
+    });
+  }, [hasDrag, hasRows]);
   // 同一時間的兩筆：後記的在上面（和「記帳前餘額」的先後一致）
   const sorted = [...txs].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt) || b.createdAt.localeCompare(a.createdAt));
   if (sorted.length === 0) return <div class="empty-list">{empty ?? '沒有紀錄'}</div>;
@@ -75,7 +97,7 @@ export function TxList({ data, txs, onTap, selected, empty, onLongPress, prevBal
   }
 
   return (
-    <div class="timeline">
+    <div class="timeline" ref={rootRef}>
       {groups.map((g) => {
         const date = new Date(g.items[0].occurredAt);
         let inc = 0, exp = 0;
@@ -101,7 +123,7 @@ export function TxList({ data, txs, onTap, selected, empty, onLongPress, prevBal
               const mark = h !== lastHour;
               lastHour = h;
               return (
-                <div class="tl-row" key={t.id}>
+                <div class="tl-row" key={t.id} data-id={t.id}>
                   <div class="tl-axis">
                     {mark && <span class="tl-hour">{String(h).padStart(2, '0')}:00</span>}
                     <span class="tl-dot" />
@@ -210,7 +232,7 @@ export function TxCard({ data, t, onTap, selected, selectable, onLongPress, prev
     }
   }
   return (
-    <button class={`tx-card${frame}${selected ? ' selected' : ''}`} onClick={() => onTap(t)} {...longPressHandlers(t, onLongPress)}>
+    <button class={`tx-card${frame}${selected ? ' selected' : ''}`} data-tx={t.id} onClick={() => onTap(t)} {...longPressHandlers(t, onLongPress)}>
       {selectable && <span class={`check${selected ? ' on' : ''}`}>{selected ? <Icon name="check" size={14} /> : ''}</span>}
       <span class={`tx-icon ${cls}`} style={bg ? { background: bg, color: fg } : undefined}><Icon name={icon} size={20} /></span>
       <span class="tx-mid">

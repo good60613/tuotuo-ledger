@@ -862,3 +862,18 @@ html:not(.no-glass) .collapse-bar.glass { background: color-mix(in srgb, var(--c
 .chip:disabled { opacity: .35; }
 .goal-left { position: relative; z-index: 1; font-size: 11px; color: var(--muted); white-space: nowrap; }
 .goal-left.done { color: var(--income); font-weight: 700; }
+
+/* ===== 2.5 明細：長按浮起、拖曳、插入線、垃圾桶、多選列 ===== */
+.tx-card { transition: transform .12s ease-out, box-shadow .12s, opacity .12s; }
+.tx-card.tx-armed { transform: scale(1.03); box-shadow: 0 8px 22px var(--shadow-lg, rgba(0,0,0,.18)); }
+.tx-card.tx-dragging { opacity: .3; }
+.tx-ghost { box-shadow: 0 14px 30px var(--shadow-lg, rgba(0,0,0,.2)) !important; }
+.tx-insert-line { position: fixed; height: 3px; border-radius: 2px; background: var(--accent); z-index: 999; pointer-events: none; display: none; }
+.tx-trash { position: fixed; left: 50%; transform: translateX(-50%); width: var(--trash-size); height: var(--trash-size); border-radius: 50%; z-index: 1001; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font-size: 11px; font-weight: 700;
+  background: var(--card); color: var(--expense); border: 2px dashed var(--expense); box-shadow: 0 6px 18px var(--shadow-lg, rgba(0,0,0,.18));
+  transition: transform .12s, background .12s, color .12s; }
+.tx-trash.hover { background: var(--expense); color: var(--on-color); border-style: solid; transform: translateX(-50%) scale(1.18); }
+.multi-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; padding: 0 4px; }
+.multi-bar .btn { flex: none; }
+@media (prefers-reduced-motion: reduce) { .tx-card, .tx-trash { transition: none; } }
