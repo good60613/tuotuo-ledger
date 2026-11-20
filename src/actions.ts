@@ -1,4 +1,4 @@
-// 跨頁面共用的操作
+﻿// 跨頁面共用的操作
 import type { Transaction } from './data/types';
 import { getState, openOverlay, updateData, showToast, ask, confirmDanger } from './store';
 import { batchItems, revertBatch, deleteTransaction } from './data/ops';
@@ -12,8 +12,9 @@ export function openTx(t: Transaction) {
     if (t.reimburseBatchId) askRevertBatch(t.reimburseBatchId);
     return;
   }
-  // 調整、市值、投資與儲蓄的記一筆：不走記帳頁，只能刪除（要改就刪掉重記）
-  if (t.type === 'adjust' || t.type === 'valuation' || t.source) {
+  // 調整、市值、投資與儲蓄的記一筆：不走記帳頁，只能刪除（要改就刪掉重記）。
+  // 2.5：儲蓄的存入／取出就是轉帳，可以用記帳頁的轉帳模式編輯（保留來源標記）；利息仍只能刪除
+  if (t.type === 'adjust' || t.type === 'valuation' || (t.source && !isSavingTransfer(t))) {
     void askDeleteSpecial(t);
     return;
   }
@@ -23,6 +24,11 @@ export function openTx(t: Transaction) {
     return;
   }
   openOverlay({ kind: 'entry', mode: t.type === 'owed' ? 'expense' : t.type, accountId: t.accountId, toAccountId: t.toAccountId ?? null, txId: t.id });
+}
+
+/** 2.5：儲蓄頁記的存入、取出（type＝transfer），可以編輯 */
+export function isSavingTransfer(t: Transaction): boolean {
+  return t.type === 'transfer' && (t.source === 'saving-in' || t.source === 'saving-out');
 }
 
 /** 整批退回待報帳（要確認） */

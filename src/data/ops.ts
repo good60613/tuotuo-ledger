@@ -1,4 +1,4 @@
-// 所有會改動資料的操作。全部是「舊資料 → 新資料」的純函式，方便單元測試。
+﻿// 所有會改動資料的操作。全部是「舊資料 → 新資料」的純函式，方便單元測試。
 import type { Account, AppData, Category, Transaction, TxType } from './types';
 import { TX_SOURCE_NO_CATEGORY } from './types';
 import { withAccountIcon } from '../categoryStyle';
@@ -200,6 +200,8 @@ export function updateTransaction(data: AppData, id: string, input: TxInput): Ap
     };
   } else {
     next = build(input, old.id, old.createdAt);
+    // 2.5：編輯儲蓄的存入／取出時保留來源標記（記帳頁不會帶 source；類型改了就不保留）
+    if (input.source === undefined && old.source && next.type === old.type) next.source = old.source;
     // 編輯時不重新拆帳：拆帳群組保留；金額沒改才保留原本的算式（改了金額，舊算式就對不上了）
     next.splitId = old.splitId;
     // 定期扣款自動記的那筆：改帳戶、金額後仍記得是哪一項哪個月（避免補記時重複）
