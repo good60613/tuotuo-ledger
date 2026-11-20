@@ -1,4 +1,4 @@
-// ===== 手勢與防誤觸設定（要微調手感就改這裡） =====
+﻿// ===== 手勢與防誤觸設定（要微調手感就改這裡） =====
 // 單位：毫秒(ms)、畫面像素(px)。
 
 export const GESTURE = {
@@ -108,8 +108,12 @@ export const HOME = {
   maxCardRows: 3,
   /** 卡片之間的間距 */
   cardGapPx: 10,
-  /** 最近紀錄每一筆佔的高度（卡片 54px＋間距） */
-  recentRowPx: 52,
+  /** 最近紀錄每一筆佔的高度（2.4 起用明細頁的紀錄列：卡片 54px＋間距 4px） */
+  recentRowPx: 58,
+  /** 2.4：最近紀錄最底下那一列（快速記一筆＋logo＋拖拖小語）的高度 */
+  quoteRowPx: 56,
+  /** 2.4：拿起帳戶卡時，「支出／收入」放置區縮成一排的高度（下面照樣顯示紀錄，可當放置目標）。\n   *  跟 quoteRowPx 一樣高＝拿起時佔用小語列的位置，紀錄一筆都不會少 */
+  liftZonePx: 56,
   /** 最近紀錄每筆之間的間距（含在 recentRowPx 裡） */
   recentGapPx: 4,
   /** 最近紀錄固定顯示幾筆（貼在導覽列上方；螢幕太矮時自動少顯示） */
@@ -299,4 +303,22 @@ export const COLLAPSE_HEAD = {
 /** 2.2 統計頁「自訂」區間：天數在這以內用每日長條圖，超過改每月（每個結算期一根） */
 export const STATS_RANGE = {
   dailyMaxDays: 31,
+} as const;
+
+
+/** 2.4 拖拖小語（句子在 src/quotes.ts） */
+export const QUOTE = {
+  /** 有情境符合時，出情境句的機率（其他時候出一般句） */
+  situationalChance: 0.7,
+  /** 帳戶餘額低於這個數字算「快見底」（餘額 0 的帳戶不算） */
+  lowBalance: 100,
+  /** 今天或昨天單筆收入達到這個數字算「發薪」 */
+  bigIncome: 10000,
+  /** 連續記帳幾天以上才出連續天數的句子 */
+  streakMin: 3,
+  /** 晚上幾點後還沒記帳就提醒 */
+  remindHour: 20,
+  /** 月底幾天、月初幾天 */
+  monthEndDays: 3,
+  monthStartDays: 3,
 } as const;

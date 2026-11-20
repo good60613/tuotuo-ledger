@@ -1,17 +1,20 @@
-import { useLayoutEffect, useRef, useState } from 'preact/hooks';
-import { useAppState, setState, openOverlay, showToast, goPage, TODO_PAGE, PAGES, pageIndex } from '../store';
+﻿import { useLayoutEffect, useEffect, useRef, useState } from 'preact/hooks';
+import { useAppState, setState, openOverlay, showToast, goPage, TODO_PAGE, PAGES, pageIndex, getState, updateData } from '../store';
 import { allBalances, spendableTotal, totals, periodKey, dayKey, pendingBudgetByAccount, pendingBudgetTotal, pendingOwedTotal, recurringReserved } from '../data/calc';
 import { overdueCount } from '../data/budget';
 import { bankAccounts, accountName } from '../selectors';
-import { ballDropTarget } from '../data/ops';
+import { ballDropTarget, OpError } from '../data/ops';
+import { canReassign, reassignAccount, restoreTxs, shownAccountId } from '../data/reassign';
 import { KIND_LABEL, type Account, type AccountKind } from '../data/types';
 import { AccountCard } from '../components/AccountCard';
 import { Balls } from '../components/Balls';
 import { SideNotes, type SideNote } from '../components/SideNotes';
 import type { DropTarget } from '../gestures/cardDrag';
 import { money, mdLabel, weekday } from '../format';
-import { txView } from '../components/TxList';
-import { openTx } from '../actions';
+import { TxCard } from '../components/TxList';
+import { openTx, quickEntry } from '../actions';
+import { pickQuote } from '../quotes';
+import logo from '../assets/logo.png';
 import { HOME, HOME_SUM, BOTTOM_BAR } from '../config';
 import { Icon } from '../components/Icon';
 import type { Transaction } from '../data/types';
@@ -32,7 +35,18 @@ export function HomePage() {
   const m = totals(d, { period: periodKey(now, d.settings.settleDay) });
   const t = totals(d, { day: dayKey(now) });
   const [lifted, setLifted] = useState<Account | null>(null);
+  /** 2.4：拿起的是小帳戶球（只能放到紀錄上）；lifted 是那顆球的預設帳戶（可能沒有） */
+  const [liftBall, setLiftBall] = useState<string | null>(null);
   const [hover, setHover] = useState<DropTarget | null>(null);
+  const lifting = !!lifted || !!liftBall;
+  const liftName = lifted?.name ?? (liftBall ? KIND_LABEL[liftBall as AccountKind] : '');
+
+  // 2.4 拖拖小語：每次回到首頁（換頁回來、關掉記帳頁等畫面回來）換一句
+  const onHome = s.page === pageIndex('首頁') && s.overlays.length === 0;
+  const [quote, setQuote] = useState(() => pickQuote(d));
+  useEffect(() => {
+    if (onHome) setQuote(pickQuote(getState().data));
+  }, [onHome]);
 
   const ballFirst = (kind: string) => ballDropTarget(d, kind as AccountKind);
   const banks = bankAccounts(d);
@@ -41,7 +55,7 @@ export function HomePage() {
   const cardsRef = useRef<HTMLDivElement>(null);
   const recentRef = useRef<HTMLDivElement>(null);
   const liftedRef = useRef(false);
-  liftedRef.current = !!lifted;
+  liftedRef.current = lifting;
   const [cardsMax, setCardsMax] = useState<number | null>(null);
   const [recentN, setRecentN] = useState(0);
   const scrollable = banks.length > HOME.maxCardRows * 2;
@@ -51,7 +65,8 @@ export function HomePage() {
       setCardsMax(scrollable && first ? first.offsetHeight * HOME.maxCardRows + HOME.cardGapPx * (HOME.maxCardRows - 1) : null);
       const box = recentRef.current;
       // 拿起時中間區換成放置區，高度會變，這時不重算最近紀錄筆數
-      if (box && !liftedRef.current) setRecentN(Math.max(0, Math.min(HOME.recentCount, Math.floor((box.clientHeight - BOTTOM_BAR.navInsetPx - HOME.recentHeadPx - HOME.recentPadPx) / HOME.recentRowPx))));
+      // 2.4：扣掉最底下小語列的高度；用 floor 只放得下的整列，最後一列不會被外框切到
+      if (box && !liftedRef.current) setRecentN(Math.max(0, Math.min(HOME.recentCount, Math.floor((box.clientHeight - BOTTOM_BAR.navInsetPx - HOME.recentHeadPx - HOME.recentPadPx - HOME.quoteRowPx) / HOME.recentRowPx))));
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -61,9 +76,19 @@ export function HomePage() {
   }, [banks.length, scrollable]);
   const recent = recentTxs(d.transactions, recentN);
 
+  // 拿起時：支出／收入放置區縮成一排放上面（球不能記帳，就不出現），下面紀錄少放幾筆，空出位置
+  const liftRows = liftBall ? recent.length : Math.max(0, recent.length - Math.ceil(Math.max(0, HOME.liftZonePx - HOME.quoteRowPx) / HOME.recentRowPx));
+
   const hint = (() => {
+    if (!lifting) return '';
+    if (!hover) return liftBall ? '拖到紀錄上 ＝ 改成這個帳戶；空白處 ＝ 取消' : '放到空白處 ＝ 取消';
+    if (hover.kind === 'tx') {
+      const tx = d.transactions.find((x) => x.id === hover.id);
+      if (!lifted) return `還沒有「${liftName}」帳戶`;
+      if (tx && shownAccountId(d, tx) === lifted.id) return '已經是這個帳戶';
+      return `放開 ＝ 這筆改成 ${lifted.name}`;
+    }
     if (!lifted) return '';
-    if (!hover) return '放到空白處 ＝ 取消';
     switch (hover.kind) {
       case 'expense':
         return `放開 ＝ 記一筆支出（${lifted.name}）`;
@@ -84,8 +109,48 @@ export function HomePage() {
     goPage(pageIndex('明細'));
   };
 
+  /** 2.4：改那筆的帳戶。不跳確認，提示條給〔復原〕；同一個帳戶不做事 */
+  const reassign = (acc: Account | null, txId: string, kindLabel: string) => {
+    if (!acc) {
+      showToast(`還沒有「${kindLabel}」帳戶，請到設定新增`);
+      return;
+    }
+    try {
+      const r = reassignAccount(getState().data, txId, acc.id);
+      if (!r) return;
+      updateData(() => r.data);
+      showToast(`已改成 ${acc.name}`, () => {
+        updateData((x) => restoreTxs(x, r.olds));
+        showToast('已復原');
+      });
+    } catch (e) {
+      showToast(e instanceof OpError ? e.message : '改帳戶失敗');
+    }
+  };
+
+  const ballDrag = {
+    onLift: (kind: string) => {
+      setLiftBall(kind);
+      setLifted(ballFirst(kind) ?? null);
+      setHover(null);
+      setState({ dragging: true });
+    },
+    onHover: setHover,
+    onDrop: (kind: string, target: DropTarget) => {
+      if (target.kind === 'tx') reassign(ballFirst(kind) ?? null, target.id, KIND_LABEL[kind as AccountKind]);
+    },
+    onEnd: () => {
+      setLiftBall(null);
+      setLifted(null);
+      setHover(null);
+      setState({ dragging: false });
+    },
+  };
+
   const onDrop = (acc: Account, target: DropTarget) => {
-    if (target.kind === 'expense' || target.kind === 'income') {
+    if (target.kind === 'tx') {
+      reassign(acc, target.id, '');
+    } else if (target.kind === 'expense' || target.kind === 'income') {
       openOverlay({ kind: 'entry', mode: target.kind, accountId: acc.id });
     } else if (target.kind === 'account') {
       openOverlay({ kind: 'entry', mode: 'transfer', accountId: acc.id, toAccountId: target.id });
@@ -215,47 +280,57 @@ export function HomePage() {
         {banks.length === 0 && <div class="empty">還沒有一般帳戶，請到「設定」新增</div>}
       </div>
 
-      <Balls data={d} droppable />
+      <Balls data={d} droppable drag={ballDrag} />
 
-      {/* 最近紀錄：實心卡，貼在導覽列上方、填滿剩下的高度；拿起卡片時換成「支出／收入」兩個放置區 */}
+      {/* 最近紀錄：實心卡，貼在導覽列上方、填滿剩下的高度。
+          2.4：每列用明細頁的紀錄列；拿起帳戶卡時上方出現一排「支出／收入」放置區，下面的紀錄可當放置目標（改帳戶） */}
       <div class="home-recent" ref={recentRef} style={{ minHeight: `${HOME.dropZoneMinPx + HOME.dragHintPx}px` }}>
-        {lifted ? (
-          <>
-          <div class="drag-hint show" style={{ height: `${HOME.dragHintPx}px`, lineHeight: `${HOME.dragHintPx}px` }}>{hint}</div>
-          <div class="home-zones">
-            <div class="drop-zone zone-expense" data-drop="expense">
-              <span class="zone-icon"><Icon name="minus" size={22} /></span>支出
-            </div>
-            <div class="drop-zone zone-income" data-drop="income">
-              <span class="zone-icon"><Icon name="plus" size={22} /></span>收入
-            </div>
-          </div>
-          </>
-        ) : (
-          <div class="recent-card" style={{ '--recent-head': `${HOME.recentHeadPx}px`, '--recent-pad': `${HOME.recentPadPx}px` } as Record<string, string>}>
+        <div
+          class="recent-card"
+          style={{
+            '--recent-head': `${HOME.recentHeadPx}px`,
+            '--recent-pad': `${HOME.recentPadPx}px`,
+            '--recent-row': `${HOME.recentRowPx}px`,
+            '--quote-row': `${HOME.quoteRowPx}px`,
+            '--lift-zone': `${HOME.liftZonePx}px`,
+          } as Record<string, string>}
+        >
+          {lifting ? (
+            <div class="recent-head drag-hint show">{hint}</div>
+          ) : (
             <div class="recent-head">
               <b>最近紀錄</b>
               {recent.length > 0 && <span class="muted small">最近 {recent.length} 筆</span>}
             </div>
-            <div class="recent-list">
-              {recent.map((x) => {
-                const v = txView(d, x);
-                const title = x.note && x.type !== 'reimburse_in' ? x.note : v.title;
-                const sub = [v.catName, v.acc?.name].filter(Boolean).join('・');
-                return (
-                  <button key={x.id} class="recent-row" onClick={() => openTx(x)}>
-                    <span class={`recent-icon tx-icon ${v.cls}`} style={v.bg ? { background: v.bg, color: v.fg } : undefined}><Icon name={v.icon} size={20} /></span>
-                    <span class="recent-mid">
-                      <span class="recent-title">{title}</span>
-                      <span class="recent-sub">{sub}</span>
-                    </span>
-                    <span class={`tx-amt ${v.cls}`}>{v.amt}</span>
-                  </button>
-                );
-              })}
+          )}
+          {lifting && !liftBall && (
+            <div class="home-zones lift">
+              <div class="drop-zone zone-expense" data-drop="expense">
+                <span class="zone-icon"><Icon name="minus" size={20} /></span>支出
+              </div>
+              <div class="drop-zone zone-income" data-drop="income">
+                <span class="zone-icon"><Icon name="plus" size={20} /></span>收入
+              </div>
             </div>
+          )}
+          <div class="recent-list">
+            {(lifting ? recent.slice(0, liftRows) : recent).map((x) => (
+              <div key={x.id} class={`recent-slot${canReassign(x) ? '' : ' no-drop'}`} data-drop={canReassign(x) ? `tx:${x.id}` : undefined}>
+                <TxCard data={d} t={x} onTap={openTx} selectable={false} withDay />
+              </div>
+            ))}
+            {recent.length === 0 && <div class="recent-empty muted small">還沒有紀錄</div>}
           </div>
-        )}
+          {!lifting && (
+            <div class="quote-row">
+              <button class="quote-quick" onClick={() => quickEntry(null)}>
+                <Icon name="plus" size={16} /> 快速記一筆
+              </button>
+              <img class="quote-logo" src={logo} alt="" />
+              <span class="quote-text">{quote}</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

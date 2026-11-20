@@ -26,3 +26,12 @@ export function toLocalInput(iso: string): string {
 export function fromLocalInput(v: string): string {
   return new Date(v).toISOString();
 }
+
+/** 2.4 首頁最近紀錄：今天／昨天／11/18（沒有日期標題時，紀錄列自己帶日期） */
+export function shortDay(d: Date, now = new Date()): string {
+  const day = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = Math.round((day(now) - day(d)) / 86400000);
+  if (diff === 0) return '今天';
+  if (diff === 1) return '昨天';
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}

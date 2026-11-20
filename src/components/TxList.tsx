@@ -1,4 +1,4 @@
-// 時間軸明細列表：明細頁、待辦頁共用。
+﻿// 時間軸明細列表：明細頁、待辦頁共用。
 import { catBg } from './CatIcon';
 import { Icon } from './Icon';
 import { colorOf } from '../categoryStyle';
@@ -6,7 +6,7 @@ import type { AppData, Transaction } from '../data/types';
 import { statEffect, kindLookup, dayKey } from '../data/calc';
 import { accountName, categoryOf } from '../selectors';
 import { ACCOUNT_KIND_ICON } from '../icons';
-import { money, mdLabel, weekday, hm } from '../format';
+import { money, mdLabel, weekday, hm, shortDay } from '../format';
 import { GESTURE } from '../config';
 import { vibrate } from '../gestures/haptics';
 import { blockClicks } from '../gestures/guard';
@@ -175,7 +175,7 @@ export function txView(data: AppData, t: Transaction) {
   return { icon, title, amt, cls, bg, fg, acc, catName };
 }
 
-export function TxCard({ data, t, onTap, selected, selectable, onLongPress, prevBal }: { data: AppData; t: Transaction; onTap: (t: Transaction) => void; selected?: boolean; selectable: boolean; onLongPress?: (t: Transaction) => void; prevBal?: PrevBalanceTable | null }) {
+export function TxCard({ data, t, onTap, selected, selectable, onLongPress, prevBal, withDay }: { data: AppData; t: Transaction; onTap: (t: Transaction) => void; selected?: boolean; selectable: boolean; onLongPress?: (t: Transaction) => void; prevBal?: PrevBalanceTable | null; /** 2.4 首頁：時間前面加「今天／昨天／11/18」 */ withDay?: boolean }) {
   const d = new Date(t.occurredAt);
   const { icon, title, amt, cls, bg, fg, acc } = txView(data, t);
   // 記帳前餘額：轉帳那列沒有帳戶欄位，這版先不顯示；不動餘額的（未付預算、先欠）查不到＝不顯示
@@ -219,7 +219,7 @@ export function TxCard({ data, t, onTap, selected, selectable, onLongPress, prev
           {t.note && t.type !== 'reimburse_in' && <span class="tx-note"> · {t.note}</span>}
         </span>
         <span class="tx-sub">
-          {hm(d)}
+          {withDay && <>{shortDay(d)} </>}{hm(d)}
           {t.type !== 'transfer' && acc && <> · <Icon name={ACCOUNT_KIND_ICON[acc.kind]} size={12} class="sub-kind-icon" /> {acc.name}{prev !== undefined && <span class="tx-prev">{money(prev)}</span>}</>}
           {t.type === 'adjust' && <span class="badge calib">不計收支</span>}
           {t.type === 'owed' && <> · 別人先付</>}

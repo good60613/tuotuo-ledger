@@ -834,3 +834,22 @@ html:not(.no-glass) .collapse-bar.glass { background: color-mix(in srgb, var(--c
 /* 2.3 編輯畫面上方的提示條：右邊放小按鈕（來自預算：退回未付） */
 .notice-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .notice-btn { border: 1px solid currentColor; background: none; color: inherit; border-radius: 999px; padding: 3px 12px; font-size: 13px; font-weight: 700; }
+
+/* ===== 2.4 首頁最近紀錄：用明細頁的紀錄列、固定列高（最後一列不會被切到）、最底下拖拖小語列 ===== */
+.home-recent .recent-list { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+.home-recent .recent-slot { flex: none; height: var(--recent-row); display: flex; align-items: center; border-radius: var(--radius); }
+.home-recent .recent-slot .tx-card { flex: 1 1 auto; height: 54px; margin: 0; padding-top: 6px; padding-bottom: 6px; transition: opacity .12s, border-color .12s, background .12s, box-shadow .12s; }
+.home-recent .recent-slot .tx-sub { flex-wrap: nowrap; white-space: nowrap; overflow: hidden; }
+.home-recent .recent-empty { padding: 16px 0; text-align: center; }
+/* 拿起帳戶卡：可改的紀錄淡一點、不能改的更淡；指到的那列亮起來 */
+.home.lifting .recent-slot .tx-card { opacity: .55; }
+.home.lifting .recent-slot.no-drop .tx-card { opacity: .28; }
+.home.lifting .recent-slot.drop-hover .tx-card { opacity: 1; border-color: var(--transfer); background: var(--transfer-soft); box-shadow: 0 0 var(--fx-hover-glow, 10px) var(--glow, transparent); }
+.recent-head.drag-hint { justify-content: center; font-size: 13px; font-weight: 600; }
+.home-zones.lift { flex: none; height: var(--lift-zone); min-height: 0; padding: 0 0 6px; }
+.home-zones.lift .drop-zone { font-size: 14px; }
+.quote-row { flex: none; height: var(--quote-row); display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--line); }
+.quote-quick { flex: none; display: flex; align-items: center; gap: 4px; border: 0; border-radius: 999px; background: var(--accent); color: var(--on-accent); padding: 6px 12px; font-size: 13px; font-weight: 700; }
+.quote-quick:active { opacity: .85; }
+.quote-logo { flex: none; width: 26px; height: 26px; border-radius: 50%; }
+.quote-text { flex: 1; min-width: 0; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
