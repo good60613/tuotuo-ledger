@@ -1,4 +1,4 @@
-// 小帳戶子畫面用的「輸入金額」視窗：上方放各畫面自己的欄位，下方是計算機（同記帳頁）。
+﻿// 小帳戶子畫面用的「輸入金額」視窗：上方放各畫面自己的欄位，下方是計算機（同記帳頁）。
 import type { ComponentChildren } from 'preact';
 import { useState } from 'preact/hooks';
 import { Sheet } from './Sheet';
@@ -19,12 +19,14 @@ interface Props {
   ready?: boolean;
   /** 金額下方的補充說明，例如「差額 +30」 */
   hint?: (amount: number) => string;
+  /** 2.5：金額旁的快捷鈕（例如「全部」帶入來源目前金額） */
+  quick?: { label: string; amount: number };
   /** 回傳 false 表示不關閉（例如檢查沒過） */
   onSubmit: (amount: number) => boolean | void;
   onClose: () => void;
 }
 
-export function AmountForm({ title, children, initial, allowZero, ready = true, hint, onSubmit, onClose }: Props) {
+export function AmountForm({ title, children, initial, allowZero, ready = true, hint, quick, onSubmit, onClose }: Props) {
   const [expr, setExpr] = useState(initial !== undefined ? numberToExpr(initial) : '');
   const value = evaluate(expr);
   const amount = value === null ? 0 : roundAmount(value);
@@ -48,6 +50,11 @@ export function AmountForm({ title, children, initial, allowZero, ready = true, 
       <div class="amount-line">
         <span class="muted">TWD</span>
         <b>{expr === '' ? '0' : displayExpr(expr)}</b>
+        {quick && (
+          <button class="pill-btn small amount-quick" onClick={() => setExpr(numberToExpr(Math.max(0, quick.amount)))}>
+            {quick.label}
+          </button>
+        )}
       </div>
       {hint && valid && <div class="muted small amount-hint">{hint(amount)}</div>}
       <Calculator

@@ -1,4 +1,4 @@
-import { Icon } from '../components/Icon';
+﻿import { Icon } from '../components/Icon';
 // 儲蓄子畫面：頂端總額、儲蓄目標（直向等寬，「已存／目標」）、長按拖曳排序、記一筆三種（存入、取出、利息）。
 // 排序採金字塔概念：越下面越必要（緊急預備金），越上面越想要。
 import { useEffect, useRef, useState } from 'preact/hooks';
@@ -24,7 +24,7 @@ export function SavingSub() {
   const goals = savingGoals(d);
   const bal = allBalances(d);
   const [sel, setSel] = useState<string | null>(null);
-  const [sheet, setSheet] = useState<null | 'entry' | 'add' | 'calib'>(null);
+  const [sheet, setSheet] = useState<null | 'entry' | 'add' | 'calib' | 'move'>(null);
   const selected = goals.find((g) => g.id === sel) ?? null;
   const total = goals.reduce((s, g) => s + (bal.get(g.id) ?? 0), 0);
   // 校正：只有一個目標時一直顯示；多個時選了某個目標才出現
@@ -102,7 +102,12 @@ export function SavingSub() {
       title="儲蓄"
       total={money(total)}
       accountIds={shown}
-      topRight={target && <button class="pill-btn small" onClick={() => setSheet('calib')}>校正</button>}
+      topRight={
+        <>
+          {goals.length >= 2 && <button class="pill-btn small" onClick={() => setSheet('move')}>轉移</button>}
+          {target && <button class="pill-btn small" onClick={() => setSheet('calib')}>校正</button>}
+        </>
+      }
       onAdd={() => (goals.length ? setSheet('entry') : showToast('請先新增儲蓄目標'))}
     >
       <p class="muted small goal-hint">越下面越必要，長按目標可拖曳調整順序</p>
@@ -123,6 +128,8 @@ export function SavingSub() {
             >
               <div class="goal-fill" style={{ width: `${ratio * 100}%` }} />
               <span class="goal-name">{g.name}</span>
+              {/* 2.5：名稱和金額中間一行小字：還差多少／已達標 */}
+              {!!g.target && <span class={`goal-left${saved >= g.target ? ' done' : ''}`}>{saved >= g.target ? '已達標' : `還差 ${money(g.target - saved)}`}</span>}
               <span class="goal-amt">{money(saved)} <span class="muted">／ {g.target ? money(g.target) : '未設目標'}</span></span>
             </div>
           );
@@ -132,6 +139,7 @@ export function SavingSub() {
 
       {sheet === 'entry' && <SavingEntry goals={goals} preset={selected?.id ?? null} onClose={() => setSheet(null)} />}
       {sheet === 'add' && <AddGoal onClose={() => setSheet(null)} />}
+      {sheet === 'move' && <SavingMove goals={goals} preset={selected?.id ?? null} onClose={() => setSheet(null)} />}
       {sheet === 'calib' && target && <CalibrateSheet accountId={target.id} name={target.name} onClose={() => setSheet(null)} />}
     </SubFrame>
   );
@@ -197,6 +205,60 @@ function SavingEntry({ goals, preset, onClose }: { goals: Account[]; preset: str
           onClose={() => setPickOther(false)}
         />
       )}
+    </AmountForm>
+  );
+}
+
+/**
+ * 2.5 轉移：把錢從一個儲蓄目標轉到另一個。產生的是一般的轉帳紀錄（和首頁拖球轉帳同一種），
+ * 走 addTransaction，不另寫算法。不能超過來源目前的金額；來源＝目的不能送出。
+ * 不改「上一筆用的帳戶」（那是記帳頁用的預設帳戶）。
+ */
+function SavingMove({ goals, preset, onClose }: { goals: Account[]; preset: string | null; onClose: () => void }) {
+  const d = useAppState().data;
+  const bal = allBalances(d);
+  const [from, setFrom] = useState<string>(preset ?? goals[goals.length - 1].id);
+  const [to, setTo] = useState<string | null>(goals.find((g) => g.id !== (preset ?? goals[goals.length - 1].id))?.id ?? null);
+  const [note, setNote] = useState('');
+  const fromBal = Math.max(0, bal.get(from) ?? 0);
+  const same = !to || to === from;
+  return (
+    <AmountForm
+      title="轉移"
+      ready={!same}
+      quick={{ label: '全部', amount: fromBal }}
+      hint={(amount) => (amount > fromBal ? `超過「${accountName(d, from)}」目前的 ${money(fromBal)}` : `${accountName(d, from)} → ${accountName(d, to)}`)}
+      onSubmit={(amount) => {
+        if (same) return false;
+        if (amount > fromBal) {
+          showToast(`不能超過「${accountName(d, from)}」目前的 ${money(fromBal)}`);
+          return false;
+        }
+        try {
+          updateData((x) => ({ ...addTransaction(x, { type: 'transfer', amount, accountId: from, toAccountId: to!, note: note.trim(), occurredAt: new Date().toISOString() }).data, settings: x.settings }));
+          showToast(`已轉移 ${money(amount)}`);
+        } catch (e) {
+          showToast(e instanceof OpError ? e.message : '存檔失敗');
+          return false;
+        }
+      }}
+      onClose={onClose}
+    >
+      <div class="muted small move-label">從</div>
+      <div class="chip-row">
+        {goals.map((g) => (
+          <button key={g.id} class={`chip${from === g.id ? ' on' : ''}`} onClick={() => { setFrom(g.id); if (to === g.id) setTo(null); }}>
+            {g.name} <span class="muted">{money(bal.get(g.id) ?? 0)}</span>
+          </button>
+        ))}
+      </div>
+      <div class="muted small move-label">轉到</div>
+      <div class="chip-row">
+        {goals.map((g) => (
+          <button key={g.id} class={`chip${to === g.id ? ' on' : ''}`} disabled={g.id === from} onClick={() => setTo(g.id)}>{g.name}</button>
+        ))}
+      </div>
+      <input class="note-input full" value={note} maxLength={40} placeholder="備註" onInput={(e) => setNote(e.currentTarget.value)} />
     </AmountForm>
   );
 }

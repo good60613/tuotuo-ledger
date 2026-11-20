@@ -1,4 +1,4 @@
-/* 試玩版樣式：只求清楚好用，視覺風格之後再談 */
+﻿/* 試玩版樣式：只求清楚好用，視覺風格之後再談 */
 :root {
   /* 顏色一律由 src/theme.ts 的 applyTheme 寫入（--bg、--card、--accent…），這裡不寫死 */
   --radius: 14px;
@@ -853,3 +853,12 @@ html:not(.no-glass) .collapse-bar.glass { background: color-mix(in srgb, var(--c
 .quote-quick:active { opacity: .85; }
 .quote-logo { flex: none; width: 26px; height: 26px; border-radius: 50%; }
 .quote-text { flex: 1; min-width: 0; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ===== 2.5 儲蓄：轉移、還差多少 ===== */
+.amount-line:has(.amount-quick) { justify-content: flex-start; }
+.amount-line:has(.amount-quick) b { margin-left: auto; }
+.amount-quick { margin-left: 10px; align-self: center; font-size: 13px; }
+.move-label { margin: 6px 2px 2px; }
+.chip:disabled { opacity: .35; }
+.goal-left { position: relative; z-index: 1; font-size: 11px; color: var(--muted); white-space: nowrap; }
+.goal-left.done { color: var(--income); font-weight: 700; }
