@@ -1,4 +1,4 @@
-﻿// 跨頁面共用的操作
+// 跨頁面共用的操作
 import type { Transaction } from './data/types';
 import { getState, openOverlay, updateData, showToast, ask, confirmDanger } from './store';
 import { batchItems, revertBatch, deleteTransaction } from './data/ops';

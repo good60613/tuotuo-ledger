@@ -1,4 +1,4 @@
-﻿import { Icon } from '../components/Icon';
+import { Icon } from '../components/Icon';
 // 明細頁（右一）：時間軸列出每一筆。2.2：頂部浮動小條、底部篩選膠囊列（帳戶｜日期｜分類｜類型｜🔍）
 import { useState } from 'preact/hooks';
 import { useAppState, setState, getState, updateData, showToast, confirmDanger, PAGES } from '../store';

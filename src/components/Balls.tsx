@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef } from 'preact/hooks';
+import { useEffect, useRef } from 'preact/hooks';
 import type { AppData, AccountKind } from '../data/types';
 import { ballTotal } from '../data/calc';
 import { balls } from '../selectors';

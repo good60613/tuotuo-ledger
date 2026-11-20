@@ -1,4 +1,4 @@
-﻿// 小帳戶子畫面用的「輸入金額」視窗：上方放各畫面自己的欄位，下方是計算機（同記帳頁）。
+// 小帳戶子畫面用的「輸入金額」視窗：上方放各畫面自己的欄位，下方是計算機（同記帳頁）。
 import type { ComponentChildren } from 'preact';
 import { useState } from 'preact/hooks';
 import { Sheet } from './Sheet';

@@ -1,4 +1,4 @@
-﻿// 所有會改動資料的操作。全部是「舊資料 → 新資料」的純函式，方便單元測試。
+// 所有會改動資料的操作。全部是「舊資料 → 新資料」的純函式，方便單元測試。
 import type { Account, AppData, Category, Transaction, TxType } from './types';
 import { TX_SOURCE_NO_CATEGORY } from './types';
 import { withAccountIcon } from '../categoryStyle';

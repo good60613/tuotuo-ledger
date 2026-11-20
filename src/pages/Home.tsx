@@ -1,4 +1,4 @@
-﻿import { useLayoutEffect, useEffect, useRef, useState } from 'preact/hooks';
+import { useLayoutEffect, useEffect, useRef, useState } from 'preact/hooks';
 import { useAppState, setState, openOverlay, showToast, goPage, TODO_PAGE, PAGES, pageIndex, getState, updateData } from '../store';
 import { allBalances, spendableTotal, totals, periodKey, dayKey, pendingBudgetByAccount, pendingBudgetTotal, pendingOwedTotal, recurringReserved } from '../data/calc';
 import { overdueCount } from '../data/budget';

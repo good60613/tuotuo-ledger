@@ -1,4 +1,4 @@
-﻿// 2.4：首頁把帳戶卡（或小帳戶球）拖到一筆紀錄上＝改那筆的帳戶。
+// 2.4：首頁把帳戶卡（或小帳戶球）拖到一筆紀錄上＝改那筆的帳戶。
 // 一律走 updateTransaction（現有的改紀錄流程），不另寫算法；餘額、預、剩餘可用、本月與今日都由紀錄重算。
 import type { AppData, Transaction } from './types';
 import { updateTransaction, isLocked, isPaidBudget, isBudgetPayment, OpError, type TxInput } from './ops';

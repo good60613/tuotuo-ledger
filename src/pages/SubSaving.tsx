@@ -1,4 +1,4 @@
-﻿import { Icon } from '../components/Icon';
+import { Icon } from '../components/Icon';
 // 儲蓄子畫面：頂端總額、儲蓄目標（直向等寬，「已存／目標」）、長按拖曳排序、記一筆三種（存入、取出、利息）。
 // 排序採金字塔概念：越下面越必要（緊急預備金），越上面越想要。
 import { useEffect, useRef, useState } from 'preact/hooks';

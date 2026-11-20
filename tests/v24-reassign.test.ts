@@ -1,4 +1,4 @@
-﻿// 2.4 段B：首頁把帳戶卡拖到紀錄上＝改那筆的帳戶（走 updateTransaction），復原完全還原
+// 2.4 段B：首頁把帳戶卡拖到紀錄上＝改那筆的帳戶（走 updateTransaction），復原完全還原
 import { describe, expect, it } from 'vitest';
 import { allBalances, spendableTotal, totals, periodKey, pendingBudgetByAccount } from '../src/data/calc';
 import { addTransaction, updateTransaction } from '../src/data/ops';

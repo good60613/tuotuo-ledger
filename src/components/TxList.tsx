@@ -1,4 +1,4 @@
-﻿// 時間軸明細列表：明細頁、待辦頁共用。
+// 時間軸明細列表：明細頁、待辦頁共用。
 import { catBg } from './CatIcon';
 import { Icon } from './Icon';
 import { colorOf } from '../categoryStyle';

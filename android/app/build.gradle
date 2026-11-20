@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
-// �??簽�?：�??��?密碼?�在專�?外�??��?帳APP-?�鑰?��??�夾，�???git
-def keystorePropsFile = rootProject.file('../../記帳APP-?�鑰/keystore.properties')
+// 正式簽章：金鑰與密碼放在專案外的「記帳APP-金鑰」資料夾，不進 git
+def keystorePropsFile = rootProject.file('../../記帳APP-金鑰/keystore.properties')
 def keystoreProps = new Properties()
 if (keystorePropsFile.exists()) keystorePropsFile.withInputStream { keystoreProps.load(it) }
 

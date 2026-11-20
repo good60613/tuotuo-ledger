@@ -1,4 +1,4 @@
-﻿// 全域狀態：資料（會存檔）＋畫面狀態（不存檔）。
+// 全域狀態：資料（會存檔）＋畫面狀態（不存檔）。
 import { useEffect, useState } from 'preact/hooks';
 import type { TypeFilter } from './detailFilter';
 import type { AppData } from './data/types';

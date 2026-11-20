@@ -1,4 +1,4 @@
-﻿// 記帳頁（支出／收入）與轉帳輸入，共用同一個畫面。內含「拖拖計算機」：把標記膠囊拖到數字上拆帳。
+// 記帳頁（支出／收入）與轉帳輸入，共用同一個畫面。內含「拖拖計算機」：把標記膠囊拖到數字上拆帳。
 import { CatIcon } from '../components/CatIcon';
 import { Icon } from '../components/Icon';
 import { CAPSULE_ICONS, UI_ICONS } from '../icons';

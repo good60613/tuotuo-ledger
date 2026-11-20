@@ -1,4 +1,4 @@
-﻿// 設定（右二）：只放讓其他功能能運作的項目。
+// 設定（右二）：只放讓其他功能能運作的項目。
 import { advanceOwedOn, recurringOn, glassOn, detailHome, prevBalanceOn, notifBarOn, notifHideLockOn, entryAccountMode } from '../features';
 import { requestNotifPermission } from '../widget';
 import { RecurringPanel } from './RecurringSettings';
