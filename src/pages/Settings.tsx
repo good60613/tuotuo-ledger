@@ -7,6 +7,7 @@ import { FontPicker, confirmAndDownload } from '../components/FontPicker';
 import { checkImport, importSummary, normalizeImport, AI_PROMPT } from '../data/aiImport';
 import { copyText, shareToAi } from '../aiShare';
 import { scrollInPage } from '../scrollInPage';
+import { HelpPage } from '../components/HelpPage';
 import { requestNotifPermission, isNative, setAppIcon } from '../widget';
 import { RecurringPanel } from './RecurringSettings';
 import { useEffect, useRef, useState } from 'preact/hooks';
@@ -59,7 +60,7 @@ function Row({ label, note, children }: { label: string; note?: string; children
 }
 import { useBackLayer } from '../backNav';
 import { PAGES } from '../store';
-import { useAppState, getState, updateData, showToast, ask, confirmDanger, setState, replaceData } from '../store';
+import { useAppState, getState, updateData, showToast, ask, confirmDanger, setState, replaceData, goPage, pageIndex } from '../store';
 import {
   byOrder, reorder, uid, upsertAccount, removeAccount, countAccountRecords,
   removeCategory, countCategoryRecords, OpError, editAccount, moveTargets,
@@ -133,6 +134,16 @@ export function SettingsPage() {
   const [native, setNative] = useState(false);
   useEffect(() => {
     isNative().then(setNative);
+  }, []);
+  // 3.0 版本號：APK 版讀 Android 的 versionName；網頁版（開發用）顯示「網頁版」
+  const [appVersion, setAppVersion] = useState('');
+  useEffect(() => {
+    import('@capacitor/core').then(async ({ Capacitor }) => {
+      if (!Capacitor.isNativePlatform()) return setAppVersion('網頁版');
+      const { App } = await import('@capacitor/app');
+      const info = await App.getInfo();
+      setAppVersion(`v${info.version}`);
+    }).catch(() => setAppVersion(''));
   }, []);
 
   // 3.0：別頁要求打開某個畫面（教學、首頁範例提示）
@@ -548,6 +559,18 @@ export function SettingsPage() {
           </section>
 
           <section class="panel">
+            <h3>說明</h3>
+            <button class="setting-row" onClick={() => setView('help')}>
+              <span>使用說明</span>
+              <span class="muted">13 篇 ›</span>
+            </button>
+            <button class="setting-row" onClick={() => { setState({ tutorial: true }); goPage(pageIndex('首頁')); }}>
+              <span>重看新手教學</span>
+              <span class="muted">›</span>
+            </button>
+          </section>
+
+          <section class="panel">
             <h3>管理</h3>
             <button class="setting-row" onClick={() => setView('accounts')}><span>帳戶管理</span><span class="muted">{banks.length} 個 ›</span></button>
             <button class="setting-row" onClick={() => setView('small')}><span>小帳戶管理</span><span class="muted">錢包、投資、儲蓄 ›</span></button>
@@ -743,6 +766,11 @@ export function SettingsPage() {
         </div>
         <p class="muted small">由左到右越來越危險。清空紀錄只刪記帳紀錄，帳戶與設定保留。</p>
       </section>}
+
+      {view === 'help' && <HelpPage />}
+
+      {/* 3.0：最下面顯示版本號（APK 讀 App 本身的版本，改版不用另外改這裡） */}
+      {view === 'menu' && <p class="app-version muted small">拖拖記帳 {appVersion}</p>}
 
       {sheet?.k === 'account' && <AccountForm kind={sheet.kind} existing={sheet.existing} onClose={() => setSheet(null)} />}
       {sheet?.k === 'category' && <CategoryForm type={sheet.type} existing={sheet.existing} onClose={() => setSheet(null)} />}

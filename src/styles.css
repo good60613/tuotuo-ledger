@@ -932,8 +932,8 @@ html:not(.no-glass) .collapse-bar.glass { background: color-mix(in srgb, var(--c
 .tour { position: absolute; inset: 0; z-index: 140; }
 .tour.pass { pointer-events: none; }
 .tour.pass .tour-bubble { pointer-events: auto; }
-.tour-dim { position: absolute; inset: 0; background: rgba(0, 0, 0, .58); }
-.tour-hole { position: absolute; border-radius: 18px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, .58); outline: 2px solid var(--accent); pointer-events: none; transition: left .25s, top .25s, width .25s, height .25s; }
+.tour-dim { position: absolute; inset: 0; background: rgba(0, 0, 0, .66); }
+.tour-hole { position: absolute; border-radius: 18px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, .66); outline: 2px solid var(--accent); pointer-events: none; transition: left .25s, top .25s, width .25s, height .25s; }
 .tour-bubble { position: absolute; left: 16px; right: 16px; background: var(--card); color: var(--text); border-radius: 16px; padding: 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, .35); animation: ov-in .2s ease-out; }
 .tour-bubble p { margin: 8px 0 12px; font-size: 14px; line-height: 1.55; }
 .tour-head { display: flex; align-items: center; gap: 8px; font-size: 16px; }
@@ -945,3 +945,43 @@ html:not(.no-glass) .collapse-bar.glass { background: color-mix(in srgb, var(--c
 .tour-dots i { width: 6px; height: 6px; border-radius: 3px; background: var(--line); }
 .tour-dots i.on { width: 14px; background: var(--accent); }
 .tour-last { display: flex; flex-direction: column; gap: 8px; }
+
+/* 3.0 設定最下面的版本號 */
+.app-version { text-align: center; margin: 16px 0 8px; }
+
+/* 3.0 說明區 */
+.help-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.help-item { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; text-align: left; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--text); }
+.help-item b { font-size: 15px; }
+.help-item span { font-size: 13px; color: var(--muted); }
+.help-back { display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; color: var(--accent); font-size: 14px; padding: 4px 0; margin-bottom: 6px; }
+.help-article h3 { margin: 0 0 8px; }
+.help-article h4 { margin: 16px 0 6px; font-size: 15px; }
+.help-article p { margin: 6px 0; font-size: 14px; line-height: 1.6; }
+.help-article ul, .help-article ol { margin: 6px 0; padding-left: 20px; font-size: 14px; line-height: 1.6; }
+.help-article li { margin: 3px 0; }
+.help-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
+.help-table th, .help-table td { border: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; line-height: 1.5; }
+.help-table th { background: var(--card); color: var(--muted); font-weight: 600; }
+.help-fig { display: block; width: 100%; max-width: 320px; height: auto; margin: 10px auto; font-family: inherit; }
+.help-fig .hf-move-down { animation: hf-down 4s ease-in-out infinite; }
+.help-fig .hf-move-right { animation: hf-right 4s ease-in-out infinite; }
+.help-fig .hf-zone { animation: hf-zone 4s ease-in-out infinite; }
+@keyframes hf-down {
+  0%, 12% { transform: translate(0, 0); opacity: 1; }
+  50%, 78% { transform: translate(-52px, 88px); opacity: 1; }
+  90% { transform: translate(-52px, 88px); opacity: 0; }
+  91% { transform: translate(0, 0); opacity: 0; }
+  100% { transform: translate(0, 0); opacity: 1; }
+}
+@keyframes hf-right {
+  0%, 12% { transform: translate(0, 0); opacity: 1; }
+  50%, 78% { transform: translate(85px, 0); opacity: 1; }
+  90% { transform: translate(85px, 0); opacity: 0; }
+  91% { transform: translate(0, 0); opacity: 0; }
+  100% { transform: translate(0, 0); opacity: 1; }
+}
+@keyframes hf-zone { 0%, 40% { stroke-width: 2; } 55%, 78% { stroke-width: 4; } 100% { stroke-width: 2; } }
+@media (prefers-reduced-motion: reduce) {
+  .help-fig .hf-move-down, .help-fig .hf-move-right, .help-fig .hf-zone { animation: none; }
+}
