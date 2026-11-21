@@ -131,22 +131,6 @@ export function StatsPage() {
         </span>
       </div>
 
-      {mode === 'month' && (
-        <section class="panel">
-          <div class="cal-head">
-            <h3>日曆</h3>
-            <div class="streak">
-              <img class="streak-coin" src={STREAK_COIN_SRC[cheer.coin]} alt="" />
-              <span class="streak-text">
-                {streak.days > 0 && <span class="streak-n">連續記帳 <b>{streak.days}</b> 天</span>}
-                <span class="streak-cheer">{cheer.text}</span>
-              </span>
-            </div>
-          </div>
-          <MonthCalendar days={periodDays(month, sd)} today={dayKey(now)} series={series} logged={logged} onPick={(day) => jump({ day })} />
-        </section>
-      )}
-
       <div class="month-sum">
         <div>
           <div class="amt-label">{sumLabel}支出</div>
@@ -161,6 +145,22 @@ export function StatsPage() {
         <div class="stats-budget">
           {sumLabel}預算：已付 <b>{money(bud.paid)}</b>／還剩 <b>{money(bud.remaining)}</b>
         </div>
+      )}
+
+      {mode === 'month' && (
+        <section class="panel">
+          <div class="cal-head">
+            <h3>日曆</h3>
+            <div class="streak">
+              <span class="streak-text">
+                {streak.days > 0 && <span class="streak-n">連續記帳 <b>{streak.days}</b> 天</span>}
+                <span class="streak-cheer">{cheer.text}</span>
+              </span>
+              <img class="streak-coin" src={STREAK_COIN_SRC[cheer.coin]} alt="" />
+            </div>
+          </div>
+          <MonthCalendar days={periodDays(month, sd)} today={dayKey(now)} series={series} logged={logged} onPick={(day) => jump({ day })} />
+        </section>
       )}
 
       <CategorySection title="支出分類" data={d} list={exp} total={m.expense} onPick={(id) => jump({ categoryId: id })} />
