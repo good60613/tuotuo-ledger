@@ -718,7 +718,7 @@ html.glass-blur .glass-nav {
 .home-sum .amt-divider { margin: 4px 0; }
 /* 2.6 平均／日：夾在剩餘可用與右側小字欄中間；空間不夠時先縮自己的字，不擠掉兩邊 */
 .sum-avg { flex: 0 1 auto; min-width: 0; display: flex; flex-direction: column; align-items: center; }
-.sum-avg-val { font-size: calc(var(--sum-avg) * var(--amt-k, 1)); font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; line-height: 1.2; white-space: nowrap; }
+.sum-avg-val { font-size: calc(var(--sum-avg) * var(--amt-k, 1)); font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; line-height: 1.2; white-space: nowrap; }
 .sum-avg-val.neg { color: var(--expense); }
 .sum-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
 .sum-col { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
