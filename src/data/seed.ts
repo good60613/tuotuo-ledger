@@ -116,7 +116,7 @@ export function sampleData(now: Date = new Date()): AppData {
     tx({ type: 'expense', amount: 3000, accountId: 'a-salary', categoryId: 'c-e2', note: '週末聚餐', budget: true, budgetStatus: 'pending', occurredAt: daysAgo(0, 0, 5) }),
     tx({ type: 'expense', amount: 65, accountId: 'a-cash', categoryId: 'c-e0', note: '麥噹噹', occurredAt: hoursAgo(3) }),
     tx({ type: 'expense', amount: 55, accountId: 'a-cash', categoryId: 'c-e3', note: '711', occurredAt: hoursAgo(1) }),
-    tx({ type: 'valuation', amount: 41000, accountId: 'a-0050', note: '', occurredAt: hoursAgo(0.5) }),
+    tx({ type: 'valuation', amount: 41000, accountId: 'a-0050', note: '', occurredAt: daysAgo(3, 15) }),
   ];
   d.recurring = [
     {

@@ -357,3 +357,6 @@ export const FONT = { dir: 'fonts' } as const;
 
 /** 3.0 範例資料（新手教學用，見 src/data/seed.ts）：結算日、定期扣款日（結算日前一天，任何一天安裝都落在這一期） */
 export const SAMPLE = { settleDay: 5, recurringDay: 4 } as const;
+
+/** 3.0 新手教學：亮出來那一塊比元素本身大多少（四邊各加） */
+export const TUTORIAL = { holePadPx: 6, trackMs: 60 } as const;

@@ -128,6 +128,8 @@ export interface State {
   blocked: { reason: BlockReason; message: string } | null;
   /** 3.0：從別頁要設定頁打開某個畫面（新增第一個帳戶、從其他軟體匯入、說明）；設定頁處理完清成 null */
   settingsIntent: SettingsIntent | null;
+  /** 3.0 新手教學是否開著（第一次安裝自動開；說明區可重看） */
+  tutorial: boolean;
 }
 
 export type SettingsIntent = 'add-account' | 'import-other' | 'help';
@@ -151,6 +153,7 @@ let state: State = {
   todoTab: 'reimb',
   blocked: null,
   settingsIntent: null,
+  tutorial: false,
 };
 
 /** 保護狀態時手機上的原始資料（還原、匯入前要先把它留一份） */

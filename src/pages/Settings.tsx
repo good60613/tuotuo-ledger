@@ -6,6 +6,7 @@ import { fontById, DEFAULT_APP_FONT } from '../fonts';
 import { FontPicker, confirmAndDownload } from '../components/FontPicker';
 import { checkImport, importSummary, normalizeImport, AI_PROMPT } from '../data/aiImport';
 import { copyText, shareToAi } from '../aiShare';
+import { scrollInPage } from '../scrollInPage';
 import { requestNotifPermission, isNative, setAppIcon } from '../widget';
 import { RecurringPanel } from './RecurringSettings';
 import { useEffect, useRef, useState } from 'preact/hooks';
@@ -144,6 +145,7 @@ export function SettingsPage() {
       setSheet({ k: 'account', kind: 'bank' });
     } else if (it === 'import-other') {
       setView('backup');
+      setTimeout(() => { const el = document.getElementById('import-other'); if (el) scrollInPage(el, 'start', true); }, 350);
     } else if (it === 'help') {
       setView('help');
     }
@@ -515,7 +517,7 @@ export function SettingsPage() {
               <span>定期扣款</span>
               <span class="muted">{recurringOn(d.settings) ? `${d.recurring.length} 項` : '關閉'} ›</span>
             </button>
-            <button class="setting-row" onClick={() => setSheet({ k: 'settle' })}>
+            <button class="setting-row" data-tour="settle" onClick={() => setSheet({ k: 'settle' })}>
               <span>結算日</span>
               <span class="muted">每月 {d.settings.settleDay} 號 ›</span>
             </button>

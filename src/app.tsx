@@ -13,6 +13,8 @@ import { SettingsPage } from './pages/Settings';
 import { applyTheme, themeOf } from './theme';
 import { glassOn } from './features';
 import { applyAppFont } from './fonts';
+import { Tutorial } from './components/Tutorial';
+import { setState } from './store';
 import { UI_ICONS } from './icons';
 import { Icon } from './components/Icon';
 import { BlockedScreen } from './pages/BlockedScreen';
@@ -64,6 +66,11 @@ export function App() {
   useEffect(() => {
     if (s.ready) applyTheme(themeMode);
   }, [s.ready, themeMode]);
+
+  // 3.0 第一次安裝：讀完資料後打開新手教學
+  useEffect(() => {
+    if (s.ready && !s.blocked && s.data.settings.tutorial === 'pending') setState({ tutorial: true });
+  }, [s.ready]);
 
   // 2.6 App 字體：讀到設定或換字體時套用（沒下載或載入失敗＝維持手機字體）
   const appFont = s.data?.settings.appFont;
@@ -132,6 +139,7 @@ export function App() {
       </nav>
 
       <OverlayHost />
+      {s.tutorial && <Tutorial />}
       <DialogHost />
 
       <ToastHost toast={s.toast} lift={toastLift} />
