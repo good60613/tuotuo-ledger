@@ -1,3 +1,8 @@
 node_modules/
 public/sfx/
 out/
+
+# 3.0 宣傳片剪輯用的素材（錄影含個人畫面、檔案大，不進 git）
+public/rec.mp4
+public/intro.mp4
+public/outro.mp4
