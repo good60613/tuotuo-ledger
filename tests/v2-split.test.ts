@@ -40,7 +40,7 @@ describe('拆帳', () => {
   it('工單例：1100−600，600 掛我先付 → 一般 500＋我先付 600，帳戶共扣 1,100', () => {
     const p = ok(splitPlan('1100−600', { 1: 'advance' }));
     expect(p).toEqual({ ok: true, general: 500, parts: [{ term: 1, mark: 'advance', amount: 600 }] });
-    expect(previewText(p, '吃飯', money)).toBe('會拆成：吃飯 500＋我先付 600');
+    expect(previewText(p, '吃飯', money)).toBe('會拆成：吃飯 500＋先付 600');
     const r = addTransactions(base(), splitInputs(p, B('1100−600')));
     expect(allBalances(r.data).get('A')).toBe(8900);
     expect(totals(r.data, { period: periodKey(NOW, 1) }).expense).toBe(500);

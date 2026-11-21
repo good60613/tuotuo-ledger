@@ -48,7 +48,7 @@ describe('備份檔格式', () => {
     expect(r.data.version).toBe(DATA_VERSION);
     expect(r.data.categories.every((c) => c.color === DEFAULT_COLOR)).toBe(true);
     expect(r.data.categories[0].icon).toBe(MISSING_ICON);
-    expect(r.data.categories[1].icon).toBe('🍱'); // 有圖示的保留
+    expect(r.data.categories[1].icon).toBe('utensils'); // 有圖示的保留（2.1 起舊 emoji 轉成圖示名稱）
     const full = parseBackup(old);
     expect(full.transactions.length).toBeGreaterThan(0);
     expect(full.categories).toEqual(r.data.categories);

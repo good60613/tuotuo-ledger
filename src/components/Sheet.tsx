@@ -1,3 +1,4 @@
+import { Icon } from './Icon';
 import type { ComponentChildren } from 'preact';
 import { createPortal } from 'preact/compat';
 import { useBackLayer } from '../backNav';
@@ -15,7 +16,7 @@ export function Sheet({ title, onClose, children }: { title: string; onClose: ()
       <div class="sheet" role="dialog" aria-label={title}>
         <div class="sheet-head">
           <span>{title}</span>
-          <button class="icon-btn" onClick={onClose} aria-label="關閉">✕</button>
+          <button class="icon-btn" onClick={onClose} aria-label="關閉"><Icon name="x" /></button>
         </div>
         <div class="sheet-body">{children}</div>
       </div>

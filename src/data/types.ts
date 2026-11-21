@@ -29,6 +29,10 @@ export interface Account {
   subtype?: string;
   /** 儲蓄目標的目標金額（只有 kind='saving' 使用）。儲蓄目標 order 越大越下面（越必要） */
   target?: number;
+  /** 帳戶圖示名稱（資料第 7 版起，見 src/icons.ts）；缺值＝依種類的預設圖示 */
+  icon?: string;
+  /** 顯示方式：'icon' 圖示（預設）／'badge' 縮寫徽章（名稱第一個字，用帳戶顏色） */
+  iconStyle?: 'icon' | 'badge';
   /**
    * 預留給小帳戶之後的「小記帳」與特殊功能（下一批再設計）。
    * 試玩版不使用，但匯出/匯入會原樣保留。
@@ -112,7 +116,7 @@ export interface Category {
   id: string;
   type: CategoryType;
   name: string;
-  /** 圖示：只能從 categoryStyle.ts 的圖示選單選 */
+  /** 圖示名稱（資料第 7 版起，見 src/icons.ts）；升版時對不到的舊 emoji 原樣保留 */
   icon: string;
   /** 顏色標籤（只是視覺標記，不影響統計）；舊資料沒有時為「其他」灰色 */
   color: CategoryColorKey;
@@ -151,6 +155,30 @@ export interface Settings {
   advanceOwedEnabled?: boolean;
   /** 定期扣款開關（補強批），缺值＝開啟。判斷一律用 features.ts 的 recurringOn() */
   recurringEnabled?: boolean;
+  /** 毛玻璃效果（2.1），缺值＝開啟。判斷一律用 features.ts 的 glassOn() */
+  glass?: boolean;
+  /**
+   * 首頁使用（2.2）：'accounts'＝帳戶頁（預設，原本的首頁）、'detail'＝明細頁。
+   * 缺值或其他值＝帳戶頁。判斷一律用 features.ts 的 detailHome()。舊資料、舊備份不用升版
+   */
+  homePage?: 'accounts' | 'detail';
+  /** 明細顯示記帳前餘額（2.3），缺值＝開啟。判斷一律用 features.ts 的 prevBalanceOn()。舊資料、舊備份不用升版 */
+  showPrevBalance?: boolean;
+  /** 記帳預設帳戶（2.5）：'last'＝上一筆用的帳戶、'first'＝第一個帳戶；缺值＝'last'。判斷一律用 features.ts 的 entryAccountMode()。舊資料、舊備份不用升版 */
+  entryAccount?: 'last' | 'first';
+  /** 拖拖硬幣（2.5）：首頁小語旁、桌面小工具的圖示；缺值或 'auto'＝跟著心情換。值見 src/coins.ts。舊資料、舊備份不用升版 */
+  coinHome?: string;
+  coinWidget?: string;
+  /** 手機桌面 App 圖示（2.5）；缺值＝'original'。只是記住選了哪個，真正切換在 Android 端 */
+  appIcon?: string;
+  /** 通知欄快捷列（2.3），缺值＝關閉。判斷一律用 features.ts 的 notifBarOn()。舊資料、舊備份不用升版 */
+  notifBar?: boolean;
+  /** 鎖定畫面隱藏金額（2.3），缺值＝開啟。判斷一律用 features.ts 的 notifHideLockOn() */
+  notifHideOnLock?: boolean;
+  /** 首頁「平均／日」（2.6），缺值＝關閉。判斷一律用 features.ts 的 dailyAvgOn()。舊資料、舊備份不用升版 */
+  dailyAvg?: boolean;
+  /** App 字體（2.6）：缺值或 'system'＝跟隨系統；其他值見 src/fonts.ts。只存選了哪套，字體檔另外下載存在手機裡 */
+  appFont?: string;
 }
 
 export type ThemeMode = 'light' | 'dark' | 'system';
@@ -180,7 +208,7 @@ export interface Recurring {
 }
 
 export interface AppData {
-  version: 6;
+  version: 7;
   accounts: Account[];
   transactions: Transaction[];
   categories: Category[];
@@ -190,7 +218,7 @@ export interface AppData {
   settings: Settings;
 }
 
-export const DATA_VERSION = 6;
+export const DATA_VERSION = 7;
 
 /** 不需要分類的紀錄來源（投資配息、費用、儲蓄利息） */
 export const TX_SOURCE_NO_CATEGORY = ['invest-dividend', 'invest-fee', 'saving-interest'];

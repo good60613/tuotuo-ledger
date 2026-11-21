@@ -1,7 +1,59 @@
 // 設定（右二）：只放讓其他功能能運作的項目。
-import { advanceOwedOn, recurringOn } from '../features';
+import { advanceOwedOn, recurringOn, glassOn, detailHome, prevBalanceOn, notifBarOn, notifHideLockOn, entryAccountMode, dailyAvgOn } from '../features';
+import type { ComponentChildren } from 'preact';
+import type { Settings } from '../data/types';
+import { fontById, DEFAULT_APP_FONT } from '../fonts';
+import { FontPicker, confirmAndDownload } from '../components/FontPicker';
+import { requestNotifPermission, isNative, setAppIcon } from '../widget';
 import { RecurringPanel } from './RecurringSettings';
-import { useRef, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
+import { COINS, coinLabel, type CoinId } from '../coins';
+
+/** 2.5 拖拖硬幣：一排可點的硬幣（auto＝多一個「自動」＝跟著心情換）。2.6 起放在第二層彈窗裡 */
+function CoinStrip({ value, onPick, auto, note }: { value: string; onPick: (v: string) => void; auto?: boolean; note?: string }) {
+  return (
+    <div class="coin-pick">
+      <div class="coin-strip wrap">
+        {auto && (
+          <button class={`coin-opt auto${value === 'auto' ? ' on' : ''}`} onClick={() => onPick('auto')}>
+            自動
+          </button>
+        )}
+        {COINS.map((c) => (
+          <button key={c.id} class={`coin-opt${value === c.id ? ' on' : ''}`} onClick={() => onPick(c.id)} aria-label={c.label}>
+            <img src={c.src} alt="" />
+          </button>
+        ))}
+      </div>
+      {note && <p class="muted small">{note}</p>}
+    </div>
+  );
+}
+
+const coinText = (v: string) => (v === 'auto' ? '跟著心情換' : coinLabel(v as CoinId));
+
+/** 2.6 開／關按鈕框（樣式同「外觀：亮色／暗色／跟隨系統」） */
+function OnOff({ on, onChange }: { on: boolean; onChange: (on: boolean) => void }) {
+  return (
+    <div class="mini-seg">
+      <button class={on ? 'on' : ''} onClick={() => !on && onChange(true)}>開</button>
+      <button class={on ? '' : 'on'} onClick={() => on && onChange(false)}>關</button>
+    </div>
+  );
+}
+
+/** 2.6 一列：名稱（可加一行小字說明）＋右邊的按鈕框 */
+function Row({ label, note, children }: { label: string; note?: string; children: ComponentChildren }) {
+  return (
+    <div class="setting-row">
+      <span class="row-label">
+        {label}
+        {note && <span class="muted small row-note">{note}</span>}
+      </span>
+      {children}
+    </div>
+  );
+}
 import { useBackLayer } from '../backNav';
 import { PAGES } from '../store';
 import { useAppState, getState, updateData, showToast, ask, confirmDanger, setState, replaceData } from '../store';
@@ -11,7 +63,9 @@ import {
 } from '../data/ops';
 import { SMALL_KINDS, KIND_LABEL, type Account, type AccountKind, type Category, type CategoryType } from '../data/types';
 import { allBalances } from '../data/calc';
-import { accountName, accountsOfKind, bankAccounts, categoriesOf, KIND_ICON } from '../selectors';
+import { accountName, accountsOfKind, bankAccounts, categoriesOf } from '../selectors';
+import { ACCOUNT_KIND_ICON } from '../icons';
+import LUCIDE_LICENSE from '../../LICENSE-lucide.txt?raw';
 import { applySettingsImport, checkSettingsImport, exportJson, readBackup, saveBackupFile, type SettingsImportMapping } from '../data/backup';
 import { sampleData, blankData } from '../data/seed';
 import { clearRecords } from '../data/reset';
@@ -29,7 +83,11 @@ const dragCls = (id: string, drag: DragState | null) =>
   !drag ? '' : drag.id === id ? ' lifted' : drag.over === id ? ' over' : '';
 import { money } from '../format';
 import { pinnedCount } from '../data/notes';
-import { SETTLE } from '../config';
+import { SETTLE, ICON } from '../config';
+import { AccountIcon } from '../components/AccountIcon';
+import { Icon } from '../components/Icon';
+import { ACCOUNT_ICONS, ICON_LABELS } from '../icons';
+import { accountIconOf, accountIconStyleOf } from '../categoryStyle';
 import { carrierError, isValidCarrier, normalizeCarrier } from '../data/carrier';
 import { Barcode } from '../components/Barcode';
 import { applyTheme, themeOf, THEME_LABEL, type ThemeMode } from '../theme';
@@ -45,12 +103,15 @@ type SheetState =
   | { k: 'account'; kind: AccountKind; existing?: Account }
   | { k: 'category'; type: CategoryType; existing?: Category }
   | { k: 'tags' }
+  | { k: 'license' }
   | { k: 'defaultReimb' }
   | { k: 'settle' }
   | { k: 'carrier' }
   | { k: 'moveAccount'; from: Account }
   | { k: 'moveCategory'; from: Category }
-  | { k: 'snapshots' };
+  | { k: 'snapshots' }
+  | { k: 'font' }
+  | { k: 'coin'; which: 'coinHome' | 'coinWidget' | 'appIcon' };
 
 export function SettingsPage() {
   const s = useAppState();
@@ -62,6 +123,38 @@ export function SettingsPage() {
   useBackLayer(s.page === PAGES.indexOf('設定') && view !== 'menu', () => setView('menu'));
   const [catType, setCatType] = useState<CategoryType>('expense');
   const fileRef = useRef<HTMLInputElement>(null);
+  // App 圖示只有 APK 版能換
+  const [native, setNative] = useState(false);
+  useEffect(() => {
+    isNative().then(setNative);
+  }, []);
+
+  /** 改一個或幾個設定值 */
+  const setSetting = (patch: Partial<Settings>) => updateData((x) => ({ ...x, settings: { ...x.settings, ...patch } }));
+
+  // 2.6 字體：appFont 有值且不是 system＝用 App 字體
+  const fontOn = !!fontById(d.settings.appFont);
+  const useAppFont = async () => {
+    const f = fontById(DEFAULT_APP_FONT)!;
+    if (await confirmAndDownload(f)) setSetting({ appFont: f.id });
+  };
+
+  /** 圖示第二層：選好就關掉回第一層 */
+  const pickCoin = async (which: 'coinHome' | 'coinWidget' | 'appIcon', v: string) => {
+    if (which === 'appIcon') {
+      if (v !== (d.settings.appIcon ?? 'original')) {
+        if (!(await setAppIcon(v))) {
+          showToast('換圖示失敗');
+          return;
+        }
+        setSetting({ appIcon: v });
+        showToast(`App 圖示換成「${coinLabel(v as CoinId)}」`);
+      }
+    } else {
+      setSetting({ [which]: v });
+    }
+    setSheet(null);
+  };
 
   const sortAccounts = (ids: string[]) => updateData((x) => ({ ...x, accounts: reorder(x.accounts, ids) }));
   const sortCategories = (ids: string[]) => updateData((x) => ({ ...x, categories: reorder(x.categories, ids) }));
@@ -135,7 +228,7 @@ export function SettingsPage() {
       .then((msg) => msg && showToast(msg))
       .catch(() => showToast('匯出失敗'));
   };
-  const resetFilters = { detail: { accountId: null, categoryId: null, day: null, period: null }, statsAccountId: null, statsPeriod: null };
+  const resetFilters = { detail: { accountId: null, categoryId: null, day: null, period: null }, statsAccountId: null, statsPeriod: null, statsMode: 'month' as const, statsYear: null, statsCustom: null };
   const doImport = async (file: File) => {
     try {
       const parsed = readBackup(await file.text());
@@ -272,7 +365,7 @@ export function SettingsPage() {
         <span>{a.name}</span>
         <span class="muted small">目前 {money(bal.get(a.id) ?? 0)}</span>
       </button>
-      {canDelete && <button class="icon-btn danger" onClick={() => deleteAccount(a)} aria-label="刪除">🗑</button>}
+      {canDelete && <button class="icon-btn danger" onClick={() => deleteAccount(a)} aria-label="刪除"><Icon name="trash-2" /></button>}
     </div>
   );
   const accList = (list: Account[], canDelete: (a: Account) => boolean) => (
@@ -286,7 +379,9 @@ export function SettingsPage() {
       {view === 'menu' ? (
         <>
           <h1 class="page-title">設定</h1>
+          {/* 2.6 依用途分五類；選項短的用按鈕框，長的進下一層或彈窗 */}
           <section class="panel">
+            <h3>外觀</h3>
             <div class="setting-row">
               <span>外觀</span>
               <div class="mini-seg">
@@ -304,31 +399,83 @@ export function SettingsPage() {
                 ))}
               </div>
             </div>
-            <button class="setting-row" onClick={() => setView('accounts')}><span>帳戶管理</span><span class="muted">{banks.length} 個 ›</span></button>
-            <button class="setting-row" onClick={() => setView('small')}><span>小帳戶管理</span><span class="muted">電子錢包、投資標的、儲蓄目標 ›</span></button>
-            <button class="setting-row" onClick={() => setView('categories')}>
-              <span>分類管理</span>
-              <span class="muted">{d.settings.autoSortCategories ? '自動排序' : '手動排序'} ›</span>
+            <Row label="毛玻璃" note="關閉讓手機更順，開啟畫面更有質感">
+              <OnOff on={glassOn(d.settings)} onChange={(on) => setSetting({ glass: on })} />
+            </Row>
+            <div class="setting-row">
+              <span>字體</span>
+              <div class="mini-seg">
+                <button class={!fontOn ? 'on' : ''} onClick={() => fontOn && setSetting({ appFont: 'system' })}>跟隨系統</button>
+                <button class={fontOn ? 'on' : ''} onClick={() => !fontOn && useAppFont()}>App 字體</button>
+              </div>
+            </div>
+            {fontOn && (
+              <button class="setting-row" onClick={() => setSheet({ k: 'font' })}>
+                <span>選擇字體</span>
+                <span class="muted">{fontById(d.settings.appFont)?.label} ›</span>
+              </button>
+            )}
+          </section>
+
+          <section class="panel">
+            <h3>圖示</h3>
+            <button class="setting-row" onClick={() => setSheet({ k: 'coin', which: 'coinHome' })}>
+              <span>首頁小語圖示</span>
+              <span class="muted">{coinText(d.settings.coinHome ?? 'auto')} ›</span>
             </button>
-            <button class="setting-row" onClick={() => setSheet({ k: 'tags' })}>
-              <span>備註標籤</span>
-              <span class="muted">自動篩選，已釘選 {pinnedCount(d)} 個 ›</span>
+            <button class="setting-row" onClick={() => setSheet({ k: 'coin', which: 'coinWidget' })}>
+              <span>桌面小工具圖示</span>
+              <span class="muted">{coinText(d.settings.coinWidget ?? 'auto')} ›</span>
             </button>
-            <button class="setting-row" onClick={() => setSheet({ k: 'defaultReimb' })}>
-              <span>預設報帳帳戶</span>
-              <span class="muted">{d.settings.defaultReimburseAccountId ? accountName(d, d.settings.defaultReimburseAccountId) : '不設定'} ›</span>
-            </button>
-            <button
-              class="setting-row"
-              onClick={() => {
-                const on = !advanceOwedOn(d.settings);
-                updateData((x) => ({ ...x, settings: { ...x.settings, advanceOwedEnabled: on } }));
-                showToast(on ? '已開啟我先付／朋友付' : '已關閉我先付／朋友付（已記的照常顯示與計算）');
-              }}
-            >
-              <span>我先付／朋友付</span>
-              <span class="muted">{advanceOwedOn(d.settings) ? '開啟' : '關閉'} ›</span>
-            </button>
+            {native && (
+              <button class="setting-row" onClick={() => setSheet({ k: 'coin', which: 'appIcon' })}>
+                <span>手機桌面 App 圖示</span>
+                <span class="muted">{coinText(d.settings.appIcon ?? 'original')} ›</span>
+              </button>
+            )}
+          </section>
+
+          <section class="panel">
+            <h3>記帳</h3>
+            <div class="setting-row">
+              <span>首頁使用</span>
+              <div class="mini-seg">
+                {([['accounts', '帳戶頁'], ['detail', '明細頁']] as const).map(([k, label]) => (
+                  <button
+                    key={k}
+                    class={(detailHome(d.settings) ? 'detail' : 'accounts') === k ? 'on' : ''}
+                    onClick={() => setSetting({ homePage: k })}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <Row label="首頁平均／日" note="剩餘可用 ÷ 離結算日天數">
+              <OnOff on={dailyAvgOn(d.settings)} onChange={(on) => setSetting({ dailyAvg: on })} />
+            </Row>
+            <div class="setting-row">
+              <span>記帳預設帳戶</span>
+              <div class="mini-seg">
+                {([['last', '上一筆用的'], ['first', '第一個']] as const).map(([k, label]) => (
+                  <button key={k} class={entryAccountMode(d.settings) === k ? 'on' : ''} onClick={() => setSetting({ entryAccount: k })}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <Row label="明細顯示記帳前餘額">
+              <OnOff on={prevBalanceOn(d.settings)} onChange={(on) => setSetting({ showPrevBalance: on })} />
+            </Row>
+            <Row label="先付／先欠">
+              <OnOff
+                on={advanceOwedOn(d.settings)}
+                onChange={(on) => {
+                  setSetting({ advanceOwedEnabled: on });
+                  showToast(on ? '已開啟先付／先欠' : '已關閉先付／先欠（已記的照常顯示與計算）');
+                }}
+              />
+            </Row>
             <button class="setting-row" onClick={() => setView('recurring')}>
               <span>定期扣款</span>
               <span class="muted">{recurringOn(d.settings) ? `${d.recurring.length} 項` : '關閉'} ›</span>
@@ -336,6 +483,44 @@ export function SettingsPage() {
             <button class="setting-row" onClick={() => setSheet({ k: 'settle' })}>
               <span>結算日</span>
               <span class="muted">每月 {d.settings.settleDay} 號 ›</span>
+            </button>
+            <button class="setting-row" onClick={() => setSheet({ k: 'defaultReimb' })}>
+              <span>預設報帳帳戶</span>
+              <span class="muted">{d.settings.defaultReimburseAccountId ? accountName(d, d.settings.defaultReimburseAccountId) : '不設定'} ›</span>
+            </button>
+          </section>
+
+          <section class="panel">
+            <h3>通知與隱私</h3>
+            <Row label="通知欄快捷列">
+              <OnOff
+                on={notifBarOn(d.settings)}
+                onChange={async (on) => {
+                  // 打開時 Android 13 以上要先向使用者要通知權限；被拒絕就維持關閉並說明原因
+                  if (on && !(await requestNotifPermission())) {
+                    showToast('沒有通知權限，快捷列無法顯示。要用的話，請到手機設定 → 應用程式 → 拖拖記帳 → 通知，允許通知');
+                    return;
+                  }
+                  setSetting({ notifBar: on });
+                }}
+              />
+            </Row>
+            <Row label="鎖定畫面隱藏金額">
+              <OnOff on={notifHideLockOn(d.settings)} onChange={(on) => setSetting({ notifHideOnLock: on })} />
+            </Row>
+          </section>
+
+          <section class="panel">
+            <h3>管理</h3>
+            <button class="setting-row" onClick={() => setView('accounts')}><span>帳戶管理</span><span class="muted">{banks.length} 個 ›</span></button>
+            <button class="setting-row" onClick={() => setView('small')}><span>小帳戶管理</span><span class="muted">錢包、投資、儲蓄 ›</span></button>
+            <button class="setting-row" onClick={() => setView('categories')}>
+              <span>分類管理</span>
+              <span class="muted">{d.settings.autoSortCategories ? '自動排序' : '手動排序'} ›</span>
+            </button>
+            <button class="setting-row" onClick={() => setSheet({ k: 'tags' })}>
+              <span>備註標籤</span>
+              <span class="muted">已釘選 {pinnedCount(d)} 個 ›</span>
             </button>
             <button class="setting-row" onClick={() => setSheet({ k: 'carrier' })}>
               <span>手機條碼載具</span>
@@ -345,7 +530,7 @@ export function SettingsPage() {
         </>
       ) : (
         <div class="sub-head">
-          <button class="icon-btn" onClick={() => setView('menu')} aria-label="返回設定">‹</button>
+          <button class="icon-btn" onClick={() => setView('menu')} aria-label="返回設定"><Icon name="chevron-left" /></button>
           <h1 class="page-title">{{ accounts: '帳戶管理', small: '小帳戶管理', categories: '分類管理', recurring: '定期扣款', backup: '資料備份', demo: '清空或範例' }[view]}</h1>
         </div>
       )}
@@ -354,7 +539,7 @@ export function SettingsPage() {
         <h3>首頁卡片</h3>
         {banks.length > 1 && <p class="muted small">點一下修改，長按拖曳換位置</p>}
         {accList(banks, () => true)}
-        <button class="add-row" onClick={() => setSheet({ k: 'account', kind: 'bank' })}>＋ 新增帳戶</button>
+        <button class="add-row" onClick={() => setSheet({ k: 'account', kind: 'bank' })}><Icon name="plus" size={16} /> 新增帳戶</button>
       </section>}
 
       {view === 'small' && <section class="panel">
@@ -364,10 +549,10 @@ export function SettingsPage() {
           const multi = MULTI_KINDS.includes(kind);
           return (
             <div key={kind} class="kind-group">
-              <div class="kind-title">{KIND_ICON[kind]} {KIND_LABEL[kind]}{multi && <span class="muted small">（可以有多個）</span>}</div>
+              <div class="kind-title"><Icon name={ACCOUNT_KIND_ICON[kind]} size={18} /> {KIND_LABEL[kind]}{multi && <span class="muted small">（可以有多個）</span>}</div>
               {accList(list, (a) => (multi || list.length > 1) && !(a.kind === 'invest' && a.subtype !== 'holding'))}
               {(multi || list.length === 0) && (
-                <button class="add-row" onClick={() => setSheet({ k: 'account', kind })}>＋ 新增{KIND_LABEL[kind]}</button>
+                <button class="add-row" onClick={() => setSheet({ k: 'account', kind })}><Icon name="plus" size={16} /> 新增{KIND_LABEL[kind]}</button>
               )}
             </div>
           );
@@ -405,12 +590,12 @@ export function SettingsPage() {
               ))}
               {drag ? (
                 <div class={`cat trash${drag.over === TRASH_ID ? ' over' : ''}`} data-sort={TRASH_ID}>
-                  <span class="cat-icon">✕</span>
+                  <span class="cat-icon"><Icon name="x" /></span>
                   <span class="cat-name">刪除</span>
                 </div>
               ) : (
                 <button class="cat add" onClick={() => setSheet({ k: 'category', type: catType })}>
-                  <span class="cat-icon">＋</span>
+                  <span class="cat-icon"><Icon name="plus" /></span>
                   <span class="cat-name">新增</span>
                 </button>
               )}
@@ -440,7 +625,7 @@ export function SettingsPage() {
           <button class="btn" onClick={() => doExport('full')}>匯出完整備份</button>
           <button class="btn secondary" onClick={() => doExport('settings')}>只匯出設定</button>
         </div>
-        <p class="muted small">完整備份＝設定＋所有紀錄。只匯出設定＝帳戶、小帳戶、分類、備註標籤、結算日，不含紀錄。</p>
+        <p class="muted small">完整備份＝設定＋所有紀錄。只匯出設定＝帳戶、小帳戶、分類、備註標籤、結算日，不含紀錄。<br />2.1 版起的備份，舊版 App（2.0.x）讀不了；舊版的備份可以匯入新版。</p>
         <div class="btn-row">
           <button class="btn secondary" onClick={() => fileRef.current?.click()}>從備份匯入</button>
         </div>
@@ -462,6 +647,13 @@ export function SettingsPage() {
         />
       </section>}
 
+      {view === 'menu' && (
+        <button class="setting-row license-row" onClick={() => setSheet({ k: 'license' })}>
+          <span>開放原始碼授權</span>
+          <span class="muted">Lucide ›</span>
+        </button>
+      )}
+
       {(view === 'demo' || view === 'menu') && <section class="panel">
         <h3>清空或範例</h3>
         <div class="btn-row three">
@@ -475,8 +667,28 @@ export function SettingsPage() {
       {sheet?.k === 'account' && <AccountForm kind={sheet.kind} existing={sheet.existing} onClose={() => setSheet(null)} />}
       {sheet?.k === 'category' && <CategoryForm type={sheet.type} existing={sheet.existing} onClose={() => setSheet(null)} />}
       {sheet?.k === 'settle' && <SettleForm onClose={() => setSheet(null)} />}
+      {sheet?.k === 'font' && <FontPicker value={d.settings.appFont} onPick={(id) => setSetting({ appFont: id })} onClose={() => setSheet(null)} />}
+      {sheet?.k === 'coin' && (
+        <Sheet
+          title={{ coinHome: '首頁小語圖示', coinWidget: '桌面小工具圖示', appIcon: '手機桌面 App 圖示' }[sheet.which]}
+          onClose={() => setSheet(null)}
+        >
+          <CoinStrip
+            auto={sheet.which !== 'appIcon'}
+            value={sheet.which === 'appIcon' ? d.settings.appIcon ?? 'original' : d.settings[sheet.which] ?? 'auto'}
+            note={sheet.which === 'appIcon' ? '有些手機換完會拿掉桌面舊圖示，請從 App 列表再拖一次。' : '「自動」＝跟著心情換。'}
+            onPick={(v) => void pickCoin(sheet.which, v)}
+          />
+        </Sheet>
+      )}
       {sheet?.k === 'carrier' && <CarrierForm onClose={() => setSheet(null)} />}
       {sheet?.k === 'tags' && <TagManager onClose={() => setSheet(null)} />}
+      {sheet?.k === 'license' && (
+        <Sheet title="開放原始碼授權" onClose={() => setSheet(null)}>
+          <p class="muted small">圖示來自 Lucide（ISC 授權）。</p>
+          <pre class="license-text">{LUCIDE_LICENSE}</pre>
+        </Sheet>
+      )}
       {sheet?.k === 'snapshots' && (
         <Sheet title="自動留底" onClose={() => setSheet(null)}>
           <p class="muted small">點一份還原。還原前會先把目前資料再留一份，按錯可以還原回來。</p>
@@ -535,7 +747,7 @@ export function SettingsPage() {
                   showToast(`已刪除「${from.name}」，紀錄已移到「${c.name}」`);
                 }}
               >
-                <span class="pick-icon">{c.icon}</span>
+                <span class="pick-icon"><Icon name={c.icon} /></span>
                 <span class="pick-name">{c.name}</span>
               </button>
             ))}
@@ -554,13 +766,15 @@ function AccountForm({ kind, existing, onClose }: { kind: AccountKind; existing?
   // 新增：填初始餘額；修改：填目前金額（從紀錄推算）
   const [init, setInit] = useState(existing ? String(curBal) : '0');
   const [target, setTarget] = useState(existing?.target ? String(existing.target) : '');
+  const [iconStyle, setIconStyle] = useState<'icon' | 'badge'>(accountIconStyleOf(existing ?? {}));
+  const [icon, setIcon] = useState(accountIconOf(existing ?? { kind }));
   const parsed = Number(init.replace(/,/g, ''));
   const showAmount = !(existing && isHolding);
   const ok = name.trim() !== '' && (!showAmount || (init.trim() !== '' && Number.isFinite(parsed)));
   const save = () => {
     if (!ok) return;
     if (existing) {
-      const acc: Account = { ...existing, name: name.trim() };
+      const acc: Account = { ...existing, name: name.trim(), icon, iconStyle };
       if (kind === 'saving') acc.target = Math.round(Number(target.replace(/,/g, ''))) || 0;
       const newCur = showAmount ? Math.round(parsed) : null;
       try {
@@ -580,6 +794,8 @@ function AccountForm({ kind, existing, onClose }: { kind: AccountKind; existing?
           name: name.trim(),
           kind,
           initialBalance: Math.round(parsed),
+          icon,
+          iconStyle,
           order: d.accounts.filter((a) => a.kind === kind).sort(byOrder).length,
           ...(kind === 'invest' ? { subtype: 'holding' } : {}),
         };
@@ -594,6 +810,28 @@ function AccountForm({ kind, existing, onClose }: { kind: AccountKind; existing?
         <span>名稱</span>
         <input value={name} maxLength={12} onInput={(e) => setName(e.currentTarget.value)} placeholder="例如：薪轉帳戶" />
       </label>
+      <div class="field">
+        <span>顯示方式</span>
+        <div class="acc-style-row">
+          <AccountIcon account={{ name, kind, icon, iconStyle }} />
+          <div class="mini-seg">
+            <button class={iconStyle === 'icon' ? 'on' : ''} onClick={() => setIconStyle('icon')}>圖示</button>
+            <button class={iconStyle === 'badge' ? 'on' : ''} onClick={() => setIconStyle('badge')}>縮寫徽章</button>
+          </div>
+        </div>
+        {iconStyle === 'icon' && (
+          <div class="icon-picker acc-icon-picker" data-no-swipe>
+            <div class="icon-grid">
+              {ACCOUNT_ICONS.map((ic) => (
+                <button key={ic} class={`icon-cell${ic === icon ? ' on' : ''}`} onClick={() => setIcon(ic)} aria-label={ICON_LABELS[ic] ?? ic}>
+                  <Icon name={ic} size={ICON.pickerPx} />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {iconStyle === 'badge' && <span class="muted small">徽章會顯示名稱的第一個字</span>}
+      </div>
       {showAmount && (
         <label class="field">
           <span>{existing ? '目前金額（元，可以是負數）' : '初始餘額（開始記帳那天帳戶裡的錢，可以是負數）'}</span>

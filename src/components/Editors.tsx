@@ -6,6 +6,9 @@ import { addNoteTag, allNotes, hideNote, togglePin } from '../data/notes';
 import type { Category, CategoryType } from '../data/types';
 import { CATEGORY_COLORS, DEFAULT_COLOR, DEFAULT_NEW_ICON, ICON_GROUPS, type CategoryColorKey } from '../categoryStyle';
 import { CatIcon, catBg } from './CatIcon';
+import { Icon } from './Icon';
+import { ICON } from '../config';
+import { ICON_LABELS, isIconName } from '../icons';
 
 /**
  * 新增或修改分類（第三批第 4 項）：最上面名稱欄（左邊顯示目前圖示）→ 顏色標籤 → 圖示選單。
@@ -42,12 +45,23 @@ export function CategoryForm({
         ))}
       </div>
       <div class="icon-picker" data-no-swipe>
+        {!isIconName(icon) && (
+          <div>
+            <div class="icon-group-title">目前使用（舊圖示，可從下面換成新圖示）</div>
+            <div class="icon-grid">
+              <button class="icon-cell on" onClick={() => setIcon(icon)}><Icon name={icon} size={ICON.pickerPx} /></button>
+            </div>
+          </div>
+        )}
         {ICON_GROUPS.map((g) => (
           <div key={g.title}>
             <div class="icon-group-title">{g.title}</div>
             <div class="icon-grid">
               {g.icons.map((ic) => (
-                <button key={ic} class={`icon-cell${ic === icon ? ' on' : ''}`}onClick={() => setIcon(ic)}>{ic}</button>
+                <button key={ic} class={`icon-cell${ic === icon ? ' on' : ''}`} onClick={() => setIcon(ic)} aria-label={ICON_LABELS[ic] ?? ic}>
+                  <Icon name={ic} size={ICON.pickerPx} />
+                  {ICON_LABELS[ic] && <span class="icon-cell-label">{ICON_LABELS[ic]}</span>}
+                </button>
               ))}
             </div>
           </div>
@@ -91,9 +105,9 @@ export function TagManager({ onClose }: { onClose: () => void }) {
             onClick={() => updateData((x) => togglePin(x, n.text))}
             aria-label={n.pinned ? '取消釘選' : '釘選'}
           >
-            {n.pinned ? '★' : '☆'}
+            <Icon name="star" class={n.pinned ? 'star-on' : ''} />
           </button>
-          <button class="icon-btn danger" onClick={() => updateData((x) => hideNote(x, n.text))} aria-label="刪除">🗑</button>
+          <button class="icon-btn danger" onClick={() => updateData((x) => hideNote(x, n.text))} aria-label="刪除"><Icon name="trash-2" /></button>
         </div>
       ))}
     </Sheet>

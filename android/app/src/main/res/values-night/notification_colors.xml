@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 通知欄快捷列的顏色（系統深色模式用）：色名與 values/notification_colors.xml 完全一致。
+     主要文字、標籤改成亮色；支出紅、收入綠改用 App 暗色色票（src/theme.ts）裡較亮的那組。 -->
+<resources>
+    <color name="nb_text_primary">#FFF4EEE2</color>
+    <color name="nb_text_secondary">#FFD6D0C2</color>
+    <color name="nb_expense">#FFF08080</color>
+    <color name="nb_income">#FF5FD1A0</color>
+</resources>

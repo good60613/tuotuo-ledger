@@ -28,8 +28,8 @@ export const TOPUP_CAT_PREFIX = '__topup:';
 
 // ---------------- 餘額 ----------------
 
-/** 一筆紀錄對各帳戶餘額的影響 */
-function balanceDeltas(t: Transaction): [string | undefined, number][] {
+/** 一筆紀錄對各帳戶餘額的影響（2.3：前餘額查表也用它，確保和帳戶餘額同一套算法） */
+export function balanceDeltas(t: Transaction): [string | undefined, number][] {
   switch (t.type) {
     case 'income':
       return [[t.accountId, t.amount]];
@@ -330,6 +330,21 @@ export function periodRange(key: string, settleDay: number): { start: Date; end:
   return { start, end };
 }
 
+/**
+ * 離下一個結算日還有幾天（2.6，首頁「平均／日」用）：不含今天。
+ * 例：結算日 5 號，11/21 → 12/5 ＝ 14 天；12/4 ＝ 1 天；12/5 當天已是新的一期 → 算到 1/5。最少 1。
+ */
+export function daysToSettle(now: Date, settleDay: number): number {
+  const { end } = periodRange(periodKey(now, settleDay), settleDay);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.max(1, Math.round((end.getTime() - today.getTime()) / 86400000));
+}
+
+/** 平均每天可用＝剩餘可用 ÷ 離結算日天數，四捨五入到整數（負數照樣算） */
+export function dailyAllowance(spendable: number, now: Date, settleDay: number): number {
+  return Math.round(spendable / daysToSettle(now, settleDay));
+}
+
 /** 某一期的每一天（dayKey 陣列），日曆、曲線用 */
 export function periodDays(key: string, settleDay: number): string[] {
   const { start, end } = periodRange(key, settleDay);
@@ -431,4 +446,108 @@ export function touchesAccount(t: Transaction, accountId: string): boolean {
 /** 計算機結果存檔前四捨五入到整數元 */
 export function roundAmount(v: number): number {
   return Math.round(v);
+}
+
+// ---- 2.2 統計頁：年、自訂區間 ----
+// 計算規則與月檢視完全相同（一律經過 statEffect），只有「時間範圍」不同。
+
+/**
+ * 統計範圍：
+ * - period：單一結算期（月檢視）
+ * - year：該年一月期到十二月期（照結算期；結算日 5 號時「2026」＝2026/1/5～2027/1/4）
+ * - custom：from～to 兩天都含（'YYYY-MM-DD'，手機本地日期）
+ */
+export type StatScope =
+  | { kind: 'period'; key: string }
+  | { kind: 'year'; year: number }
+  | { kind: 'custom'; from: string; to: string };
+
+export function inScope(t: Transaction, scope: StatScope, settleDay: number): boolean {
+  if (scope.kind === 'period') return periodKey(t.occurredAt, settleDay) === scope.key;
+  if (scope.kind === 'year') return periodKey(t.occurredAt, settleDay).slice(0, 4) === String(scope.year);
+  const k = dayKey(t.occurredAt);
+  return k >= scope.from && k <= scope.to;
+}
+
+/** 範圍內主帳收支加總（全部一般帳戶） */
+export function scopeTotals(data: Pick<AppData, 'accounts' | 'transactions' | 'settings'>, scope: StatScope): Totals {
+  const kindOf = kindLookup(data.accounts);
+  const sd = data.settings.settleDay;
+  const r = { income: 0, expense: 0 };
+  for (const t of data.transactions) {
+    const e = statEffect(t, kindOf);
+    if (!e || !inScope(t, scope, sd)) continue;
+    r[e.type] += e.amount;
+  }
+  return r;
+}
+
+/** 範圍內分類加總（全部一般帳戶），大到小 */
+export function scopeBreakdown(
+  data: Pick<AppData, 'accounts' | 'transactions' | 'settings'>,
+  type: 'expense' | 'income',
+  scope: StatScope,
+): CategorySum[] {
+  const kindOf = kindLookup(data.accounts);
+  const sd = data.settings.settleDay;
+  const m = new Map<string, number>();
+  let total = 0;
+  for (const t of data.transactions) {
+    const e = statEffect(t, kindOf);
+    if (!e || e.type !== type || !inScope(t, scope, sd)) continue;
+    m.set(e.categoryId, (m.get(e.categoryId) ?? 0) + e.amount);
+    total += e.amount;
+  }
+  return [...m.entries()]
+    .map(([categoryId, amount]) => ({ categoryId, amount, ratio: total ? amount / total : 0 }))
+    .sort((a, b) => b.amount - a.amount);
+}
+
+/** 自訂區間的天數（兩端都含） */
+export function customDays(from: string, to: string): string[] {
+  const out: string[] = [];
+  const end = new Date(to + 'T00:00');
+  for (let d = new Date(from + 'T00:00'); d <= end && out.length < 4000; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) out.push(dayKey(d));
+  return out;
+}
+
+/**
+ * 長條圖／曲線用的分組：
+ * - year：12 根，每根一個結算期（'YYYY-01'～'YYYY-12'）
+ * - custom 且天數 ≤ dailyMaxDays：每日；超過：每個結算期一根（頭尾兩期可能只含部分天數）
+ * keys：每根的代號（dayKey 或 periodKey）；by：'day' | 'period'
+ */
+export function scopeSeries(
+  data: Pick<AppData, 'accounts' | 'transactions' | 'settings'>,
+  scope: Exclude<StatScope, { kind: 'period' }>,
+  dailyMaxDays: number,
+): { by: 'day' | 'period'; keys: string[]; series: Totals[] } {
+  const kindOf = kindLookup(data.accounts);
+  const sd = data.settings.settleDay;
+  let by: 'day' | 'period';
+  let keys: string[];
+  if (scope.kind === 'year') {
+    by = 'period';
+    keys = Array.from({ length: 12 }, (_, i) => `${scope.year}-${pad(i + 1)}`);
+  } else {
+    const days = customDays(scope.from, scope.to);
+    if (days.length <= dailyMaxDays) {
+      by = 'day';
+      keys = days;
+    } else {
+      by = 'period';
+      keys = [];
+      const last = periodKey(scope.to + 'T00:00', sd);
+      for (let p = periodKey(scope.from + 'T00:00', sd); p <= last; p = shiftPeriod(p, 1)) keys.push(p);
+    }
+  }
+  const idx = new Map(keys.map((k, i) => [k, i]));
+  const series: Totals[] = keys.map(() => ({ income: 0, expense: 0 }));
+  for (const t of data.transactions) {
+    const e = statEffect(t, kindOf);
+    if (!e || !inScope(t, scope, sd)) continue;
+    const i = idx.get(by === 'day' ? dayKey(t.occurredAt) : periodKey(t.occurredAt, sd));
+    if (i !== undefined) series[i][e.type] += e.amount;
+  }
+  return { by, keys, series };
 }

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 2.5 拖拖硬幣 App 圖示（cool）：背景沿用原版漸層，前景是去背硬幣 -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@drawable/ic_launcher_gradient"/>
+    <foreground android:drawable="@drawable/ic_fg_cool"/>
+</adaptive-icon>

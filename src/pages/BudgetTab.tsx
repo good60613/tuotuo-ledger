@@ -1,3 +1,4 @@
+import { Icon } from '../components/Icon';
 // 待辦頁的「預算」分頁（第四批第 3、4 段）：操作比照報帳分頁——可多選、整批按「已支付」。
 // 已支付：當天新增一筆真正的支出（金額可改成實際付款金額），帳戶扣款、預算消掉。
 import { useEffect, useState } from 'preact/hooks';
@@ -9,6 +10,7 @@ import { accountName, categoryOf } from '../selectors';
 import { TxList } from '../components/TxList';
 import { BottomBar } from '../components/BottomBar';
 import { Sheet } from '../components/Sheet';
+import { AccountPicker } from '../components/AccountPicker';
 import { openTx } from '../actions';
 import { money, hm } from '../format';
 
@@ -67,7 +69,7 @@ export function BudgetTab({ onBar }: { onBar?: (on: boolean) => void }) {
             txs={pending}
             onTap={onTapPending}
             selected={multi ? new Set(selected) : undefined}
-            empty="沒有未付的預算 🎉"
+            empty="沒有未付的預算"
             onLongPress={(t) => {
               setMulti(true);
               setSel((x) => (multi ? (x.includes(t.id) ? x : [...x, t.id]) : [t.id]));
@@ -158,7 +160,7 @@ function BudgetDetail({ t, onClose, onPay, onRevert }: { t: Transaction; onClose
   return (
     <Sheet title="預算紀錄" onClose={onClose}>
       <div class="detail-head">
-        <span class="tx-icon">{c?.icon ?? '？'}</span>
+        <span class="tx-icon"><Icon name={c?.icon ?? '？'} size={20} /></span>
         <span class="grow detail-name">{c?.name ?? '（已刪除分類）'}</span>
         <span class="amt-mid budget-color">{money(t.amount)}</span>
       </div>
@@ -170,6 +172,7 @@ function BudgetDetail({ t, onClose, onPay, onRevert }: { t: Transaction; onClose
         <span class="budget-color">{isPaid ? '已付' : overdue ? '未付（已過結算期）' : '未付'}</span>
       </div>
       {pay && <div class="kv"><span>實際付款</span><span>{money(pay.amount)}（{ymd(new Date(pay.occurredAt))}）</span></div>}
+      {pay && pay.accountId !== t.accountId && <div class="kv"><span>付款帳戶</span><span>{accountName(d, pay.accountId)}</span></div>}
       {t.note && <div class="kv-note">{t.note}</div>}
       <div class="dialog-btns">
         <button
@@ -179,7 +182,7 @@ function BudgetDetail({ t, onClose, onPay, onRevert }: { t: Transaction; onClose
             openTx(t);
           }}
         >
-          ✏️ 編輯
+          <Icon name="pencil" size={16} /> 編輯
         </button>
         {isPaid ? (
           <button class="btn danger" onClick={onRevert}>退回未付</button>
@@ -198,7 +201,11 @@ function PayConfirm({ ids, onClose, onDone }: { ids: string[]; onClose: () => vo
   const [amounts, setAmounts] = useState<Record<string, string>>(() =>
     Object.fromEntries(items.map((t) => [t.id, String(t.amount)])),
   );
-  const parsed = items.map((t) => ({ id: t.id, amount: Math.round(Number(amounts[t.id])) }));
+  // 2.3：每一列可以改從哪個帳戶付（預設＝預算原本的帳戶）
+  const [accs, setAccs] = useState<Record<string, string>>({});
+  const [pickFor, setPickFor] = useState<string | null>(null);
+  const accOf = (t: Transaction) => (d.accounts.some((a) => a.id === accs[t.id]) ? accs[t.id] : t.accountId);
+  const parsed = items.map((t) => ({ id: t.id, amount: Math.round(Number(amounts[t.id])), accountId: accOf(t) }));
   const valid = parsed.every((p) => Number.isFinite(p.amount) && p.amount > 0);
   const total = valid ? parsed.reduce((a, p) => a + p.amount, 0) : 0;
 
@@ -215,16 +222,21 @@ function PayConfirm({ ids, onClose, onDone }: { ids: string[]; onClose: () => vo
 
   return (
     <Sheet title="確定已經付款了嗎？" onClose={onClose}>
-      <div class="muted">付款日是今天。實際金額跟預算不同時，直接改金額，帳戶會照實際金額扣款。</div>
+      <div class="muted">付款日是今天。實際金額跟預算不同時，直接改金額，帳戶會照實際金額扣款；也可以點帳戶改從別的帳戶付。</div>
       <div class="pay-list">
         {items.map((t) => {
           const c = categoryOf(d, t.categoryId);
           return (
-            <label class="pay-row" key={t.id}>
+            <div class="pay-row" key={t.id}>
               <span class="grow">
                 {c?.name ?? '（已刪除分類）'}
                 {t.note ? `・${t.note}` : ''}
-                <span class="muted small">　{accountName(d, t.accountId)}・預算 {money(t.amount)}</span>
+                <span class="muted small">
+                  　<button class={`pay-acc${accOf(t) !== t.accountId ? ' changed' : ''}`} onClick={() => setPickFor(t.id)}>
+                    {accountName(d, accOf(t))} <Icon name="chevron-down" size={12} />
+                  </button>
+                  ・預算 {money(t.amount)}
+                </span>
               </span>
               <input
                 class="pay-input"
@@ -235,7 +247,7 @@ function PayConfirm({ ids, onClose, onDone }: { ids: string[]; onClose: () => vo
                   setAmounts((a) => ({ ...a, [t.id]: v }));
                 }}
               />
-            </label>
+            </div>
           );
         })}
       </div>
@@ -247,6 +259,14 @@ function PayConfirm({ ids, onClose, onDone }: { ids: string[]; onClose: () => vo
         <button class="btn secondary" onClick={onClose}>取消</button>
         <button class="btn budget-btn" disabled={!valid} onClick={confirm}>確認已支付</button>
       </div>
+      {pickFor && (
+        <AccountPicker
+          title="從哪個帳戶付"
+          value={accOf(items.find((t) => t.id === pickFor)!)}
+          onPick={(id) => id && setAccs((a) => ({ ...a, [pickFor]: id }))}
+          onClose={() => setPickFor(null)}
+        />
+      )}
     </Sheet>
   );
 }

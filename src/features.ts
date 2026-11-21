@@ -13,3 +13,38 @@ export function recurringOn(settings: Pick<Settings, 'recurringEnabled'> | undef
 export function advanceOwedOn(settings: Pick<Settings, 'advanceOwedEnabled'> | undefined): boolean {
   return settings?.advanceOwedEnabled !== false;
 }
+
+/** 毛玻璃效果是否開啟（缺值＝開啟）。關掉時毛玻璃元素改成實心 */
+export function glassOn(settings: Pick<Settings, 'glass'> | undefined): boolean {
+  return settings?.glass !== false;
+}
+
+/** 明細是否顯示「記帳前餘額」（2.3，缺值＝開啟） */
+export function prevBalanceOn(settings: Pick<Settings, 'showPrevBalance'> | undefined): boolean {
+  return settings?.showPrevBalance !== false;
+}
+
+/** 通知欄快捷列是否開啟（2.3，缺值＝關閉） */
+export function notifBarOn(settings: Pick<Settings, 'notifBar'> | undefined): boolean {
+  return settings?.notifBar === true;
+}
+
+/** 鎖定畫面是否隱藏通知欄上的金額（2.3，缺值＝隱藏） */
+export function notifHideLockOn(settings: Pick<Settings, 'notifHideOnLock'> | undefined): boolean {
+  return settings?.notifHideOnLock !== false;
+}
+
+/** 首頁剩餘可用旁是否顯示「平均／日」（2.6，缺值＝關閉） */
+export function dailyAvgOn(settings: Pick<Settings, 'dailyAvg'> | undefined): boolean {
+  return settings?.dailyAvg === true;
+}
+
+/** 首頁是否用明細頁（2.2，缺值＝帳戶頁） */
+export function detailHome(settings: Pick<Settings, 'homePage'> | undefined): boolean {
+  return settings?.homePage === 'detail';
+}
+
+/** 記帳預設帳戶（2.5，缺值＝上一筆用的帳戶） */
+export function entryAccountMode(settings: Pick<Settings, 'entryAccount'> | undefined): 'last' | 'first' {
+  return settings?.entryAccount === 'first' ? 'first' : 'last';
+}

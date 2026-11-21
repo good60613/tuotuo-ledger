@@ -34,6 +34,8 @@ try {
   # 先停掉上次留在背景的打包程式，避免它佔住暫存資料夾（mergeReleaseAssets 刪不掉）
   & .\gradlew.bat --stop | Out-Null
   Step '簽章打包' { & .\gradlew.bat assembleRelease }
+  # 打包完立刻關掉 Gradle 背景程式（約 900MB 記憶體），不然電腦會一直卡
+  & .\gradlew.bat --stop | Out-Null
   Set-Location $root
   $ver = (Select-String -Path 'android\app\build.gradle' -Pattern 'versionName\s+"([^"]+)"').Matches[0].Groups[1].Value
   New-Item -ItemType Directory -Force 'APK' | Out-Null

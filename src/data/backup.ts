@@ -7,6 +7,8 @@
 //   - data.version 是資料本身的版本（見 types.ts 的 DATA_VERSION），舊版會自動升級。
 //   - 補強批起資料版本 6：多了 recurring（定期扣款），完整備份與「只有設定」都會帶；舊備份沒有＝空的。
 //     舊版 App（資料版本 5）讀不了版本 6 的檔案，會顯示「不支援的資料版本」。
+//   - 2.1 起資料版本 7：帳戶多了 icon、iconStyle，分類 icon 改存圖示名稱；兩種備份都會帶。
+//     舊版 App（2.0.x，資料版本 6）讀不了版本 7 的檔案。
 // 舊版備份檔（第一、二批）沒有 type 與 fileVersion，一律當完整備份。
 import type { Account, AppData, Category, CategoryType, Transaction } from './types';
 import { migrate } from './migrate';

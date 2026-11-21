@@ -15,7 +15,9 @@ export type DropTarget =
   | { kind: 'expense' }
   | { kind: 'income' }
   | { kind: 'account'; id: string }
-  | { kind: 'ball'; ballKind: string };
+  | { kind: 'ball'; ballKind: string }
+  /** 2.4：首頁最近紀錄的一列（帳戶卡拖上去＝改那筆的帳戶） */
+  | { kind: 'tx'; id: string };
 
 export interface CardDragOptions {
   /** 被拿起的帳戶 id */
@@ -27,6 +29,8 @@ export interface CardDragOptions {
   onDrop: (t: DropTarget) => void;
   /** 取消或結束（不論結果都會呼叫，用來收起放置區） */
   onEnd: () => void;
+  /** 只接受哪些目標（不給＝全部）；不接受的不亮、放開＝取消。小帳戶球用來限定只能放到紀錄上 */
+  accepts?: (t: DropTarget) => boolean;
 }
 
 export function parseTarget(el: Element | null): DropTarget | null {
@@ -36,6 +40,7 @@ export function parseTarget(el: Element | null): DropTarget | null {
   if (v === 'expense' || v === 'income') return { kind: v };
   if (v.startsWith('account:')) return { kind: 'account', id: v.slice(8) };
   if (v.startsWith('ball:')) return { kind: 'ball', ballKind: v.slice(5) };
+  if (v.startsWith('tx:')) return { kind: 'tx', id: v.slice(3) };
   return null;
 }
 
@@ -61,6 +66,7 @@ export function attachCardDrag(el: HTMLElement, opt: CardDragOptions): () => voi
     const sel =
       t.kind === 'account' ? `[data-drop="account:${t.id}"]`
       : t.kind === 'ball' ? `[data-drop="ball:${t.ballKind}"]`
+      : t.kind === 'tx' ? `[data-drop="tx:${t.id}"]`
       : `[data-drop="${t.kind}"]`;
     document.querySelectorAll(sel).forEach((n) => n.classList.add('drop-hover'));
   };
@@ -142,6 +148,14 @@ export function attachCardDrag(el: HTMLElement, opt: CardDragOptions): () => voi
     moveGhost(lastX, lastY);
   };
 
+  /** 指到的東西：不接受的當作沒有；放回自己那張卡＝無效 */
+  const pick = (x: number, y: number): DropTarget | null => {
+    const t = parseTarget(document.elementFromPoint(x, y));
+    if (!t || (opt.accepts && !opt.accepts(t))) return null;
+    return t;
+  };
+  const isValid = (t: DropTarget | null) => !!t && !(t.kind === 'account' && t.id === opt.sourceId());
+
   const moveGhost = (x: number, y: number) => {
     if (!ghost) return;
     if (!shrunk && Math.hypot(x - x0, y - y0) > GESTURE.shrinkAfterPx) {
@@ -152,11 +166,11 @@ export function attachCardDrag(el: HTMLElement, opt: CardDragOptions): () => voi
     }
     ghost.style.left = `${x - grabDx}px`;
     ghost.style.top = `${y - grabDy + (shrunk ? GESTURE.dragOffsetY : 0)}px`;
-    const t = parseTarget(document.elementFromPoint(x, y));
+    const t = pick(x, y);
     if (!sameTarget(t, hover)) {
       hover = t;
-      if (t && !(t.kind === 'account' && t.id === opt.sourceId())) vibrate(GESTURE.hoverVibrateMs);
-      highlight(t && !(t.kind === 'account' && t.id === opt.sourceId()) ? t : null);
+      if (isValid(t)) vibrate(GESTURE.hoverVibrateMs);
+      highlight(isValid(t) ? t : null);
       opt.onHover(t);
     }
   };
@@ -210,8 +224,8 @@ export function attachCardDrag(el: HTMLElement, opt: CardDragOptions): () => voi
         opt.onTap();
       }
     } else if (phase === 'lifted') {
-      const t = parseTarget(document.elementFromPoint(e.clientX, e.clientY));
-      const valid = t && !(t.kind === 'account' && t.id === opt.sourceId());
+      const t = pick(e.clientX, e.clientY);
+      const valid = isValid(t);
       blockClicks(GESTURE.afterDropCooldownMs);
       removeGhost(!valid);
       reset();

@@ -6,7 +6,7 @@ import { markBudgetPaid, revertBudgetPaid, isOverdueBudget, overdueCount, budget
 import { emptyData, sampleData } from '../src/data/seed';
 import { exportJson, parseBackup } from '../src/data/backup';
 import { migrate } from '../src/data/migrate';
-import type { AppData } from '../src/data/types';
+import { DATA_VERSION, type AppData } from '../src/data/types';
 
 const NOW = new Date(2026, 10, 8, 12, 0); // 2026-11-08
 const iso = (m0: number, d: number) => new Date(2026, m0, d, 10).toISOString();
@@ -97,11 +97,14 @@ describe('已支付', () => {
     expect(totals(d, { period: per }).expense).toBe(1300);
   });
 
-  it('已付的預算鎖住：不能改金額、不能刪；付款那筆不能直接刪', () => {
+  it('已付的預算（2.3 起可直接編輯）：改的是付款那筆；類型不能改、不能刪；付款那筆不能直接刪', () => {
     const { data: d0, id } = budget(base());
     const d = markBudgetPaid(d0, [{ id, amount: 1000 }], NOW, () => 'P1');
+    // 2.3：改金額 → 改到付款那筆，不再擋
+    const dAmt = updateTransaction(d, id, { type: 'expense', amount: 500, accountId: 'A', categoryId: 'c-e1', occurredAt: NOW.toISOString(), budget: true });
+    expect(tx(dAmt, 'P1')?.amount).toBe(500);
     expect(() =>
-      updateTransaction(d, id, { type: 'expense', amount: 500, accountId: 'A', categoryId: 'c-e1', occurredAt: NOW.toISOString(), budget: true }),
+      updateTransaction(d, id, { type: 'income', amount: 500, accountId: 'A', categoryId: 'c-i1', occurredAt: NOW.toISOString() }),
     ).toThrow(OpError);
     expect(() => deleteTransaction(d, id)).toThrow(OpError);
     expect(() => deleteTransaction(d, 'P1')).toThrow(OpError);
@@ -158,7 +161,7 @@ describe('資料 v4 與備份', () => {
     d = markBudgetPaid(d, [{ id: a.id, amount: 990 }], NOW);
     d = budget(d, 200, 'B').data;
     const back = parseBackup(exportJson(d));
-    expect(back.version).toBe(6);
+    expect(back.version).toBe(DATA_VERSION);
     expect(spendableTotal(back)).toBe(spendableTotal(d));
     expect(allBalances(back)).toEqual(allBalances(d));
     expect(JSON.parse(JSON.stringify(back.transactions))).toEqual(JSON.parse(JSON.stringify(d.transactions)));
@@ -168,7 +171,7 @@ describe('資料 v4 與備份', () => {
     const v3 = { ...sampleData(), version: 3 };
     const before = spendableTotal(v3 as unknown as AppData);
     const d = parseBackup(JSON.stringify(v3));
-    expect(d.version).toBe(6);
+    expect(d.version).toBe(DATA_VERSION);
     expect(spendableTotal(d)).toBe(before);
     expect(d.transactions.every((t) => !t.budget)).toBe(true);
   });

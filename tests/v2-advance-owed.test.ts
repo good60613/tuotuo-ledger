@@ -152,7 +152,7 @@ describe('我先付（比照報帳）', () => {
     expect(tx(d, a.id).reimburseStatus).toBe('done');
     const inTx = d.transactions.find((t) => t.type === 'reimburse_in')!;
     expect(inTx.reimburseKind).toBe('advance');
-    expect(inTx.note).toContain('我先付');
+    expect(inTx.note).toContain('先付');
     d = revertBatch(d, 'b1');
     expect(spendableTotal(d)).toBe(13404);
     expect(tx(d, a.id).reimburseStatus).toBe('pending');
@@ -202,7 +202,7 @@ describe('資料 v5 與舊備份', () => {
     const v4 = { ...sampleData(), version: 4 };
     const before = spendableTotal(v4 as unknown as AppData);
     const d = parseBackup(JSON.stringify(v4));
-    expect(d.version).toBe(6);
+    expect(d.version).toBe(DATA_VERSION);
     expect(spendableTotal(d)).toBe(before);
     expect(d.transactions.every((t) => !t.reimburseKind && t.type !== 'owed')).toBe(true);
     expect(d.settings.theme ?? 'light').toBe('light');

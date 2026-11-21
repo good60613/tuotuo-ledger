@@ -13,7 +13,7 @@ export const GESTURE = {
   /** 拖曳經過新目標時的輕震（0 = 關閉） */
   hoverVibrateMs: 8,
   /** 拿起後卡片放大倍率 */
-  liftScale: 1.08,
+  liftScale: 1.14,
   /** 拿起後開始移動時，卡片縮小成這個倍率，避免蓋住底下的目標 */
   dragScale: 0.7,
   /** 移動中卡片的透明度（1 = 不透明），讓底下目標的高亮透得出來 */
@@ -95,8 +95,12 @@ export const SNAPSHOT = {
   eventKeep: 5,
 } as const;
 
-/** 「已記一筆」提示停留多久（可按復原） */
+/** 「已記一筆」提示停留多久（可按復原）；倒數線也是跑這麼久 */
 export const TOAST_MS = 4000;
+/** 提示膠囊（2.3）：淡出往下滑走的時間、手指往下滑多少算滑掉（像素）、彈簧滑入的時間 */
+export const TOAST_EXIT_MS = 260;
+export const TOAST_SWIPE_PX = 36;
+export const TOAST_IN_MS = 420;
 
 /** 首頁版面（第三批第 3 項） */
 export const HOME = {
@@ -104,12 +108,33 @@ export const HOME = {
   maxCardRows: 3,
   /** 卡片之間的間距 */
   cardGapPx: 10,
-  /** 最近紀錄每一筆佔的高度（卡片 54px＋間距） */
+  /** 最近紀錄每一筆佔的高度（2.4 起用明細頁的紀錄列：卡片 54px＋間距 4px） */
   recentRowPx: 58,
+  /** 2.4：最近紀錄最底下那一列（快速記一筆＋logo＋拖拖小語）的高度 */
+  quoteRowPx: 56,
+  /** 2.4：拿起帳戶卡時，「支出／收入」放置區縮成一排的高度（下面照樣顯示紀錄，可當放置目標）。
+   *  跟 quoteRowPx 一樣高＝拿起時佔用小語列的位置，紀錄一筆都不會少 */
+  liftZonePx: 56,
   /** 最近紀錄每筆之間的間距（含在 recentRowPx 裡） */
   recentGapPx: 4,
   /** 最近紀錄固定顯示幾筆（貼在導覽列上方；螢幕太矮時自動少顯示） */
-  recentCount: 3,
+  recentCount: 6,
+  /** 2.5：最近紀錄框內可以上下滑，最多往下看幾筆（再舊的去明細頁） */
+  recentMax: 30,
+  /** 2.5：拿起帳戶卡時，手指靠近紀錄框上下緣多少 px 內會自動捲動、每格捲多少 px */
+  recentEdgePx: 28,
+  recentScrollPx: 6,
+  /** 最近紀錄卡：標題列高度、上下內距（算能放幾筆用） */
+  recentHeadPx: 40,
+  recentPadPx: 8,
+  /** 首頁各區塊之間的間距 */
+  gapPx: 12,
+  /** 帳戶卡高度、小帳戶球直徑 */
+  cardHeightPx: 68,
+  ballPx: 54,
+  /** 剩餘可用大卡 */
+  /** avgPx：2.6「平均／日」金額字級（放在剩餘可用與右側小字欄之間） */
+  sum: { bigPx: 36, labelPx: 12, rowPx: 15, avgPx: 20 },
   /** 拿起卡片時，最下面「支出／收入」放置區的最小高度（螢幕太矮時仍要出現） */
   dropZoneMinPx: 96,
   /** 拿起時放置區上緣提示字那一行的高度 */
@@ -169,7 +194,7 @@ export const DRAG_MARK = {
   /** 跟著手指的小膠囊影子，相對手指的垂直偏移（負＝偏上） */
   ghostOffsetY: -44,
   /** 拖曳時快速標籤那排的透明度 */
-  dimOpacity: 0.3,
+  dimOpacity: 0.35,
   /** 命中數字時，數字的框往上下左右各加大多少 px */
   dropPadPx: 18,
 } as const;
@@ -210,5 +235,122 @@ export const BOTTOM_BAR = {
   /** 操作列與內容、浮動「＋」、提示條之間的間距 */
   gapPx: 10,
   /** 底部導覽列高度（原本寫在 styles.css 的 --nav-h） */
-  navHeightPx: 58,
+  navHeightPx: 62,
+  /** 導覽列浮起：左右與離底的留白 */
+  navInsetPx: 14,
 } as const;
+
+export const ICON = {
+  /** 圖示預設大小（px，24 格畫布縮放） */
+  size: 22,
+  /** 線條粗細（工單規格 1.8） */
+  stroke: 1.8,
+  /** 圖示選單格子裡的圖示大小 */
+  pickerPx: 24,
+} as const;
+
+export const HOME_SUM = {
+  /** 首頁「本月」「今日」兩行：支出與收入之間的間距（PK 補充，先給 12px，手機看過再調） */
+  gapPx: 12,
+  /** 2.6：剩餘可用那一列放不下時，字最多縮到原本的幾倍 */
+  minFitK: 0.6,
+} as const;
+
+/** 帳戶圖示（卡片左側、帳戶編輯預覽）：38 見方、圓角 12、圖示 22 */
+export const ACCOUNT_ICON = {
+  boxPx: 38,
+  radiusPx: 12,
+  iconPx: 22,
+  /** 縮寫徽章字級 */
+  badgeFontPx: 17,
+} as const;
+
+/** 毛玻璃（2.1）：模糊與飽和度、背景光暈。關掉或不支援時改實心（styles.css 的 .no-glass／@supports） */
+export const GLASS = {
+  blurPx: 18,
+  saturatePct: 160,
+  /** 底部導覽列 */
+  navBlurPx: 22,
+  navSaturatePct: 170,
+  /**
+   * 即時背景模糊（backdrop-filter）。2.1.1 起預設關：玻璃後面只有平滑的背景光暈，模糊後幾乎看不出差別，
+   * 但每個玻璃元素每一格都要重算模糊，換頁、捲動時最吃效能。設 true 才開。
+   */
+  liveBlur: false,
+  /** 背景光暈（radial-gradient）濃度，0～100 */
+  glowPct: 55,
+} as const;
+
+/** 拖曳光影（2.1 F 段）：只用 transform／opacity／陰影；減少動態效果時全部關掉（styles.css） */
+export const DRAG_FX = {
+  /** 拿起時膠囊放大倍率（首頁卡片的倍率在 GESTURE.liftScale） */
+  liftScale: 1.14,
+  /** 拿起時傾斜角度（度，負＝逆時針） */
+  tiltDeg: -6,
+  /** 拿起時從正放慢慢轉到傾斜、放大的時間（毫秒）；太短會顯得生硬 */
+  liftMs: 220,
+  /** 拿起的陰影模糊（px） */
+  shadowPx: 30,
+  /** 邊緣發光的模糊（px） */
+  glowPx: 18,
+  /** 經過目標時的光暈（px） */
+  hoverGlowPx: 14,
+  /** 放下回彈時間（毫秒） */
+  dropMs: 280,
+  /** 經過目標亮起／熄滅時間（毫秒） */
+  hoverMs: 120,
+} as const;
+
+/** 2.2：明細、統計頁頂部浮動。往下捲超過 triggerPx 時，頂端出現只有本期支出／收入的小條；捲回頂端時消失 */
+export const COLLAPSE_HEAD = {
+  /** 捲動多少 px 後出現小條（大約是頂部金額區的高度） */
+  triggerPx: 96,
+  /** 小條出現／收起的動畫時間（毫秒） */
+  animMs: 200,
+} as const;
+
+/** 2.2 統計頁「自訂」區間：天數在這以內用每日長條圖，超過改每月（每個結算期一根） */
+export const STATS_RANGE = {
+  dailyMaxDays: 31,
+} as const;
+
+
+/** 2.4 拖拖小語（句子在 src/quotes.ts） */
+export const QUOTE = {
+  /** 有情境符合時，出情境句的機率（其他時候出一般句） */
+  situationalChance: 0.6,
+  /** 同時符合好幾種情境時：最優先那種出現的機率，剩下的平均分給其他符合的情境 */
+  topChance: 0.6,
+  /** 帳戶餘額低於這個數字算「快見底」（餘額 0 的帳戶不算） */
+  lowBalance: 100,
+  /** 今天或昨天單筆收入達到這個數字算「發薪」 */
+  bigIncome: 10000,
+  /** 連續記帳幾天以上才出連續天數的句子 */
+  streakMin: 3,
+  /** 晚上幾點後還沒記帳就提醒 */
+  remindHour: 20,
+  /** 月底幾天、月初幾天 */
+  monthEndDays: 3,
+  monthStartDays: 3,
+} as const;
+/** 2.5 明細頁拖曳換位置／拖去刪除（長按、移動門檻沿用 GESTURE） */
+export const TX_DRAG = {
+  /** 垃圾桶大小、離畫面底部多高（要在底部篩選列上方） */
+  trashSizePx: 64,
+  trashBottomPx: 96,
+  /** 手指在垃圾桶外圍多少像素內也算放在垃圾桶上 */
+  trashHitPadPx: 12,
+  /** 拖到畫面上下邊緣這麼近就自動捲動；每一格捲多少 */
+  edgePx: 70,
+  scrollSpeedPx: 12,
+  /** 下緣自動捲動區要扣掉底部篩選列的高度 */
+  bottomInsetPx: 150,
+  /** 插入線左邊空出時間軸那一欄 */
+  lineInsetPx: 44,
+} as const;
+
+/** 2.5 記帳後提示條「長按刪除」：要按住多久才刪 */
+export const HOLD_DELETE_MS = 1500;
+
+/** 2.6 App 字體：下載後存在手機 App 資料夾裡的哪個子資料夾（字體清單見 src/fonts.ts） */
+export const FONT = { dir: 'fonts' } as const;

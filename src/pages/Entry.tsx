@@ -1,20 +1,26 @@
 // 記帳頁（支出／收入）與轉帳輸入，共用同一個畫面。內含「拖拖計算機」：把標記膠囊拖到數字上拆帳。
 import { CatIcon } from '../components/CatIcon';
+import { Icon } from '../components/Icon';
+import { CAPSULE_ICONS, UI_ICONS } from '../icons';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { getState, updateData, closeOverlay, showToast, confirmDanger, type Overlay } from '../store';
-import { addTransaction, addTransactions, updateTransaction, deleteTransaction, isLocked, isBudgetPayment, uid, OpError, type TxInput } from '../data/ops';
+import { getState, updateData, closeOverlay, showToast, showHoldToast, confirmDanger, type Overlay } from '../store';
+import { deleteMany, restoreDeleted } from '../data/txMove';
+import { addTransaction, addTransactions, updateTransaction, deleteTransaction, isLocked, isBudgetPayment, isPaidBudget, uid, OpError, type TxInput } from '../data/ops';
+import { revertBudgetPaid, restoreBudgetPaid } from '../data/budget';
 import { roundAmount } from '../data/calc';
 import { pressKey, evaluate, hasOperator, numberToExpr, type CalcKey } from '../calcExpr';
 import { accountName, categoryOf } from '../selectors';
 import { sortedCategories, suggestedNotes } from '../data/notes';
 import { Calculator } from '../components/Calculator';
 import { AccountPicker } from '../components/AccountPicker';
+import { toastRich } from '../toastInfo';
 import { CategoryForm, TagManager } from '../components/Editors';
 import { useAppState } from '../store';
 import { ENTRY_ROW, DRAG_MARK, GESTURE } from '../config';
 import { toLocalInput, fromLocalInput, money } from '../format';
 import { advanceOwedOn } from '../features';
 import { blockClicks } from '../gestures/guard';
+import { useNoteKeyboard } from '../noteKeyboard';
 import {
   parseTerms, canMark, reconcileMarks, splitPlan, splitInputs, previewText, MARK_LABEL,
   type Mark, type Marks,
@@ -50,7 +56,12 @@ function recordMark(t: Transaction): Mark | null {
   return null;
 }
 
-const CHIP_ICON: Record<Mark, string> = { advance: '🤝', owed: '📥', budget: '🎯', reimb: '🧾' };
+const CHIP_ICON: Record<Mark, string> = {
+  advance: CAPSULE_ICONS['我先付'],
+  owed: CAPSULE_ICONS['朋友付'],
+  budget: CAPSULE_ICONS['預算'],
+  reimb: CAPSULE_ICONS['報帳'],
+};
 
 type Mode = 'expense' | 'income' | 'transfer';
 type EntryOverlay = Extract<Overlay, { kind: 'entry' }>;
@@ -68,28 +79,40 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
   const editing = o.txId ? d.transactions.find((t) => t.id === o.txId) : undefined;
   const locked = editing ? isLocked(editing) : false;
   const isPay = editing ? isBudgetPayment(editing) : false;
+  // 2.3：已付款的預算可以直接編輯。編輯它＝改實際付款那一筆，所以畫面上的金額、帳戶、日期、算式都從付款那筆帶出來
+  const paidB = editing ? isPaidBudget(editing) : false;
+  const payRec = paidB ? d.transactions.find((t) => t.id === editing!.budgetPaidTxId) : undefined;
+  const src = payRec ?? editing;
+  // 來自預算的兩列（預算那列、付款那列）：類型、標記不能改，要改請先退回未付
+  const fromBudget = paidB || isPay;
+  const budgetId = paidB ? editing?.id : editing?.budgetOfId;
 
   const initMode: Mode = editing ? (editing.type === 'owed' ? 'expense' : (editing.type as Mode)) : o.mode;
   const [mode, setMode] = useState<Mode>(initMode);
-  const [accountId, setAccountId] = useState<string | null>(editing ? editing.accountId || null : o.accountId);
+  const [accountId, setAccountId] = useState<string | null>(src ? src.accountId || null : o.accountId);
   const [toAccountId, setToAccountId] = useState<string | null>(editing?.toAccountId ?? o.toAccountId ?? null);
   // 新記帳：預設選分類格左上第一個
   const [catId, setCatId] = useState<string | null>(
     editing ? editing.categoryId ?? null : initMode !== 'transfer' ? sortedCategories(d, initMode)[0]?.id ?? null : null,
   );
   const [expr, setExpr] = useState(() => {
-    if (!editing) return '';
-    const ce = editing.calcExpr;
+    if (!src) return '';
+    const ce = src.calcExpr;
     // 算式只在「整筆金額＝算式結果」時沿用；拆帳出來的一部分只顯示自己的金額
-    if (ce && editing.calcTerm === undefined && evaluate(ce) !== null && roundAmount(evaluate(ce)!) === editing.amount) return ce;
-    return numberToExpr(editing.amount);
+    if (ce && src.calcTerm === undefined && evaluate(ce) !== null && roundAmount(evaluate(ce)!) === src.amount) return ce;
+    return numberToExpr(src.amount);
   });
   const [note, setNote] = useState(editing?.note ?? '');
-  const [when, setWhen] = useState(editing ? toLocalInput(editing.occurredAt) : toLocalInput(new Date().toISOString()));
+  const [when, setWhen] = useState(src ? toLocalInput(src.occurredAt) : toLocalInput(new Date().toISOString()));
   const [marks, setMarks] = useState<Marks>({});
   const [sel, setSel] = useState<number | null>(null);
+  /** 2.5：先點膠囊（還沒打數字時）＝選好標記，之後打的數字（沒有自己標記的）都套用它 */
+  const [pickMark, setPickMark] = useState<Mark | null>(null);
   const [editMark, setEditMark] = useState<Mark | null>(editing ? recordMark(editing) : null);
   const [noteFocus, setNoteFocus] = useState(false);
+  // 2.3.1：備註輸入時，系統鍵盤取代計算機鍵盤（分類區、輸入列的行為見 noteKeyboard.ts）
+  const noteRef = useRef<HTMLInputElement>(null);
+  const kb = useNoteKeyboard(noteRef);
   const [drag, setDrag] = useState<DragView | null>(null);
   const [sheet, setSheet] = useState<null | 'account' | 'from' | 'to' | 'newCat' | 'tags'>(null);
   const saving = useRef(false);
@@ -125,8 +148,13 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
   const marksOn = !editing && mode === 'expense';
   const bankOnly = (id: string | null) => !id || d.accounts.find((a) => a.id === id)?.kind === 'bank';
 
+  // 2.5：先點的膠囊套到每個可掛標記、還沒有自己標記的數字上（實際存檔、預覽、顯示都用這份）
+  const effMarks: Marks = marksOn && pickMark
+    ? ({ ...Object.fromEntries(terms.filter((t) => canMark(t) && !marks[t.index]).map((t) => [t.index, pickMark])), ...marks } as Marks)
+    : marks;
+
   // 新記帳的拆帳計畫
-  const plan = marksOn || mode === 'income' ? splitPlan(clean, marksOn ? marks : {}) : null;
+  const plan = marksOn || mode === 'income' ? splitPlan(clean, marksOn ? effMarks : {}) : null;
   const needAccount = plan && plan.ok ? plan.general > 0 || plan.parts.some((p) => p.mark !== 'owed') : true;
 
   let valid: boolean;
@@ -139,6 +167,7 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
     setMode(m);
     setMarks({});
     setSel(null);
+    setPickMark(null);
     if (m !== 'expense') setEditMark(null);
     if (m !== 'transfer') {
       // 分類各自獨立，換模式要選新模式的第一個（編輯舊紀錄則只在型別不符時重選）
@@ -147,18 +176,21 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
   };
 
   const lockedText = (act: string) => {
-    if (isPay) return '這筆是預算付款，不能改成預算或報帳';
-    if (editing?.type === 'owed') return `這筆朋友付已還，${act}請先在待辦頁退回未還`;
-    if (editing?.budget) return `這筆預算已付款，${act}請先在待辦頁退回未付`;
-    if (editing?.reimburseKind === 'advance') return `這筆我先付已收回，${act}請先在待辦頁退回`;
+    if (fromBudget) return '這筆來自預算，要改類型請先退回未付';
+    if (editing?.type === 'owed') return `這筆先欠已還，${act}請先在待辦頁退回未還`;
+    if (editing?.reimburseKind === 'advance') return `這筆先付已收回，${act}請先在待辦頁退回`;
     return `這筆已報帳，${act}請先在待辦頁退回待報帳`;
   };
-  const lockedHint = () => showToast(isPay ? lockedText('') : lockedText('不能再改標記，要改'));
+  const lockedHint = () => showToast(fromBudget ? lockedText('') : lockedText('不能再改標記，要改'));
 
   // 換帳戶：已掛預算卻換到非一般帳戶 → 自動取消預算並提示
   const pickAccount = (id: string | null) => {
     setAccountId(id);
-    if (bankOnly(id)) return;
+    if (bankOnly(id) || paidB) return;
+    if (pickMark === 'budget') {
+      setPickMark(null);
+      showToast('預算只能掛在一般帳戶，已取消預算');
+    }
     if (editMark === 'budget') {
       setEditMark(null);
       showToast('預算只能掛在一般帳戶，已取消預算');
@@ -187,6 +219,14 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
 
   const onTermTap = (i: number) => {
     if (!marksOn) return;
+    // 2.5：先點了膠囊、再點某個數字＝只把標記掛在這個數字上
+    if (pickMark && !marks[i]) {
+      if (!canMark(terms[i])) return showToast('乘除裡的數字不能掛標記');
+      setMarks((x) => ({ ...x, [i]: pickMark }));
+      setPickMark(null);
+      setSel(null);
+      return;
+    }
     const m = marks[i];
     if (m) {
       setMarks((x) => {
@@ -204,7 +244,7 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
   const onChipTap = (m: Mark) => {
     if (performance.now() - dragEndAt.current < 400) return;
     if (editing) {
-      if (locked || isPay) return lockedHint();
+      if (locked || fromBudget) return lockedHint();
       if (editMark === m) return setEditMark(null);
       if (m === 'budget' && !bankOnly(accountId)) return showToast('預算只能掛在一般帳戶');
       setEditMark(m);
@@ -212,8 +252,15 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
     }
     if (!marksOn) return;
     if (sel !== null) return applyMark(sel, m, true);
+    if (pickMark === m) return setPickMark(null);
     if (terms.length === 1) return applyMark(0, m, true);
-    showToast('把膠囊拖到數字上，或先點數字再點膠囊');
+    // 2.5：還沒打數字就點膠囊＝先選好標記（亮起來），打完數字按 OK 就套用
+    if (terms.length === 0) {
+      if (m === 'budget' && !bankOnly(accountId)) return showToast('預算只能掛在一般帳戶');
+      setPickMark(m);
+      return;
+    }
+    showToast('把膠囊拖到數字上，或先點膠囊／數字都可以');
   };
 
   // ---- 拖曳標記膠囊 ----
@@ -365,17 +412,14 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
         });
         updateData(() => r.data);
         closeOverlay();
-        showToast('已轉帳一筆', () => {
-          updateData((x) => deleteTransaction(x, r.id));
-          showToast('已復原');
-        });
+        showHoldToast('已轉帳一筆', () => holdDelete([r.id]), toastRich('已轉帳', r.data, r.data.transactions.filter((t) => t.id === r.id)));
       } catch (e) {
         saving.current = false;
         showToast(e instanceof OpError ? e.message : '存檔失敗');
       }
       return;
     }
-    const p = splitPlan(clean, marksOn ? marks : {});
+    const p = splitPlan(clean, marksOn ? effMarks : {});
     if (!p.ok) return showToast(p.error);
     let inputs: TxInput[];
     try {
@@ -396,20 +440,49 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
       const r = addTransactions(getState().data, inputs);
       updateData(() => r.data);
       closeOverlay();
-      showToast(r.ids.length === 1 ? '已記一筆' : `已記 ${r.ids.length} 筆`, () => {
-        updateData((x) => r.ids.reduce((acc, id) => deleteTransaction(acc, id), x));
-        showToast('已復原');
-      });
+      showHoldToast(r.ids.length === 1 ? '已記一筆' : `已記 ${r.ids.length} 筆`, () => holdDelete(r.ids), toastRich('已記', r.data, r.data.transactions.filter((t) => r.ids.includes(t.id))));
     } catch (e) {
       saving.current = false;
       showToast(e instanceof OpError ? e.message : '存檔失敗');
     }
   };
 
+  /** 2.5：提示條〔長按刪除〕按滿：刪掉剛記的那幾筆，再給「已刪除｜復原」（普通點一下就救回來） */
+  const holdDelete = (ids: string[]) => {
+    const r = deleteMany(getState().data, ids);
+    if (r.deleted.length === 0) return showToast(r.skipped[0]?.reason ?? '找不到這筆紀錄');
+    updateData(() => r.data);
+    showToast('已刪除', () => {
+      updateData((x) => restoreDeleted(x, r.deleted));
+      showToast('已復原');
+    });
+  };
+
+  /** 退回未付（2.3）：不再跳確認框，直接退回、關掉編輯畫面，用新提示給〔復原〕 */
+  const onRevertBudget = () => {
+    if (!budgetId || saving.current) return;
+    const before = getState().data;
+    const b = before.transactions.find((t) => t.id === budgetId);
+    const pay = b ? before.transactions.find((t) => t.id === b.budgetPaidTxId) : undefined;
+    if (!b || !pay) return showToast('找不到這筆預算的付款紀錄');
+    saving.current = true;
+    try {
+      updateData((x) => revertBudgetPaid(x, budgetId));
+    } catch (e) {
+      saving.current = false;
+      return showToast(e instanceof Error ? e.message : '退回失敗');
+    }
+    closeOverlay();
+    showToast('已退回未付', () => {
+      updateData((x) => restoreBudgetPaid(x, budgetId, pay));
+      showToast('已復原');
+    });
+  };
+
   const onDelete = async () => {
     if (!editing) return;
-    if (isPay) {
-      showToast('這筆是預算付款，請先在待辦頁退回未付再刪除');
+    if (fromBudget) {
+      showToast('這筆來自預算，請先退回未付再刪除');
       return;
     }
     if (locked) {
@@ -438,7 +511,7 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
     let pos = 0;
     for (const t of terms) {
       if (t.start > pos) out.push(<span class="op" key={`o${t.index}`}>{expr.slice(pos, t.start)}</span>);
-      const m = marksOn ? marks[t.index] : undefined;
+      const m = marksOn ? effMarks[t.index] : undefined;
       const cls = [
         'term',
         m ? `marked mk-${m}` : '',
@@ -466,9 +539,9 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
     if (showAO || editMark === 'owed') chipMarks.push('owed');
     chipMarks.push('budget', 'reimb');
   }
-  const activeOf = (m: Mark) => (editing ? editMark === m : Object.values(marks).includes(m));
+  const activeOf = (m: Mark) => (editing ? editMark === m : pickMark === m || Object.values(effMarks).includes(m));
 
-  const previewLine = marksOn && Object.keys(marks).length > 0 && plan
+  const previewLine = marksOn && Object.keys(effMarks).length > 0 && plan
     ? plan.ok
       ? { text: previewText(plan, cat?.name ?? '一般', money), err: false }
       : { text: plan.error, err: true }
@@ -477,20 +550,26 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
   return (
     <div class="entry">
       <div class="entry-top">
-        <button class="icon-btn" onClick={closeOverlay} aria-label="返回">✕</button>
+        <button class="icon-btn" onClick={closeOverlay} aria-label="返回"><Icon name={UI_ICONS['關閉']} /></button>
         <div class="seg">
-          <button class={mode === 'expense' ? 'on expense' : ''} onClick={() => switchMode('expense')} disabled={locked}>支出</button>
-          <button class={mode === 'income' ? 'on income' : ''} onClick={() => switchMode('income')} disabled={locked}>收入</button>
-          <button class={mode === 'transfer' ? 'on transfer' : ''} onClick={() => switchMode('transfer')} disabled={locked}>轉帳</button>
+          <button class={mode === 'expense' ? 'on expense' : ''} onClick={() => switchMode('expense')} disabled={locked || fromBudget}>支出</button>
+          <button class={mode === 'income' ? 'on income' : ''} onClick={() => switchMode('income')} disabled={locked || fromBudget}>收入</button>
+          <button class={mode === 'transfer' ? 'on transfer' : ''} onClick={() => switchMode('transfer')} disabled={locked || fromBudget}>轉帳</button>
         </div>
         {editing ? (
-          <button class="icon-btn danger" onClick={onDelete} aria-label="刪除">🗑</button>
+          <button class="icon-btn danger" onClick={onDelete} aria-label="刪除"><Icon name={UI_ICONS['刪除']} /></button>
         ) : (
           <span class="icon-btn entry-top-spacer" aria-hidden="true" />
         )}
       </div>
 
       {locked && <div class="notice">{lockedText('要改金額或帳戶')}</div>}
+      {fromBudget && (
+        <div class="notice notice-row">
+          <span>這筆來自預算</span>
+          <button class="notice-btn" onClick={onRevertBudget}>退回未付</button>
+        </div>
+      )}
 
       {isTransfer ? (
         <div class="transfer-box">
@@ -506,7 +585,7 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
               setToAccountId(accountId);
             }}
           >
-            ⇄
+            <Icon name="arrow-left-right" />
           </button>
           <button class="xfer-acc" onClick={() => setSheet('to')}>
             <span class="muted">到</span>
@@ -523,7 +602,7 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
             </button>
           ))}
           <button class="cat add" onClick={() => setSheet('newCat')}>
-            <span class="cat-icon">＋</span>
+            <span class="cat-icon"><Icon name={UI_ICONS['新增']} /></span>
             <span class="cat-name">新增分類</span>
           </button>
         </div>
@@ -531,6 +610,7 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
 
       <div class="amount-row" data-no-swipe>
         <label class="when-cell" style={{ flexGrow: ENTRY_ROW.date }}>
+          <Icon name={UI_ICONS['日期']} size={14} />
           <span class="when-text">{whenLabel(when)}</span>
           <input
             type="datetime-local"
@@ -548,14 +628,29 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
           )}
         </div>
         <input
+          ref={noteRef}
           class="note-input"
           style={{ flexGrow: row[1] }}
           value={note}
           maxLength={40}
           placeholder="備註"
+          enterkeyhint="done"
           onInput={(e) => setNote(e.currentTarget.value)}
-          onFocus={() => setNoteFocus(true)}
-          onBlur={() => setNoteFocus(false)}
+          onFocus={() => {
+            setNoteFocus(true);
+            kb.onFocus();
+          }}
+          onBlur={() => {
+            setNoteFocus(false);
+            kb.onBlur();
+          }}
+          // 鍵盤上的完成鈕：只收鍵盤（回到計算機），不存檔
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              e.currentTarget.blur();
+            }
+          }}
         />
       </div>
 
@@ -563,23 +658,23 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
 
       {!isTransfer && (
         <div class="mark-row" data-no-swipe ref={markRowRef}>
-          <button class="mark-chip chip-acc" onClick={() => !locked && setSheet('account')} disabled={locked}>
-            💳 {accountId ? accountName(d, accountId) : '選帳戶'}
+          <button class="mark-chip glass chip-acc" onClick={() => !locked && setSheet('account')} disabled={locked}>
+            <Icon name="credit-card" size={16} /> {accountId ? accountName(d, accountId) : '選帳戶'}
           </button>
           {chipMarks.map((m) => (
             <button
               key={m}
-              class={`mark-chip drag mk-${m}${activeOf(m) ? ' on' : ''}`}
+              class={`mark-chip glass drag mk-${m}${activeOf(m) ? ' on' : ''}`}
               onClick={() => onChipTap(m)}
               onPointerDown={(e) => onChipDown(e, m)}
               onPointerMove={onChipMove}
               onPointerUp={onChipUp}
               onPointerCancel={onChipCancel}
             >
-              {CHIP_ICON[m]} {MARK_LABEL[m]}
+              <Icon name={CHIP_ICON[m]} size={16} /> {MARK_LABEL[m]}
             </button>
           ))}
-          <button class="mark-chip chip-other" onClick={() => showToast('即將推出')}>✨ 其他</button>
+          <button class="mark-chip glass chip-other" onClick={() => showToast('即將推出')} aria-label="其他"><Icon name={UI_ICONS['更多']} size={16} /></button>
         </div>
       )}
 
@@ -590,11 +685,16 @@ export function EntryPage({ o }: { o: EntryOverlay }) {
         <button class="tag more" onClick={() => setSheet('tags')}>更多…</button>
       </div>
 
-      <Calculator onKey={onKey} onOk={onOk} okLabel="OK" okDisabled={!valid || value === null} />
+      {/* 備註輸入時計算機讓位給系統鍵盤：holdHide＝看不見但先佔著位置，等視窗變矮才真的拿掉；holdShow／hidden＝不顯示（鍵盤收起、視窗變高後才放回來） */}
+      {(kb.phase === 'show' || kb.phase === 'holdHide') && (
+        <div class={`calc-slot${kb.phase === 'holdHide' ? ' hold' : ''}`}>
+          <Calculator onKey={onKey} onOk={onOk} okLabel="OK" okDisabled={!valid || value === null} />
+        </div>
+      )}
 
       {drag && (
         <div class={`mark-ghost mk-${drag.mark}`} style={{ left: `${drag.x}px`, top: `${drag.y + DRAG_MARK.ghostOffsetY}px` }}>
-          {CHIP_ICON[drag.mark]} {MARK_LABEL[drag.mark]}
+          <Icon name={CHIP_ICON[drag.mark]} size={16} /> {MARK_LABEL[drag.mark]}
         </div>
       )}
 

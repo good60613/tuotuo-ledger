@@ -3,7 +3,8 @@
   /* 顏色一律由 src/theme.ts 的 applyTheme 寫入（--bg、--card、--accent…），這裡不寫死 */
   --radius: 14px;
   --nav-h: 58px;
-  font-family: system-ui, -apple-system, 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+  /* 2.6：--app-font＝設定選的 App 字體（src/fonts.ts 設定）；沒設定＝跟隨系統。缺字時自動退回系統字 */
+  font-family: var(--app-font, system-ui), system-ui, -apple-system, 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
   color: var(--text);
   -webkit-tap-highlight-color: transparent;
 }
@@ -46,23 +47,20 @@ button { font: inherit; color: inherit; }
 .page-title { font-size: 20px; margin: 4px 0 12px; }
 
 /* ---------- 底部導覽列 ---------- */
+/* 浮動膠囊（2.1）：高度 --nav-h、左右與離底 --nav-gap（config BOTTOM_BAR）；毛玻璃外觀在檔尾的 .glass */
 .bottom-nav {
-  display: flex; height: calc(var(--nav-h) + env(safe-area-inset-bottom));
-  padding-bottom: env(safe-area-inset-bottom);
-  background: var(--card); border-top: 1px solid var(--line);
+  display: flex; flex: none; height: var(--nav-h); padding: 0 6px;
+  margin: 0 var(--nav-gap) calc(var(--nav-gap) + env(safe-area-inset-bottom));
+  border-radius: calc(var(--nav-h) / 2); position: relative; z-index: 3;
 }
 .nav-item {
   flex: 1; border: 0; background: none; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 2px; color: var(--muted); position: relative;
 }
-.nav-icon { font-size: 20px; filter: grayscale(1); opacity: .6; }
-.nav-label { font-size: 12px; }
+.nav-icon { width: 46px; height: 30px; border-radius: 15px; display: flex; align-items: center; justify-content: center; }
+.nav-label { font-size: 11px; }
 .nav-item.active { color: var(--accent); font-weight: 700; }
-.nav-item.active .nav-icon { filter: none; opacity: 1; }
-.nav-item.active::before {
-  content: ''; position: absolute; top: 0; left: 25%; right: 25%; height: 3px;
-  background: var(--accent); border-radius: 0 0 3px 3px;
-}
+.nav-item.active .nav-icon { background: var(--chip); }
 
 /* ---------- 首頁 ---------- */
 .home { display: flex; flex-direction: column; height: 100%; overflow: hidden; padding: 0 14px 12px; }
@@ -170,12 +168,33 @@ button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 .btn-row.three .btn { min-width: 0; padding-left: 6px; padding-right: 6px; }
 .btn:disabled { opacity: .4; }
 
-.toast {
-  position: absolute; left: 12px; right: 12px; bottom: calc(var(--nav-h) + 14px + env(safe-area-inset-bottom));
-  background: var(--inverse); color: var(--on-inverse); border-radius: 12px; padding: 12px 14px; display: flex;
-  align-items: center; justify-content: space-between; z-index: 200; box-shadow: 0 6px 18px var(--shadow-lg);
+/* 提示膠囊（2.3）：浮在畫面上的圓角膠囊，底色＝主題色的淺色版（亮色藍、暗色金，跟著主題色變） */
+.toast-capsule {
+  position: absolute; left: 16px; right: 16px; z-index: 200;
+  bottom: calc(var(--nav-h) + var(--nav-gap) + 14px + var(--bottom-bar-h, 0px) + env(safe-area-inset-bottom));
+  display: flex; align-items: center; gap: 10px; padding: 9px 10px 11px 12px; border-radius: 999px; overflow: hidden;
+  background: color-mix(in srgb, var(--accent) 16%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  color: var(--text); touch-action: none;
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--accent) 24%, transparent), 0 2px 6px var(--shadow-xs);
+  animation: toast-spring var(--toast-in-ms, 420ms) cubic-bezier(.34, 1.56, .64, 1);
 }
-.toast-undo { background: none; border: 1px solid var(--inverse-line); color: var(--inverse-accent); border-radius: 8px; padding: 6px 12px; font-weight: 700; }
+/* 明細頁、小帳戶子畫面右下角有「＋」（58px）：往上抬，不蓋住它 */
+.toast-capsule.lift { bottom: calc(var(--nav-h) + var(--nav-gap) + 14px + var(--bottom-bar-h, 0px) + 58px + 16px + env(safe-area-inset-bottom)); }
+.toast-capsule.leaving { animation: toast-out var(--toast-out-ms, 260ms) ease-in forwards; pointer-events: none; }
+.toast-capsule.dragging { animation: none; }
+.toast-icon { width: 30px; height: 30px; flex: none; border-radius: 50%; background: var(--fill-soft); display: flex; align-items: center; justify-content: center; }
+.toast-text { flex: 1 1 auto; min-width: 0; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.toast-title { font-weight: 600; }
+.toast-amt { font-weight: 700; font-variant-numeric: tabular-nums; }
+.toast-amt.transfer { color: var(--transfer); }
+.toast-undo { flex: none; border: 0; background: var(--accent); color: var(--on-accent); border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 700; }
+.toast-undo:disabled { opacity: .5; }
+/* 倒數線：從滿到空＝還剩多久可以復原 */
+.toast-timer { position: absolute; left: 18px; right: 18px; bottom: 4px; height: 2px; border-radius: 1px; background: var(--accent); opacity: .7; transform-origin: left center; animation: toast-timer linear forwards; }
+@keyframes toast-spring { from { transform: translateY(70px) scale(.96); opacity: 0; } 55% { opacity: 1; } }
+@keyframes toast-out { to { transform: translateY(48px); opacity: 0; } }
+@keyframes toast-timer { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 
 /* ---------- 底部選單、對話框 ---------- */
 .sheet-backdrop, .dialog-backdrop { position: absolute; inset: 0; background: var(--backdrop); z-index: 120; display: flex; }
@@ -283,6 +302,9 @@ button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 .tag.on { border-color: var(--accent); color: var(--accent); }
 .tag.more { color: var(--muted); }
 
+/* 記帳頁：備註輸入時計算機的外框（看不見但先佔位，見 noteKeyboard.ts） */
+.calc-slot { flex: none; }
+.calc-slot.hold { visibility: hidden; }
 .calc { display: grid; grid-template-columns: repeat(5, 1fr); grid-auto-rows: var(--calc-row, 52px); gap: var(--calc-gap, 1px); background: var(--line); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
 .calc-key { border: 0; background: var(--key); font-size: 22px; font-variant-numeric: tabular-nums; }
 .calc-key:active { background: var(--key-press); }
@@ -398,6 +420,29 @@ button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 .kind-title { font-weight: 700; font-size: 14px; padding-top: 6px; }
 .setting-row { display: flex; justify-content: space-between; width: 100%; border: 0; background: none; padding: 14px 0; font-size: 15px; border-bottom: 1px solid var(--line); }
 .setting-row:last-child { border-bottom: 0; }
+/* 2.5 拖拖硬幣選擇列 */
+.setting-row.coin-row { flex-direction: column; gap: 8px; }
+.coin-row-head { display: flex; justify-content: space-between; align-items: center; }
+.coin-strip { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px; }
+.coin-strip::-webkit-scrollbar { display: none; }
+.coin-opt { flex: none; width: 44px; height: 44px; padding: 3px; border-radius: 12px; border: 2px solid transparent; background: var(--line); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--muted); }
+.coin-opt img { width: 100%; height: 100%; object-fit: contain; }
+/* 2.6：選中只換金色外框，底色不變（「自動」也是填滿色塊，不再像空心框） */
+.coin-opt.on { border-color: var(--accent); color: var(--text); }
+.coin-strip.wrap { flex-wrap: wrap; overflow: visible; gap: 8px; }
+.coin-strip.wrap .coin-opt { width: 52px; height: 52px; }
+.coin-pick p { margin: 10px 0 0; }
+/* 2.6 設定列：名稱下面可加一行小字；右邊按鈕框不被擠扁 */
+.setting-row { align-items: center; gap: 10px; }
+.setting-row > .mini-seg { flex: none; }
+.row-label { display: flex; flex-direction: column; gap: 2px; min-width: 0; text-align: left; }
+.row-note { line-height: 1.3; }
+/* 2.6 選字體彈窗 */
+.font-list { display: flex; flex-direction: column; gap: 8px; }
+.font-opt { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; width: 100%; padding: 10px 12px; border-radius: 12px; border: 2px solid transparent; background: var(--fill-soft); text-align: left; }
+.font-opt.on { border-color: var(--accent); }
+.font-opt-head { display: flex; justify-content: space-between; width: 100%; }
+.font-sample { font-size: 20px; font-variant-numeric: tabular-nums; }
 .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
 .btn-row .btn { flex: 1; }
 
@@ -405,12 +450,6 @@ button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 @media (max-height: 700px) {
   .home-head { height: 62px; padding-top: 6px; }
   .drag-hint { height: 20px; line-height: 20px; font-size: 13px; }
-  .card { min-height: 72px; padding: 10px 12px; }
-  .card-balance { font-size: 20px; }
-  .cards { gap: 8px; }
-  .home .balls { margin: 10px 0 4px; }
-  .ball-dot { width: 42px; height: 42px; font-size: 19px; }
-  .amounts { --amt-k: var(--amt-short); }
   .amt-mid { font-size: 18px; }
   .calc { grid-auto-rows: var(--calc-row-short, 46px); }
 }
@@ -515,7 +554,7 @@ button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 /* ---------- 待辦頁（第四批）：報帳／預算分頁 ---------- */
 .todo { display: flex; flex-direction: column; }
 .todo-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
-.todo-tabs button { flex: 1; border: 0; background: var(--card); padding: 10px; border-radius: 12px; font-size: 16px; font-weight: 700; color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 6px; }
+.todo-tabs button { flex: 1; border: 0; background: var(--card); padding: 10px; border-radius: 12px; font-size: 16px; font-weight: 700; color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; min-width: 0; }
 .todo-tabs button.on.reimb { background: var(--reimb); color: var(--on-color); }
 .todo-tabs button.on.budget { background: var(--budget); color: var(--on-color); }
 .todo-count { min-width: 20px; padding: 0 6px; border-radius: 10px; background: var(--overlay-soft); font-size: 12px; line-height: 20px; }
@@ -547,14 +586,12 @@ button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 .drop-zone { transition: transform .1s, background .1s, color .1s; }
 .home-zones .drop-zone { animation: zone-fade .15s ease-out; }
 @keyframes zone-fade { from { opacity: 0; transform: scale(.96); } }
-/* 提示條滑入 */
-.toast { animation: toast-in .18s ease-out; }
-@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
 /* 空狀態：字小一點、行距鬆一點 */
 .empty-list, .empty { line-height: 1.6; font-size: 14px; }
 /* 使用者設定減少動態時，關掉這些小動畫 */
 @media (prefers-reduced-motion: reduce) {
-  .toast, .home-zones .drop-zone, .drop-zone { animation: none; transition: none; }
+  .toast-capsule, .home-zones .drop-zone, .drop-zone { animation: none; transition: none; }
+  .toast-capsule.leaving { opacity: 0; }
 }
 
 /* ---------- 第五批：單手操作版面（只看的在上、要按的在下） ---------- */
@@ -574,8 +611,7 @@ button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 /* 「＋」浮在操作列上方：黏在操作列頂端再往上留一點 */
 .detail .fab { bottom: calc(var(--bar-h) + var(--bar-gap) * 2 + 8px); }
 .detail .fab { margin-bottom: 8px; }
-/* 提示條浮在操作列上方（--bottom-bar-h 由 app.tsx 依目前頁面設定） */
-.toast { bottom: calc(var(--nav-h) + 14px + var(--bottom-bar-h, 0px) + env(safe-area-inset-bottom)); }
+/* 提示膠囊浮在操作列上方（--bottom-bar-h 由 app.tsx 依目前頁面設定），見前面的 .toast-capsule */
 
 /* 待辦頁（第五批）：總額在最上、清單在中間可捲動、控制項由下往上＝切換列→未付／已付→多選列 */
 .page-pad.todo { height: 100%; padding-bottom: 0; overflow: hidden; }
@@ -623,3 +659,263 @@ button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 .tx-flag.owed { background: var(--owed); color: var(--on-color); }
 .tx-expr { font-variant-numeric: tabular-nums; }
 .todo-tabs button { min-width: 0; }
+
+/* ---------- 2.1 B 段：圖示選單、帳戶圖示 ---------- */
+.icon-cell { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: var(--text); }
+.icon-cell-label { font-size: 10px; color: var(--muted); line-height: 1; }
+.icon-grid { grid-template-columns: repeat(5, 1fr); }
+.acc-icon { flex: none; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); color: var(--accent); }
+.acc-icon.badge { border-radius: 50%; background: var(--accent); color: var(--on-accent); font-weight: 700; }
+.acc-style-row { display: flex; align-items: center; gap: 12px; margin: 6px 0; }
+.acc-icon-picker { max-height: 30vh; }
+
+/* ---------- 2.1 C 段：毛玻璃（只用在導航列、首頁帳戶卡／小球／剩餘可用大卡、記帳頁拖拖膠囊） ---------- */
+/* 背景光暈：radial-gradient 疊在 body 背景上（不用大面積 blur 元素，省效能） */
+body {
+  background:
+    radial-gradient(ellipse 80% 38% at 8% 0%, color-mix(in srgb, var(--glow-a) var(--glow-pct), transparent), transparent 72%),
+    radial-gradient(ellipse 80% 42% at 100% 100%, color-mix(in srgb, var(--glow-b) var(--glow-pct), transparent), transparent 72%),
+    var(--bg);
+}
+.glass {
+  background: var(--gbg);
+  border: 1px solid var(--gbd);
+  box-shadow: var(--gsh), var(--ghi);
+}
+/* 即時背景模糊只在 config GLASS.liveBlur 開啟時才用（html.glass-blur），平常只靠半透明底＋邊框＋高光，效能便宜很多 */
+html.glass-blur .glass {
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+}
+html.glass-blur .glass-nav {
+  -webkit-backdrop-filter: blur(var(--glass-nav-blur)) saturate(var(--glass-nav-sat));
+  backdrop-filter: blur(var(--glass-nav-blur)) saturate(var(--glass-nav-sat));
+}
+/* 關閉毛玻璃：改實心（solid 底＋line 邊），外觀一致 */
+:where(html.no-glass) .glass {
+  background: var(--card); border: 1px solid var(--line); box-shadow: 0 1px 3px var(--shadow-xs);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+/* 瀏覽器不支援 backdrop-filter：自動退回實心 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass {
+    background: var(--card); border: 1px solid var(--line); box-shadow: 0 1px 3px var(--shadow-xs);
+  }
+}
+.acc-icon { background: var(--chip); }
+
+/* ---------- 2.1 D 段：首頁版面（標題→剩餘可用大卡→帳戶卡→小球→最近紀錄→浮動導覽列） ---------- */
+.home { gap: var(--home-gap); padding-bottom: 0; }
+.home-head { height: 40px; padding-top: 6px; align-items: center; justify-content: space-between; }
+.home-title { font-size: 22px; font-weight: 800; }
+.home-date { font-size: 13px; }
+.home > .home-sum { flex: none; }
+.home-sum { border-radius: 20px; padding: 14px 16px 12px; }
+.sum-top { display: flex; align-items: center; gap: 14px; }
+.sum-main { min-width: 0; flex: 1 1 auto; }
+.sum-label { font-size: var(--sum-label); color: var(--muted); }
+.sum-big { font-size: calc(var(--sum-big) * var(--amt-k, 1)); font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; line-height: 1.15; white-space: nowrap; }
+.home-sum .amt-divider { margin: 4px 0; }
+/* 2.6 平均／日：夾在剩餘可用與右側小字欄中間；空間不夠時先縮自己的字，不擠掉兩邊 */
+.sum-avg { flex: 0 1 auto; min-width: 0; display: flex; flex-direction: column; align-items: center; }
+.sum-avg-val { font-size: calc(var(--sum-avg) * var(--amt-k, 1)); font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; line-height: 1.2; white-space: nowrap; }
+.sum-avg-val.neg { color: var(--expense); }
+.sum-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.sum-col { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.sum-vals { display: flex; gap: var(--sum-gap); font-size: calc(var(--sum-row) * var(--row-k, 1)); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sum-vals .expense { color: var(--expense); }
+.sum-vals .income { color: var(--income); }
+
+.cards { gap: 10px; }
+.card { height: var(--home-card-h); min-height: 0; padding: 0 12px; align-items: center; border-radius: 20px; }
+.card-body { align-self: center; justify-content: center; gap: 1px; }
+.card-name-row { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.card-name { font-size: 13px; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-budget { flex: none; font-size: 10px; color: var(--budget); white-space: nowrap; }
+.card-balance { font-size: 19px; }
+.card.is-source { border-width: 1px; }
+.empty.glass, .cards > .empty { border-radius: 20px; }
+
+.balls { margin: 0; }
+.ball { padding: 0; }
+.ball-dot { width: var(--home-ball); height: var(--home-ball); color: var(--accent); box-shadow: var(--gsh), var(--ghi); }
+.ball-label { font-size: 11px; }
+.ball-amt { font-size: 10px; }
+
+.home-recent { flex: 1 1 0; min-height: 0; }
+.recent-card { flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 0 14px var(--recent-pad); overflow: hidden; margin-bottom: var(--nav-gap); }
+.recent-head { flex: none; height: var(--recent-head); display: flex; align-items: center; justify-content: space-between; font-size: 14px; }
+.recent-list { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.recent-row { flex: 1 1 0; min-height: 0; max-height: 64px; display: flex; align-items: center; gap: 10px; border: 0; background: none; padding: 0; text-align: left; border-top: 1px solid var(--line); }
+.recent-row:first-child { border-top: 0; }
+.recent-icon { flex: none; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.recent-mid { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.recent-title { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.recent-sub { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.recent-row:active { opacity: .85; }
+.home-zones { padding-bottom: var(--nav-gap); }
+
+/* ---------- 2.1 E 段：記帳頁 ---------- */
+/* 膠囊顏色：我先付＝青綠、朋友付＝橘、預算＝紅、報帳＝綠（帳戶那顆用主色） */
+.mk-owed { --mk: var(--cap-owed); --mk-soft: var(--cap-owed-soft); }
+.mk-budget { --mk: var(--expense); --mk-soft: var(--expense-soft); }
+.mk-reimb { --mk: var(--income); --mk-soft: var(--income-soft); }
+.mark-chip.glass { background: var(--gbg); border: 1px solid var(--mk, var(--gbd)); color: var(--mk, var(--text)); box-shadow: 0 2px 8px var(--shadow-xs), var(--ghi); gap: 5px; }
+.mark-chip.glass.on { background: var(--mk); color: var(--on-color); }
+.mark-chip.glass.chip-other { color: var(--muted); border-color: var(--gbd); }
+html.no-glass .mark-chip.glass { background: var(--card); }
+html.no-glass .mark-chip.glass.on { background: var(--mk); }
+.mark-ghost { display: inline-flex; align-items: center; gap: 5px; }
+/* 快速標籤：灰色純文字、用點的，和有顏色的膠囊一眼分得出來 */
+.tag { border-color: transparent; background: var(--fill-soft); color: var(--muted); }
+.tag.on { background: var(--fill-soft); border-color: var(--border-strong); color: var(--text); }
+.when-cell { gap: 4px; }
+.when-cell .icon { color: var(--muted); flex: none; }
+/* OK 鍵：主色底，帶淡光 */
+.calc-key.ok { box-shadow: 0 0 16px var(--glow); }
+.calc-key.ok:disabled { box-shadow: none; }
+.calc-key .icon { display: block; margin: 0 auto; }
+.icon-btn { display: inline-flex; align-items: center; justify-content: center; }
+
+/* ---------- 2.1 F 段：拖曳光影（只用 transform／opacity／陰影） ---------- */
+/* 拿起：從正放、原大小慢慢轉到傾斜（不要一瞬間跳過去） */
+@keyframes lift-in { from { rotate: 0deg; scale: 1; } }
+/* 拿起：首頁卡片的影子（倍率由 GESTURE.liftScale 決定）傾斜、大陰影、主色發光 */
+.drag-ghost { rotate: var(--fx-tilt); animation: lift-in var(--fx-lift-ms) cubic-bezier(.2, .8, .3, 1); -webkit-backdrop-filter: none !important; backdrop-filter: none !important; background: var(--card) !important; box-shadow: 0 14px var(--fx-shadow) var(--shadow-lg), 0 0 var(--fx-glow) var(--glow) !important; }
+/* 拿起：膠囊影子放大、傾斜、發出自己顏色的光 */
+.mark-ghost { scale: var(--fx-lift); rotate: var(--fx-tilt); animation: lift-in var(--fx-lift-ms) cubic-bezier(.2, .8, .3, 1); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: 0 10px var(--fx-shadow) var(--shadow-lg), 0 0 var(--fx-glow) color-mix(in srgb, var(--mk) 60%, transparent); }
+/* 經過目標：亮一圈（外框＋淡光暈），離開熄掉 */
+.term { transition: transform var(--fx-hover-ms), background var(--fx-hover-ms), box-shadow var(--fx-hover-ms); }
+.term.hover { box-shadow: 0 0 var(--fx-hover-glow) var(--glow); }
+.drop-zone { transition: transform var(--fx-hover-ms), background var(--fx-hover-ms), color var(--fx-hover-ms), box-shadow var(--fx-hover-ms); }
+.zone-expense.drop-hover { box-shadow: 0 0 var(--fx-hover-glow) color-mix(in srgb, var(--expense) 55%, transparent); }
+.zone-income.drop-hover { box-shadow: 0 0 var(--fx-hover-glow) color-mix(in srgb, var(--income) 55%, transparent); }
+.card.drop-hover, .ball.drop-hover { box-shadow: 0 0 var(--fx-hover-glow) var(--glow); }
+/* 放下：輕輕回彈（來源卡片恢復時帶一點過衝；掛上標記的數字彈一下） */
+.card { transition: border-color .1s, background .1s, transform var(--fx-drop-ms) cubic-bezier(.34, 1.56, .64, 1); }
+.card.is-source { transform: scale(.94); }
+@keyframes term-pop { 0% { transform: scale(1.18); } 60% { transform: scale(.96); } 100% { transform: scale(1); } }
+.term.marked { animation: term-pop var(--fx-drop-ms) ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .drag-ghost { transform: none !important; transition: none !important; rotate: none; animation: none; }
+  .mark-ghost { scale: none; rotate: none; animation: none; }
+  .term, .term.hover, .drop-zone, .card, .card.is-source, .card.drop-hover, .ball.drop-hover, .drop-zone.drop-hover { transform: none !important; transition: none; }
+  .term.marked { animation: none; }
+  .tags { transition: none; }
+}
+
+/* ---------- 2.1 G 段：其餘畫面的圖示對齊 ---------- */
+svg.icon { vertical-align: -0.2em; flex: none; }
+.star-on { fill: currentColor; }
+.zone-icon { display: inline-flex; }
+.sub-kind-icon { vertical-align: -2px; }
+.blocked-icon { vertical-align: -4px; color: var(--warn); }
+.fab, .chip, .pill-btn, .add-row, .goal-row.add { align-items: center; }
+.chip .icon, .add-row .icon, .goal-row .icon, .pill-btn .icon { margin: 0 2px; }
+.license-text { white-space: pre-wrap; font-size: 12px; line-height: 1.5; user-select: text; -webkit-user-select: text; max-height: 50vh; overflow-y: auto; margin: 0; }
+.license-row { margin-top: 12px; }
+
+/* ---------- 2.2 B1／C1：頂部浮動小條（不佔版面，出現時列表不跳） ---------- */
+.collapse-head { position: sticky; top: 0; height: 0; z-index: 7; }
+.collapse-bar {
+  position: absolute; left: 0; right: 0; top: 6px; height: 36px; border-radius: 18px;
+  display: flex; align-items: center; justify-content: space-around; font-size: 13px; color: var(--muted);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+  opacity: 0; transform: translateY(-8px); visibility: hidden; pointer-events: none;
+  transition: opacity var(--ch-ms) ease, transform var(--ch-ms) ease, visibility 0s linear var(--ch-ms);
+}
+.collapse-bar b { font-size: 15px; margin-left: 4px; }
+.collapse-bar .expense { color: var(--expense); }
+.collapse-bar .income { color: var(--income); }
+.collapse-head.on .collapse-bar { opacity: 1; transform: none; visibility: visible; transition: opacity var(--ch-ms) ease, transform var(--ch-ms) ease; }
+
+/* ---------- 2.2 B2：明細底部篩選膠囊列 ---------- */
+.cap-row { flex: 1 1 0; min-width: 0; display: flex; gap: 6px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
+.cap-row::-webkit-scrollbar { display: none; }
+.cap {
+  flex: 1 0 auto; justify-content: center; display: flex; align-items: center; height: 100%; box-sizing: border-box;
+  border: 1px solid var(--line); background: var(--card); color: var(--text); border-radius: 999px; padding: 0 4px;
+}
+.cap button { border: 0; background: none; color: inherit; font: inherit; height: 100%; display: flex; align-items: center; gap: 4px; padding: 0 8px; }
+.cap .cap-main { font-size: 14px; font-weight: 600; white-space: nowrap; max-width: 9em; overflow: hidden; text-overflow: ellipsis; }
+.cap .cap-arrow { padding: 0 3px; }
+.cap .cap-arrow:disabled { opacity: .3; }
+.cap .cap-x { padding: 0 6px 0 0; opacity: .85; }
+.cap.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.cap.dim { opacity: .45; }
+.cap-q { max-width: 6em; overflow: hidden; text-overflow: ellipsis; }
+.cap-search { flex: 1; min-width: 0; height: 100%; box-sizing: border-box; border: 1px solid var(--accent); border-radius: 999px; padding: 0 14px; font-size: 15px; background: var(--card); color: var(--text); outline: none; }
+.pick-group { font-size: 12px; color: var(--muted); padding: 10px 6px 2px; }
+/* 2.2 C2：統計底部「年｜‹ 月 ›｜自訂」，選中的那顆用主色 */
+.stats-bar .pill-btn.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.stats-bar .period-switch .label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 小條蓋在列表上：即時模糊預設關閉，底色加濃避免底下文字透出來干擾閱讀 */
+html:not(.no-glass) .collapse-bar.glass { background: color-mix(in srgb, var(--card) 88%, transparent); }
+
+/* 2.3 付款確認：點帳戶改從別的帳戶付；改過的帳戶名稱用主題色 */
+.pay-acc { border: 0; background: none; padding: 2px 4px; margin: -2px 0; border-radius: 8px; font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 2px; }
+.pay-acc.changed { color: var(--accent); font-weight: 600; }
+
+/* 2.3 明細：帳戶名稱右邊的「記帳前餘額」灰色小字 */
+.tx-prev { color: var(--faint); margin-left: 4px; font-variant-numeric: tabular-nums; }
+
+/* 2.3 編輯畫面上方的提示條：右邊放小按鈕（來自預算：退回未付） */
+.notice-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.notice-btn { border: 1px solid currentColor; background: none; color: inherit; border-radius: 999px; padding: 3px 12px; font-size: 13px; font-weight: 700; }
+
+/* ===== 2.4 首頁最近紀錄：用明細頁的紀錄列、固定列高（最後一列不會被切到）、最底下拖拖小語列 ===== */
+/* 2.5：框內可上下滑（高度＝固定筆數，由 Home.tsx 給 max-height） */
+.home-recent .recent-list { flex: 0 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; scrollbar-width: none; display: flex; flex-direction: column; }
+.home-recent .recent-list::-webkit-scrollbar { display: none; }
+.home-recent .quote-row { margin-top: auto; }
+.home-recent .recent-slot { flex: none; height: var(--recent-row); display: flex; align-items: center; border-radius: var(--radius); }
+.home-recent .recent-slot .tx-card { flex: 1 1 auto; height: 54px; margin: 0; padding-top: 6px; padding-bottom: 6px; transition: opacity .12s, border-color .12s, background .12s, box-shadow .12s; }
+.home-recent .recent-slot .tx-sub { flex-wrap: nowrap; white-space: nowrap; overflow: hidden; }
+.home-recent .recent-empty { padding: 16px 0; text-align: center; }
+/* 拿起帳戶卡：可改的紀錄淡一點、不能改的更淡；指到的那列亮起來 */
+.home.lifting .recent-slot .tx-card { opacity: .55; }
+.home.lifting .recent-slot.no-drop .tx-card { opacity: .28; }
+.home.lifting .recent-slot.drop-hover .tx-card { opacity: 1; border-color: var(--transfer); background: var(--transfer-soft); box-shadow: 0 0 var(--fx-hover-glow, 10px) var(--glow, transparent); }
+.recent-head.drag-hint { justify-content: center; font-size: 13px; font-weight: 600; }
+.home-zones.lift { flex: none; height: var(--lift-zone); min-height: 0; padding: 0 0 6px; }
+.home-zones.lift .drop-zone { font-size: 14px; }
+.quote-row { flex: none; height: var(--quote-row); display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--line); }
+.quote-quick { flex: none; display: flex; align-items: center; gap: 4px; border: 0; border-radius: 999px; background: var(--accent); color: var(--on-accent); padding: 6px 12px; font-size: 13px; font-weight: 700; }
+.quote-quick:active { opacity: .85; }
+.quote-logo { flex: none; width: 32px; height: 32px; object-fit: contain; }
+.quote-text { flex: 1; min-width: 0; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ===== 2.5 儲蓄：轉移、還差多少 ===== */
+.amount-line:has(.amount-quick) { justify-content: flex-start; }
+.amount-line:has(.amount-quick) b { margin-left: auto; }
+.amount-quick { margin-left: 10px; align-self: center; font-size: 13px; }
+.move-label { margin: 6px 2px 2px; }
+.chip:disabled { opacity: .35; }
+.goal-left { position: relative; z-index: 1; font-size: 11px; color: var(--muted); white-space: nowrap; }
+.goal-left.done { color: var(--income); font-weight: 700; }
+
+/* ===== 2.5 明細：長按浮起、拖曳、插入線、垃圾桶、多選列 ===== */
+.tx-card { transition: transform .12s ease-out, box-shadow .12s, opacity .12s; }
+.tx-card.tx-armed { transform: scale(1.03); box-shadow: 0 8px 22px var(--shadow-lg, rgba(0,0,0,.18)); }
+.tx-card.tx-dragging { opacity: .3; }
+.tx-ghost { box-shadow: 0 14px 30px var(--shadow-lg, rgba(0,0,0,.2)) !important; }
+.tx-insert-line { position: fixed; height: 3px; border-radius: 2px; background: var(--accent); z-index: 999; pointer-events: none; display: none; }
+.tx-trash { position: fixed; left: 50%; transform: translateX(-50%); width: var(--trash-size); height: var(--trash-size); border-radius: 50%; z-index: 1001; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font-size: 11px; font-weight: 700;
+  background: var(--card); color: var(--expense); border: 2px dashed var(--expense); box-shadow: 0 6px 18px var(--shadow-lg, rgba(0,0,0,.18));
+  transition: transform .12s, background .12s, color .12s; }
+.tx-trash.hover { background: var(--expense); color: var(--on-color); border-style: solid; transform: translateX(-50%) scale(1.18); }
+.multi-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; padding: 0 4px; }
+.multi-bar .btn { flex: none; }
+@media (prefers-reduced-motion: reduce) { .tx-card, .tx-trash { transition: none; } }
+
+/* ===== 2.5 提示條〔長按刪除〕：按住時底色從左往右填滿；手指按著時倒數線暫停 ===== */
+.toast-hold { position: relative; overflow: hidden; flex: none; border: 1.5px solid var(--expense); background: var(--card); color: var(--expense); border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 700; touch-action: none; user-select: none; -webkit-user-select: none; }
+.toast-hold-fill { position: absolute; inset: 0; background: var(--expense); transform-origin: left center; transform: scaleX(0); }
+.toast-hold.holding .toast-hold-fill { animation: hold-fill var(--hold-ms) linear forwards; }
+.toast-hold.holding .toast-hold-label { animation: hold-label var(--hold-ms) step-end forwards; }
+@keyframes hold-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes hold-label { 50% { color: var(--on-color); } 100% { color: var(--on-color); } }
+.toast-hold-label { position: relative; }
+.toast-capsule.held .toast-timer { animation-play-state: paused; }
+.toast-hold:disabled { opacity: .5; }

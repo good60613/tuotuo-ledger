@@ -2,7 +2,7 @@
 import type { Account, AppData, Category, NoteTag, Transaction } from './types';
 import { DATA_VERSION } from './types';
 import { SETTLE } from '../config';
-import type { CategoryColorKey } from '../categoryStyle';
+import { withAccountIcon, type CategoryColorKey } from '../categoryStyle';
 
 export function emptyData(): AppData {
   return {
@@ -45,17 +45,17 @@ function smallAccounts(scale: number): Account[] {
       : []),
     { id: 'a-saving', name: '緊急預備金', kind: 'saving', initialBalance: 100000 * scale, target: 150000, order: 1 },
     { id: 'a-other', name: '其他', kind: 'other', initialBalance: 0, order: 5 },
-  ];
+  ].map((a) => withAccountIcon(a as Account));
 }
 
 function defaultCategories(): Category[] {
   const ex: [string, string, CategoryColorKey][] = [
-    ['早餐', '🍞', 'food'], ['午餐', '🍱', 'food'], ['晚餐', '🍜', 'food'], ['飲料', '🧋', 'food'],
-    ['交通', '🚌', 'transport'], ['日用品', '🧴', 'living'], ['購物', '🛍️', 'shopping'], ['娛樂', '🎮', 'fun'],
-    ['醫療', '💊', 'health'], ['居家', '🏠', 'living'], ['通訊', '📱', 'digital'], ['其他', '📦', 'other'],
+    ['早餐', 'croissant', 'food'], ['午餐', 'utensils', 'food'], ['晚餐', 'soup', 'food'], ['飲料', 'cup-soda', 'food'],
+    ['交通', 'bus', 'transport'], ['日用品', 'spray-can', 'living'], ['購物', 'shopping-bag', 'shopping'], ['娛樂', 'gamepad-2', 'fun'],
+    ['醫療', 'pill', 'health'], ['居家', 'house', 'living'], ['通訊', 'smartphone', 'digital'], ['其他', 'package', 'other'],
   ];
   const inc: [string, string, CategoryColorKey][] = [
-    ['薪水', '💰', 'other'], ['獎金', '🎁', 'other'], ['投資收益', '📈', 'other'], ['兼職', '🤝', 'other'], ['其他', '📦', 'other'],
+    ['薪水', 'banknote-arrow-up', 'other'], ['獎金', 'gift', 'other'], ['投資收益', 'trending-up', 'other'], ['兼職', 'handshake', 'other'], ['其他', 'package', 'other'],
   ];
   return [
     ...ex.map(([name, icon, color], i) => ({ id: `c-e${i}`, type: 'expense' as const, name, icon, color, order: i })),
@@ -76,7 +76,7 @@ export function sampleData(now: Date = new Date()): AppData {
     { id: 'a-taishin', name: '台新', kind: 'bank', initialBalance: 6000, order: 3 },
     { id: 'a-cash', name: '現金', kind: 'bank', initialBalance: 3000, order: 4 },
     ...smallAccounts(1),
-  ];
+  ].map((a) => withAccountIcon(a as Account));
   d.settings.defaultReimburseAccountId = 'a-salary';
 
   const y = now.getFullYear();

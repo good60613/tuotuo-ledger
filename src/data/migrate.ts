@@ -1,12 +1,13 @@
 // 舊資料升級：讀取手機資料、匯入備份時都會經過這裡，舊版資料自動補成新格式。
-// 一版一版往上升：v1 → v2 → v3 → v4 → v5 → v6。
+// 一版一版往上升：v1 → v2 → v3 → v4 → v5 → v6 → v7。
 import type { Account, AppData, Category, Transaction } from './types';
 import { DATA_VERSION } from './types';
 import { SETTLE } from '../config';
 import { normalizeBudgets } from './budget';
 import { normalizeOwed } from './owed';
 import { normalizeRecurring } from './recurring';
-import { DEFAULT_COLOR, MISSING_ICON, isColorKey } from '../categoryStyle';
+import { DEFAULT_COLOR, MISSING_ICON, isColorKey, withAccountIcon } from '../categoryStyle';
+import { emojiToIcon } from './emojiIcons';
 
 type AnyData = Omit<AppData, 'version'> & { version: number };
 
@@ -61,6 +62,20 @@ function v5to6(d: AnyData): AnyData {
   return { ...d, version: 6, recurring: Array.isArray(d.recurring) ? d.recurring : [] };
 }
 
+/**
+ * v6 → v7（2.1）：圖示改用圖示名稱。
+ * - 分類：舊 emoji 依對照表換成圖示名稱；對不到的保留原 emoji（照常顯示，使用者之後自己換）。
+ * - 帳戶：補 icon（依種類預設）與 iconStyle（圖示）——由 withAccountIcon 補。
+ */
+function v6to7(d: AnyData): AnyData {
+  const categories = d.categories.map((c) => {
+    const name = typeof c.icon === 'string' ? emojiToIcon(c.icon) : undefined;
+    return name ? { ...c, icon: name } : c;
+  });
+  return { ...d, version: 7, categories };
+}
+
+
 /** 我先付標記只能掛在報帳類紀錄上；亂填的值拿掉 */
 function fixAdvance(t: Transaction): Transaction {
   if (t.reimburseKind === undefined) return t;
@@ -105,7 +120,9 @@ export function migrate(raw: unknown): AppData {
   if (d.version === 3) d = v3to4(d);
   if (d.version === 4) d = v4to5(d);
   if (d.version === 5) d = v5to6(d);
+  if (d.version === 6) d = v6to7(d);
+  const accounts = d.accounts.map(withAccountIcon);
   const categories = d.categories.map(fixCategory);
   const transactions = Array.isArray(d.transactions) ? d.transactions.map((t) => fixAdvance(fixBudget(t))) : d.transactions;
-  return normalizeRecurring(normalizeOwed(normalizeBudgets({ ...d, version: DATA_VERSION, categories, transactions } as AppData)));
+  return normalizeRecurring(normalizeOwed(normalizeBudgets({ ...d, version: DATA_VERSION, accounts, categories, transactions } as AppData)));
 }

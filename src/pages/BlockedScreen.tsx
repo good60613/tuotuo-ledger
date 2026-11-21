@@ -1,3 +1,4 @@
+import { Icon } from '../components/Icon';
 // 資料保護畫面（2.0 修正批）：讀不到帳本、升級失敗、版本比 App 新、或找不到主資料時顯示。
 // 這時不會存任何變更；只提供重試、從自動留底還原、從備份檔匯入（版本太新時只能重試，請更新 App）。
 import { useRef, useState } from 'preact/hooks';
@@ -59,7 +60,7 @@ export function BlockedScreen() {
 
   return (
     <div class="blocked-screen">
-      <h2>⚠️ {TITLE[b.reason]}</h2>
+      <h2><Icon name="triangle-alert" size={22} class="blocked-icon" /> {TITLE[b.reason]}</h2>
       <p>{b.message}</p>
       <p class="blocked-safe">為了保護你的資料，<b>目前不會存任何變更</b>。</p>
       {b.reason === 'newer' && <p>請安裝最新版的拖拖記帳，不要用舊版覆蓋，資料才不會不見。</p>}

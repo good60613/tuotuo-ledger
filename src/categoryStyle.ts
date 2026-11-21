@@ -1,26 +1,32 @@
-// 分類的圖示與顏色（第三批第 4 項）。
-// 圖示目前暫用 emoji，之後換成開源圖示庫時，只需要改這個檔案。
+// 分類與帳戶的圖示、顏色（第三批第 4 項；2.1 起圖示改為圖示名稱，SVG 在 src/icons.ts）。
+import { ACCOUNT_KIND_ICON, CATEGORY_ICON_GROUPS, isIconName } from './icons';
+import type { Account } from './data/types';
 
-/** 圖示選單：依小標題分段，四個一排 */
-export const ICON_GROUPS: { title: string; icons: string[] }[] = [
-  { title: '飲食', icons: ['🍽️', '🍦', '☕', '🍜', '🍞', '🍪', '🍕', '🍔', '🍸', '🧋', '🍱', '🍣', '🍰', '🍺', '🍷', '🥤', '🍎', '🍳', '🥗', '🍙'] },
-  { title: '購物', icons: ['🛍️', '🛒', '👕', '👗', '👟', '👜', '💄', '💍', '🎁', '🧴', '🕶️', '⌚', '📦', '🏪'] },
-  { title: '娛樂', icons: ['🎮', '🎵', '🎧', '🎬', '🎤', '🎨', '🎹', '📷', '🎟️', '🎲', '🎳', '🎢', '🏖️', '👻', '🎪'] },
-  { title: '交通', icons: ['🚕', '🚇', '🚗', '🚌', '🅿️', '✈️', '⛽', '🔌', '🚲', '🛵', '🚄', '🚢', '🚦', '🚀', '🛣️'] },
-  { title: '居家生活', icons: ['🏠', '💡', '💧', '🔥', '📞', '🛏️', '🛁', '🧺', '🧹', '🔑', '🗑️', '♻️', '🐾', '🌳', '🌸', '👶', '✂️'] },
-  { title: '學習', icons: ['📚', '✏️', '🎓', '📖', '🔬', '🔭', '🖌️', '📝', '🗺️', '🎒'] },
-  { title: '健康', icons: ['💊', '🩹', '🏥', '💉', '🦷', '🌡️', '🩺', '🧘', '💆'] },
-  { title: '數位', icons: ['📱', '💻', '🖥️', '☁️', '🤖', '📹', '📺', '🎙️', '📧', '🖨️'] },
-  { title: '金錢', icons: ['💰', '💵', '💳', '👛', '🏦', '📈', '📊', '🐷', '🧾', '🤝', '💸', '🪙', '💴', '💶', '💷', '🧮', '🏷️'] },
-  { title: '運動', icons: ['🏀', '🏐', '🎾', '🏓', '⚽', '⚾', '🏈', '🏆', '🚴', '🏋️', '🏊', '🎯', '🥾'] },
-  { title: '其他', icons: ['❤️', '💔', '😊', '💬', '🧭', '⚡', '⭐', '❓'] },
-];
+/** 分類圖示選單：依圖示清單的分組顯示 */
+export const ICON_GROUPS = CATEGORY_ICON_GROUPS;
 
 /** 新增分類時預設選的圖示（選單第一個） */
 export const DEFAULT_NEW_ICON = ICON_GROUPS[0].icons[0];
 
 /** 舊資料沒有圖示時補上的圖示（問號，明顯看得出「還沒設定」，不會誤會成某個分類） */
-export const MISSING_ICON = '❓';
+export const MISSING_ICON = 'circle-help';
+
+/** 帳戶的圖示：有選就用選的，沒有（或不是圖示名稱）就依種類給預設 */
+export function accountIconOf(a: Pick<Account, 'kind' | 'icon'>): string {
+  return isIconName(a.icon) ? a.icon : ACCOUNT_KIND_ICON[a.kind];
+}
+
+/** 帳戶補上圖示欄位（缺值或不認得＝依種類預設；顯示方式只能是圖示或徽章） */
+export function withAccountIcon<T extends Account>(a: T): T {
+  const icon = accountIconOf(a);
+  const iconStyle = accountIconStyleOf(a);
+  return icon === a.icon && iconStyle === a.iconStyle ? a : { ...a, icon, iconStyle };
+}
+
+/** 帳戶顯示方式：'icon' 圖示（預設）或 'badge' 縮寫徽章（名稱第一個字） */
+export function accountIconStyleOf(a: Pick<Account, 'iconStyle'>): 'icon' | 'badge' {
+  return a.iconStyle === 'badge' ? 'badge' : 'icon';
+}
 
 /** 顏色標籤：只是視覺標記，不是大類，不影響統計與分類結構 */
 export const CATEGORY_COLORS = [

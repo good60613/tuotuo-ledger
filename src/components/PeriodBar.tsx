@@ -1,3 +1,4 @@
+import { Icon } from './Icon';
 // 明細頁與統計頁共用的頂列：左邊「全部帳戶」佔 1/4，右邊是結算期切換（3/4）。
 import { useState } from 'preact/hooks';
 import { useAppState } from '../store';
@@ -39,13 +40,13 @@ export function PeriodBar({ accountId = null, onAccount, hideAccount, period, on
     <div class="acct-period">
       {!hideAccount && (
         <button class="pill-btn" onClick={() => setPickAcc(true)}>
-          {accountId ? accountName(d, accountId) : '全部帳戶'} ▾
+          {accountId ? accountName(d, accountId) : '全部帳戶'} <Icon name="chevron-down" size={14} />
         </button>
       )}
       <div class="period-switch">
-        <button class="arrow" onClick={() => go(shiftPeriod(period, -1))} aria-label="上一期">‹</button>
+        <button class="arrow" onClick={() => go(shiftPeriod(period, -1))} aria-label="上一期"><Icon name="chevron-left" size={18} /></button>
         <button class="label" onClick={() => setPickPeriod(true)}>{periodLabel(period)}</button>
-        <button class="arrow" disabled={period >= current} onClick={() => go(shiftPeriod(period, 1))} aria-label="下一期">›</button>
+        <button class="arrow" disabled={period >= current} onClick={() => go(shiftPeriod(period, 1))} aria-label="下一期"><Icon name="chevron-right" size={18} /></button>
       </div>
 
       {pickAcc && (

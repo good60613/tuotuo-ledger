@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="nb_channel_name">通知欄快捷列</string>
+    <string name="nb_channel_desc">常駐在通知欄的剩餘可用、今日收支與快捷按鈕（無聲、不震動）</string>
+    <string name="nb_left">剩餘可用</string>
+    <string name="nb_expense">今日支出</string>
+    <string name="nb_income">今日收入</string>
+    <string name="nb_todo">待辦</string>
+    <string name="nb_detail">明細</string>
+    <string name="nb_search">搜尋</string>
+    <string name="nb_entry">記一筆</string>
+    <string name="nb_public_title">拖拖記帳</string>
+    <string name="nb_public_text">已隱藏金額</string>
+</resources>

@@ -1,9 +1,11 @@
 // 全域狀態：資料（會存檔）＋畫面狀態（不存檔）。
 import { useEffect, useState } from 'preact/hooks';
+import type { TypeFilter } from './detailFilter';
 import type { AppData } from './data/types';
+import { detailHome } from './features';
 import { saveData, requestPersistence, deviceStorage } from './data/storage';
 import { sampleData } from './data/seed';
-import { TOAST_MS, TRANSITION, RECURRING_CHECK_MS } from './config';
+import { TOAST_MS, TOAST_EXIT_MS, TRANSITION, RECURRING_CHECK_MS } from './config';
 import { postDueRecurring } from './data/recurring';
 import { boot, ensureDailySnapshot, loadSnapshotData, replaceWithSnapshot, type BlockReason } from './data/boot';
 import type { SnapshotReason } from './data/snapshots';
@@ -12,7 +14,23 @@ export const PAGES = ['待辦', '統計', '首頁', '明細', '設定'] as const
 export const TODO_PAGE = 0;
 /** 待辦頁的分頁 */
 export type TodoTab = 'reimb' | 'advance' | 'owed' | 'budget';
+/** 中間那格＝首頁（開 App、返回鍵回到這裡）。裡面放哪一頁看設定「首頁使用」 */
 export const HOME_PAGE = 2;
+export type PageId = (typeof PAGES)[number];
+const DETAIL_HOME_ORDER: readonly PageId[] = ['待辦', '統計', '明細', '首頁', '設定'];
+/** 2.2 每一格放哪一頁：首頁使用明細頁時，明細移到中間、原首頁（帳戶）放第四格 */
+export function pageOrder(settings: AppData['settings']): readonly PageId[] {
+  return detailHome(settings) ? DETAIL_HOME_ORDER : PAGES;
+}
+/** 某一頁目前在第幾格 */
+export function pageIndex(id: PageId): number {
+  return pageOrder(state.data.settings).indexOf(id);
+}
+/** 導覽列上的名稱：首頁使用明細頁時，明細叫「首頁」、原首頁叫「帳戶」 */
+export function navLabel(id: PageId, settings: AppData['settings']): string {
+  if (!detailHome(settings)) return id;
+  return id === '明細' ? '首頁' : id === '首頁' ? '帳戶' : id;
+}
 
 /** 疊在主頁面上的畫面 */
 export type Overlay =
@@ -35,12 +53,35 @@ export interface DetailFilter {
   day: string | null; // YYYY-MM-DD
   /** 結算期 'YYYY-MM'；null＝目前這一期（到結算日會自動換下一期） */
   period?: string | null;
+  /** 2.2 類型膠囊；null／缺值＝全部 */
+  kind?: TypeFilter | null;
+  /** 2.2 搜尋（備註、分類名稱），範圍是全部月份；空＝不搜 */
+  q?: string;
+}
+
+/** 提示膠囊（2.3）左邊的分類圖示與「已記 醫療 −$450」三段字；沒給＝只顯示 text */
+export interface ToastRich {
+  icon: string;
+  /** 分類顏色底（沒有＝灰底） */
+  bg?: string;
+  fg?: string;
+  verb: string;
+  title: string;
+  /** 金額字串，例如 −$450 */
+  amt: string;
+  /** 金額顏色：expense／income／transfer */
+  cls: string;
 }
 
 export interface Toast {
   id: number;
   text: string;
   undo?: () => void;
+  /** 2.5：〔長按刪除〕：按住 HOLD_DELETE_MS 才執行（記完一筆的提示條用，取代〔復原〕） */
+  hold?: () => void;
+  rich?: ToastRich;
+  /** 時間到了、正在淡出往下滑走（這時不能再按復原） */
+  leaving?: boolean;
 }
 
 export interface DialogButton {
@@ -62,9 +103,17 @@ export interface State {
   page: number;
   overlays: Overlay[];
   detail: DetailFilter;
+  /** 2.3：通知欄「搜尋」按鈕要求明細頁直接打開搜尋；每按一次加 1，明細頁看到變動就打開 */
+  searchRequest: number;
   statsAccountId: string | null;
   /** 統計頁看的結算期；null＝目前這一期 */
   statsPeriod: string | null;
+  /** 2.2 統計頁檢視：月（預設）／年／自訂區間。只在這次使用中記住 */
+  statsMode: 'month' | 'year' | 'custom';
+  /** 年檢視看哪一年；null＝目前這一期所在的年 */
+  statsYear: number | null;
+  /** 自訂區間（兩端都含，YYYY-MM-DD） */
+  statsCustom: { from: string; to: string } | null;
   /** 跳頁時用淡入淡出（不滑動） */
   fade: boolean;
   toast: Toast | null;
@@ -86,8 +135,12 @@ let state: State = {
   page: HOME_PAGE,
   overlays: [],
   detail: { accountId: null, categoryId: null, day: null },
+  searchRequest: 0,
   statsAccountId: null,
   statsPeriod: null,
+  statsMode: 'month',
+  statsYear: null,
+  statsCustom: null,
   fade: false,
   toast: null,
   dragging: false,
@@ -143,16 +196,64 @@ export function useAppState(): State {
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
+let toastExitTimer: ReturnType<typeof setTimeout> | undefined;
 let toastSeq = 0;
-export function showToast(text: string, undo?: () => void) {
+/** 目前這則預計什麼時候開始淡出（手指按住時暫停用） */
+let toastDeadline = 0;
+let toastPausedLeft = 0;
+/**
+ * 提示膠囊（2.3 新樣式）。TOAST_MS 後開始淡出往下滑走，再過 TOAST_EXIT_MS 才真的拿掉。
+ * undo：有給就會出現〔復原〕和倒數線；rich：有給就顯示分類圖示與「已記 醫療 −$450」。
+ */
+export function showToast(text: string, undo?: () => void, rich?: ToastRich) {
   clearTimeout(toastTimer);
+  clearTimeout(toastExitTimer);
   const id = ++toastSeq;
-  setState({ toast: { id, text, undo } });
-  toastTimer = setTimeout(() => {
-    if (state.toast?.id === id) setState({ toast: null });
-  }, TOAST_MS);
+  setState({ toast: { id, text, undo, rich } });
+  toastDeadline = performance.now() + TOAST_MS;
+  toastTimer = setTimeout(() => dismissToast(id), TOAST_MS);
 }
-export const hideToast = () => setState({ toast: null });
+
+/** 2.5：記完一筆的提示條：右邊是〔長按刪除〕（按住 HOLD_DELETE_MS 才刪） */
+export function showHoldToast(text: string, hold: () => void, rich?: ToastRich) {
+  clearTimeout(toastTimer);
+  clearTimeout(toastExitTimer);
+  const id = ++toastSeq;
+  setState({ toast: { id, text, hold, rich } });
+  toastDeadline = performance.now() + TOAST_MS;
+  toastTimer = setTimeout(() => dismissToast(id), TOAST_MS);
+}
+
+/** 2.5：手指按在提示條上：先不要自動消失 */
+export function pauseToast(id: number) {
+  if (state.toast?.id !== id || state.toast.leaving) return;
+  clearTimeout(toastTimer);
+  toastPausedLeft = Math.max(0, toastDeadline - performance.now());
+}
+/** 手指放開：把剩下的時間走完（至少留一點時間讓人看到） */
+export function resumeToast(id: number) {
+  if (state.toast?.id !== id || state.toast.leaving) return;
+  clearTimeout(toastTimer);
+  const left = Math.max(toastPausedLeft, 1200);
+  toastDeadline = performance.now() + left;
+  toastTimer = setTimeout(() => dismissToast(id), left);
+}
+/** 淡出往下滑走（手指往下滑掉、時間到都走這裡）。id 給了就只收那一則 */
+export function dismissToast(id?: number) {
+  const t = state.toast;
+  if (!t || t.leaving || (id !== undefined && t.id !== id)) return;
+  clearTimeout(toastTimer);
+  setState({ toast: { ...t, leaving: true } });
+  toastExitTimer = setTimeout(() => {
+    if (state.toast?.id === t.id) setState({ toast: null });
+  }, TOAST_EXIT_MS);
+}
+/** 立刻拿掉（按了復原） */
+export const hideToast = () => {
+  clearTimeout(toastTimer);
+  clearTimeout(toastExitTimer);
+  setState({ toast: null });
+};
 
 /** 跳出選擇視窗，回傳按下的按鈕 value；按背景關閉回傳 null */
 export function ask(title: string, body: string | undefined, buttons: DialogButton[]): Promise<string | null> {

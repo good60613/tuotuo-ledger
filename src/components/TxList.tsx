@@ -1,13 +1,19 @@
 // 時間軸明細列表：明細頁、待辦頁共用。
 import { catBg } from './CatIcon';
+import { Icon } from './Icon';
+import { colorOf } from '../categoryStyle';
 import type { AppData, Transaction } from '../data/types';
 import { statEffect, kindLookup, dayKey } from '../data/calc';
-import { accountName, categoryOf, KIND_ICON } from '../selectors';
-import { money, mdLabel, weekday, hm } from '../format';
+import { accountName, categoryOf } from '../selectors';
+import { ACCOUNT_KIND_ICON } from '../icons';
+import { money, mdLabel, weekday, hm, shortDay } from '../format';
 import { GESTURE } from '../config';
 import { vibrate } from '../gestures/haptics';
 import { blockClicks } from '../gestures/guard';
 import { displayExpr } from '../calcExpr';
+import { prevBalanceOf, type PrevBalanceTable } from '../data/prevBalance';
+import { useEffect, useRef } from 'preact/hooks';
+import { attachTxDrag, type TxDragOptions } from '../gestures/txDrag';
 
 interface Props {
   data: AppData;
@@ -18,6 +24,10 @@ interface Props {
   empty?: string;
   /** 長按一筆（待辦頁用來進入多選） */
   onLongPress?: (t: Transaction) => void;
+  /** 2.3 記帳前餘額查表（明細頁給；不給＝不顯示） */
+  prevBal?: PrevBalanceTable | null;
+  /** 2.5 明細頁：長按拖曳換位置／拖去刪除／長按放開進多選（不給＝沒有這些手勢） */
+  drag?: TxDragOptions;
 }
 
 /** 長按判斷：時間與移動門檻沿用 config.ts 的手勢設定 */
@@ -55,8 +65,27 @@ function longPressHandlers(t: Transaction, cb?: (t: Transaction) => void) {
   };
 }
 
-export function TxList({ data, txs, onTap, selected, empty, onLongPress }: Props) {
-  const sorted = [...txs].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
+export function TxList({ data, txs, onTap, selected, empty, onLongPress, prevBal, drag }: Props) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef(drag);
+  dragRef.current = drag;
+  const hasDrag = !!drag;
+  const hasRows = txs.length > 0;
+  useEffect(() => {
+    if (!hasDrag || !hasRows || !rootRef.current) return;
+    // 用 ref 拿最新的設定，手勢只需要掛一次
+    return attachTxDrag(rootRef.current, {
+      canDrag: (id) => dragRef.current?.canDrag(id) ?? false,
+      onPick: (id) => dragRef.current?.onPick(id),
+      onLift: () => dragRef.current?.onLift(),
+      onEnd: () => dragRef.current?.onEnd(),
+      onDrop: (id, s) => dragRef.current?.onDrop(id, s),
+      onTrash: (id) => dragRef.current?.onTrash(id),
+      onCantDrag: (id) => dragRef.current?.onCantDrag(id),
+    });
+  }, [hasDrag, hasRows]);
+  // 同一時間的兩筆：後記的在上面（和「記帳前餘額」的先後一致）
+  const sorted = [...txs].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt) || b.createdAt.localeCompare(a.createdAt));
   if (sorted.length === 0) return <div class="empty-list">{empty ?? '沒有紀錄'}</div>;
 
   const kindOf = kindLookup(data.accounts);
@@ -68,7 +97,7 @@ export function TxList({ data, txs, onTap, selected, empty, onLongPress }: Props
   }
 
   return (
-    <div class="timeline">
+    <div class="timeline" ref={rootRef}>
       {groups.map((g) => {
         const date = new Date(g.items[0].occurredAt);
         let inc = 0, exp = 0;
@@ -94,12 +123,12 @@ export function TxList({ data, txs, onTap, selected, empty, onLongPress }: Props
               const mark = h !== lastHour;
               lastHour = h;
               return (
-                <div class="tl-row" key={t.id}>
+                <div class="tl-row" key={t.id} data-id={t.id}>
                   <div class="tl-axis">
                     {mark && <span class="tl-hour">{String(h).padStart(2, '0')}:00</span>}
                     <span class="tl-dot" />
                   </div>
-                  <TxCard data={data} t={t} onTap={onTap} selected={selected?.has(t.id)} selectable={!!selected} onLongPress={onLongPress} />
+                  <TxCard data={data} t={t} onTap={onTap} selected={selected?.has(t.id)} selectable={!!selected} onLongPress={onLongPress} prevBal={prevBal} />
                 </div>
               );
             })}
@@ -112,39 +141,41 @@ export function TxList({ data, txs, onTap, selected, empty, onLongPress }: Props
 
 /** 沒有分類的小帳戶紀錄（配息、費用、利息）的顯示 */
 const SOURCE_LABEL: Record<string, [string, string]> = {
-  'invest-dividend': ['💵', '配息'],
-  'invest-fee': ['🧾', '費用'],
-  'saving-interest': ['🪙', '利息'],
+  'invest-dividend': ['banknote', '配息'],
+  'invest-fee': ['receipt-text', '費用'],
+  'saving-interest': ['coins', '利息'],
 };
 
-export function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { data: AppData; t: Transaction; onTap: (t: Transaction) => void; selected?: boolean; selectable: boolean; onLongPress?: (t: Transaction) => void }) {
-  const d = new Date(t.occurredAt);
+/** 一筆紀錄要顯示的圖示、標題、金額字串與樣式（TxCard 與首頁最近紀錄共用；只整理顯示，不算金額） */
+export function txView(data: AppData, t: Transaction) {
   const acc = data.accounts.find((a) => a.id === (t.type === 'reimburse_in' ? t.toAccountId : t.accountId));
   let icon = '？', title = '', amt = '', cls = '';
   let bg: string | undefined;
+  let fg: string | undefined;
+  let catName: string | undefined;
   if (t.type === 'transfer') {
-    icon = '⇄';
+    icon = 'arrow-left-right';
     title = `${accountName(data, t.accountId)} ⇄ ${accountName(data, t.toAccountId)}`;
     amt = money(t.amount);
     cls = 'transfer';
   } else if (t.type === 'reimburse_in') {
-    icon = '↩';
-    title = `${t.reimburseKind === 'advance' ? '我先付收回' : '報帳入帳'} → ${accountName(data, t.toAccountId)}`;
+    icon = 'undo-2';
+    title = `${t.reimburseKind === 'advance' ? '先付收回' : '報帳入帳'} → ${accountName(data, t.toAccountId)}`;
     amt = '+' + money(t.amount);
     cls = 'reimb-in';
   } else if (t.type === 'owed_repay') {
     // 還朋友錢：從帳戶扣款；用一般帳戶還算支出（補強批）
-    icon = '↪';
+    icon = 'corner-up-right';
     title = '還朋友錢';
     amt = '-' + money(t.amount);
     cls = acc?.kind === 'bank' ? 'expense' : 'transfer';
   } else if (t.type === 'adjust') {
-    icon = '⚖';
+    icon = 'scale';
     title = '校正';
     amt = (t.adjustDir === 'down' ? '-' : '+') + money(t.amount);
     cls = 'transfer';
   } else if (t.type === 'valuation') {
-    icon = '📈';
+    icon = 'trending-up';
     title = '更新市值';
     amt = money(t.amount);
     cls = 'transfer';
@@ -156,12 +187,21 @@ export function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { 
   } else {
     const c = categoryOf(data, t.categoryId);
     icon = c?.icon ?? '？';
-    if (c) bg = catBg(c.color);
+    if (c) { bg = catBg(c.color); fg = colorOf(c.color); }
+    catName = c?.name;
     title = c?.name ?? '（已刪除分類）';
     amt = (t.type === 'expense' || t.type === 'owed' ? '-' : '+') + money(t.amount);
     // 朋友付記帳當天不算支出（還錢那天才算），用灰色
     cls = t.type === 'owed' ? 'transfer' : t.type;
   }
+  return { icon, title, amt, cls, bg, fg, acc, catName };
+}
+
+export function TxCard({ data, t, onTap, selected, selectable, onLongPress, prevBal, withDay }: { data: AppData; t: Transaction; onTap: (t: Transaction) => void; selected?: boolean; selectable: boolean; onLongPress?: (t: Transaction) => void; prevBal?: PrevBalanceTable | null; /** 2.4 首頁：時間前面加「今天／昨天／11/18」 */ withDay?: boolean }) {
+  const d = new Date(t.occurredAt);
+  const { icon, title, amt, cls, bg, fg, acc } = txView(data, t);
+  // 記帳前餘額：轉帳那列沒有帳戶欄位，這版先不顯示；不動餘額的（未付預算、先欠）查不到＝不顯示
+  const prev = prevBal && acc && t.type !== 'transfer' ? prevBalanceOf(prevBal, t.id, acc.id) : undefined;
   // 報帳／預算標示：未結案＝彩色外框＋「報」「預」；結案＝拿掉外框，留淺色「已報」「已付」。色弱靠小字辨識
   let flag: { cls: string; text: string } | null = null;
   let frame = '';
@@ -169,13 +209,13 @@ export function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { 
   if (t.reimbursable && t.reimburseKind === 'advance') {
     if (t.reimburseStatus === 'done') flag = { cls: 'done', text: '已收' };
     else {
-      flag = { cls: 'advance', text: '我付' };
+      flag = { cls: 'advance', text: '先付' };
       frame = ' tag-advance';
     }
   } else if (t.type === 'owed') {
     if (t.owedStatus === 'paid') flag = { cls: 'done', text: '已還' };
     else {
-      flag = { cls: 'owed', text: '友付' };
+      flag = { cls: 'owed', text: '先欠' };
       frame = ' tag-owed';
     }
   } else if (t.reimbursable) {
@@ -192,17 +232,17 @@ export function TxCard({ data, t, onTap, selected, selectable, onLongPress }: { 
     }
   }
   return (
-    <button class={`tx-card${frame}${selected ? ' selected' : ''}`} onClick={() => onTap(t)} {...longPressHandlers(t, onLongPress)}>
-      {selectable && <span class={`check${selected ? ' on' : ''}`}>{selected ? '✓' : ''}</span>}
-      <span class={`tx-icon ${cls}`} style={bg ? { background: bg } : undefined}>{icon}</span>
+    <button class={`tx-card${frame}${selected ? ' selected' : ''}`} data-tx={t.id} onClick={() => onTap(t)} {...longPressHandlers(t, onLongPress)}>
+      {selectable && <span class={`check${selected ? ' on' : ''}`}>{selected ? <Icon name="check" size={14} /> : ''}</span>}
+      <span class={`tx-icon ${cls}`} style={bg ? { background: bg, color: fg } : undefined}><Icon name={icon} size={20} /></span>
       <span class="tx-mid">
         <span class="tx-title">
           {title}
           {t.note && t.type !== 'reimburse_in' && <span class="tx-note"> · {t.note}</span>}
         </span>
         <span class="tx-sub">
-          {hm(d)}
-          {t.type !== 'transfer' && acc && <> · {KIND_ICON[acc.kind]} {acc.name}</>}
+          {withDay && <>{shortDay(d)} </>}{hm(d)}
+          {t.type !== 'transfer' && acc && <> · <Icon name={ACCOUNT_KIND_ICON[acc.kind]} size={12} class="sub-kind-icon" /> {acc.name}{prev !== undefined && <span class="tx-prev">{money(prev)}</span>}</>}
           {t.type === 'adjust' && <span class="badge calib">不計收支</span>}
           {t.type === 'owed' && <> · 別人先付</>}
           {t.recurringId && <> · 定期</>}

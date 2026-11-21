@@ -7,5 +7,6 @@
     <string name="widget_left_label">剩餘可用</string>
     <string name="widget_today_label">今日支出 </string>
     <string name="widget_month_label">本月支出 </string>
+    <string name="widget_copied">已複製載具</string>
     <string name="widget_stale">點開更新</string>
 </resources>
