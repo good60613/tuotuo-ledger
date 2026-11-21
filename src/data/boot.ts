@@ -70,6 +70,8 @@ export async function boot(st: Storage, now: Date = new Date()): Promise<BootRes
     } catch { /* 留底也讀不到：當成第一次使用 */ }
     if (snaps.length > 0) return blocked(st, 'missing', '手機上找不到帳本資料，但有自動留底。', raw);
     const data = sampleData(now);
+    // 3.0：只有真的第一次安裝才自動出現新手教學（舊使用者的資料沒有這欄＝不出現）
+    data.settings.tutorial = 'pending';
     st.setWriteLock(false);
     try {
       await st.saveData(data);

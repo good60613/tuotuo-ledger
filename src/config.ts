@@ -354,3 +354,6 @@ export const HOLD_DELETE_MS = 1500;
 
 /** 2.6 App 字體：下載後存在手機 App 資料夾裡的哪個子資料夾（字體清單見 src/fonts.ts） */
 export const FONT = { dir: 'fonts' } as const;
+
+/** 3.0 範例資料（新手教學用，見 src/data/seed.ts）：結算日、定期扣款日（結算日前一天，任何一天安裝都落在這一期） */
+export const SAMPLE = { settleDay: 5, recurringDay: 4 } as const;

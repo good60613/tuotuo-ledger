@@ -13,7 +13,7 @@ import { SideNotes, type SideNote } from '../components/SideNotes';
 import type { DropTarget } from '../gestures/cardDrag';
 import { money, mdLabel, weekday } from '../format';
 import { TxCard } from '../components/TxList';
-import { openTx, quickEntry } from '../actions';
+import { openTx, quickEntry, clearSampleAndStart } from '../actions';
 import { pickQuoteMood } from '../quotes';
 import { coinSrc, resolveCoin, type CoinPick } from '../coins';
 import { HOME, HOME_SUM, BOTTOM_BAR } from '../config';
@@ -284,6 +284,12 @@ export function HomePage() {
     <div class={`home${lifted ? ' lifting' : ''}`}>
       <header class="home-head">
         <div class="home-title">拖拖記帳</div>
+        {/* 3.0：還是範例資料時提醒，可以一鍵清空開始記自己的 */}
+        {d.settings.sample && (
+          <button class="sample-chip" onClick={() => void clearSampleAndStart()}>
+            範例資料<span class="sample-chip-x">清空</span>
+          </button>
+        )}
         <div class="home-date muted">
           {mdLabel(now)} {weekday(now)}
         </div>

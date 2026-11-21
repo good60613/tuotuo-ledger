@@ -6,7 +6,8 @@ import {
 } from '../src/data/calc';
 import { addTransaction, ballDropTarget, calibrate, markReimbursed, updateMarketValue, OpError } from '../src/data/ops';
 import { allNotes, hideNote, pinnedCount, sortedCategories, suggestedNotes, togglePin } from '../src/data/notes';
-import { emptyData, sampleData } from '../src/data/seed';
+import { emptyData } from '../src/data/seed';
+import { legacySampleData as sampleData } from './fixtures/legacySample';
 import { migrate } from '../src/data/migrate';
 import { exportJson, parseBackup } from '../src/data/backup';
 import type { AppData } from '../src/data/types';

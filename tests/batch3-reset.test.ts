@@ -34,7 +34,7 @@ describe('清空紀錄', () => {
     const c = clearRecords(d);
     expect(c.accounts).toEqual(d.accounts);
     expect(c.categories).toEqual(d.categories);
-    expect(c.settings).toEqual(d.settings);
+    expect(c.settings).toEqual({ ...d.settings, sample: false }); // 3.0：清空紀錄後不再是範例
   });
 
   it('帳戶金額回到初始餘額', () => {

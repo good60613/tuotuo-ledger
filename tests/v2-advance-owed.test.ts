@@ -4,7 +4,8 @@ import { allBalances, bankTotal, spendableTotal, totals, pendingOwedTotal, categ
 import { addTransaction, deleteTransaction, updateTransaction, markReimbursed, revertBatch, removeAccount, OpError } from '../src/data/ops';
 import { markBudgetPaid } from '../src/data/budget';
 import { markOwedPaid, revertOwedPaid, normalizeOwed, OwedError } from '../src/data/owed';
-import { emptyData, sampleData } from '../src/data/seed';
+import { emptyData } from '../src/data/seed';
+import { legacySampleData as sampleData } from './fixtures/legacySample';
 import { exportJson, parseBackup } from '../src/data/backup';
 import { migrate } from '../src/data/migrate';
 import { advanceOwedOn } from '../src/features';

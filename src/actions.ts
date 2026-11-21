@@ -1,6 +1,8 @@
 // 跨頁面共用的操作
 import type { Transaction } from './data/types';
-import { getState, openOverlay, updateData, showToast, ask, confirmDanger } from './store';
+import { getState, openOverlay, updateData, showToast, ask, confirmDanger, replaceData, setState, goPage, PAGES } from './store';
+import { clearSample } from './data/reset';
+import { blankData } from './data/seed';
 import { batchItems, revertBatch, deleteTransaction } from './data/ops';
 import { accountName } from './selectors';
 import { money } from './format';
@@ -80,4 +82,22 @@ async function askDeleteSpecial(t: Transaction) {
   if (!(await confirmDanger(`刪除${what}？`, '這類紀錄不能直接修改，刪除後可以重新記一筆或重新校正。', '刪除'))) return;
   updateData((x) => deleteTransaction(x, t.id));
   showToast('已刪除');
+}
+
+/**
+ * 3.0 清空範例、開始記帳（首頁範例提示、教學最後一頁）：先問，清空前自動留底，
+ * 清完到設定頁打開「新增帳戶」，讓使用者建立第一個帳戶。
+ */
+export async function clearSampleAndStart(askFirst = true): Promise<boolean> {
+  if (askFirst && !(await confirmDanger('清空範例資料？', '範例的帳戶、紀錄會全部清掉，換成你自己的。外觀、字體等設定會保留。\n（清空前會自動留底，可以還原）', '清空'))) return false;
+  try {
+    await replaceData(clearSample(getState().data, blankData()), 'pre-clear-all');
+  } catch {
+    showToast('清空失敗，資料沒有變動');
+    return false;
+  }
+  setState({ settingsIntent: 'add-account' });
+  goPage(PAGES.indexOf('設定'));
+  showToast('範例已清空，先新增你的第一個帳戶吧');
+  return true;
 }

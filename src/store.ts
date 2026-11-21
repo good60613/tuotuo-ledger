@@ -126,7 +126,11 @@ export interface State {
    * 這時畫面只顯示保護畫面，任何存檔都會被擋下。
    */
   blocked: { reason: BlockReason; message: string } | null;
+  /** 3.0：從別頁要設定頁打開某個畫面（新增第一個帳戶、從其他軟體匯入、說明）；設定頁處理完清成 null */
+  settingsIntent: SettingsIntent | null;
 }
+
+export type SettingsIntent = 'add-account' | 'import-other' | 'help';
 
 let state: State = {
   dialog: null,
@@ -146,6 +150,7 @@ let state: State = {
   dragging: false,
   todoTab: 'reimb',
   blocked: null,
+  settingsIntent: null,
 };
 
 /** 保護狀態時手機上的原始資料（還原、匯入前要先把它留一份） */

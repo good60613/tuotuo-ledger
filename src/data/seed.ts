@@ -1,7 +1,8 @@
 // 範例資料：一打開就能試。設定裡可以清空。
 import type { Account, AppData, Category, NoteTag, Transaction } from './types';
 import { DATA_VERSION } from './types';
-import { SETTLE } from '../config';
+import { SETTLE, SAMPLE } from '../config';
+import { firstMonthFrom } from './recurring';
 import { withAccountIcon, type CategoryColorKey } from '../categoryStyle';
 
 export function emptyData(): AppData {
@@ -67,22 +68,28 @@ function defaultTags(): NoteTag[] {
   return ['麥噹噹', '711', '全家', '星巴克', '便當'].map((text, i) => ({ id: `n${i}`, text, order: i, pinned: false }));
 }
 
+/**
+ * 範例資料（3.0 重做，新手教學用）：一般帳戶三張、數字整齊。
+ * 剩餘可用固定是 $30,000：一般帳戶合計 33,750 －預算 3,000 －定期扣款 390 －朋友先付 360。
+ * 定期扣款訂在結算日前一天（4 號），不管哪天安裝都落在這一期；扣款日當天自動記帳時，預留改成真的支出，剩餘可用一樣不變。
+ */
 export function sampleData(now: Date = new Date()): AppData {
   const d = emptyData();
   d.accounts = [
-    { id: 'a-salary', name: '薪轉帳戶', kind: 'bank', initialBalance: 45000, order: 0 },
-    { id: 'a-post', name: '郵局', kind: 'bank', initialBalance: 18000, order: 1 },
-    { id: 'a-cathay', name: '國泰', kind: 'bank', initialBalance: 9000, order: 2 },
-    { id: 'a-taishin', name: '台新', kind: 'bank', initialBalance: 6000, order: 3 },
-    { id: 'a-cash', name: '現金', kind: 'bank', initialBalance: 3000, order: 4 },
+    { id: 'a-salary', name: '薪轉帳戶', kind: 'bank', initialBalance: 30000, order: 0 },
+    { id: 'a-post', name: '郵局', kind: 'bank', initialBalance: 6000, order: 1 },
+    { id: 'a-cash', name: '現金', kind: 'bank', initialBalance: 3190, order: 2 },
     ...smallAccounts(1),
   ].map((a) => withAccountIcon(a as Account));
+  d.settings.settleDay = SAMPLE.settleDay;
   d.settings.defaultReimburseAccountId = 'a-salary';
+  d.settings.dailyAvg = true;
+  d.settings.sample = true;
 
-  const y = now.getFullYear();
-  const m = now.getMonth();
-  const today = now.getDate();
-  const at = (day: number, h: number, min = 0) => new Date(y, m, Math.min(day, today), h, min).toISOString();
+  // 時間都往前推：今天的用「幾小時前」，之前的用「幾天前幾點」，不會出現未來的紀錄
+  const hoursAgo = (h: number) => new Date(now.getTime() - h * 3600000).toISOString();
+  const daysAgo = (n: number, h: number, min = 0) =>
+    new Date(now.getFullYear(), now.getMonth(), now.getDate() - n, h, min).toISOString();
   let n = 0;
   const tx = (p: Partial<Transaction> & Pick<Transaction, 'type' | 'amount' | 'accountId' | 'occurredAt'>): Transaction => ({
     id: `s${n++}`,
@@ -93,25 +100,29 @@ export function sampleData(now: Date = new Date()): AppData {
   });
 
   d.transactions = [
-    tx({ type: 'income', amount: 42000, accountId: 'a-salary', categoryId: 'c-i0', note: '本月薪水', occurredAt: at(1, 9) }),
-    tx({ type: 'expense', amount: 65, accountId: 'a-cash', categoryId: 'c-e0', note: '麥噹噹', occurredAt: at(1, 8, 20) }),
-    tx({ type: 'expense', amount: 120, accountId: 'a-linepay', categoryId: 'c-e1', note: '便當', occurredAt: at(2, 12, 10) }),
-    tx({ type: 'transfer', amount: 500, accountId: 'a-salary', toAccountId: 'a-easy', note: '悠遊卡儲值', occurredAt: at(2, 18) }),
-    tx({ type: 'expense', amount: 55, accountId: 'a-cash', categoryId: 'c-e3', note: '711', occurredAt: at(3, 15, 30) }),
-    tx({ type: 'expense', amount: 1280, accountId: 'a-cathay', categoryId: 'c-e6', note: '', occurredAt: at(3, 20) }),
+    tx({ type: 'transfer', amount: 5000, accountId: 'a-salary', toAccountId: 'a-saving', note: '存起來', occurredAt: daysAgo(3, 9) }),
+    tx({ type: 'transfer', amount: 10000, accountId: 'a-invest', toAccountId: 'a-0050', note: '', source: 'invest-buy', occurredAt: daysAgo(3, 10) }),
+    tx({ type: 'income', amount: 1500, accountId: 'a-post', categoryId: 'c-i3', note: '家教', occurredAt: daysAgo(2, 17) }),
+    tx({ type: 'transfer', amount: 500, accountId: 'a-salary', toAccountId: 'a-easy', note: '悠遊卡儲值', occurredAt: daysAgo(2, 18) }),
+    tx({ type: 'expense', amount: 1000, accountId: 'a-salary', categoryId: 'c-e6', note: '', occurredAt: daysAgo(2, 20) }),
+    tx({ type: 'expense', amount: 120, accountId: 'a-linepay', categoryId: 'c-e1', note: '便當', occurredAt: daysAgo(1, 12, 10) }),
     tx({
-      type: 'expense', amount: 860, accountId: 'a-post', categoryId: 'c-e2', note: '客戶餐敘', occurredAt: at(4, 19),
+      type: 'expense', amount: 320, accountId: 'a-cash', categoryId: 'c-e4', note: '計程車', occurredAt: daysAgo(1, 22),
       reimbursable: true, reimburseStatus: 'pending',
     }),
-    tx({
-      type: 'expense', amount: 320, accountId: 'a-cash', categoryId: 'c-e4', note: '計程車', occurredAt: at(today, 10),
-      reimbursable: true, reimburseStatus: 'pending',
-    }),
-    tx({ type: 'expense', amount: 150, accountId: 'a-taishin', categoryId: 'c-e3', note: '星巴克', occurredAt: at(today, 9, 40) }),
-    tx({ type: 'income', amount: 1500, accountId: 'a-post', categoryId: 'c-i3', note: '', occurredAt: at(today, 11) }),
-    tx({ type: 'transfer', amount: 5000, accountId: 'a-salary', toAccountId: 'a-saving', note: '存起來', occurredAt: at(today, 8) }),
-    tx({ type: 'transfer', amount: 10000, accountId: 'a-invest', toAccountId: 'a-0050', note: '', source: 'invest-buy', occurredAt: at(2, 10) }),
-    tx({ type: 'valuation', amount: 42500, accountId: 'a-0050', note: '', occurredAt: at(today, 13) }),
+    // 朋友先幫我付：不動帳戶，剩餘可用先扣
+    tx({ type: 'owed', amount: 360, accountId: '', categoryId: 'c-e7', note: '電影票（小美先付）', owedStatus: 'pending', occurredAt: daysAgo(1, 20) }),
+    // 預算：不扣帳戶，剩餘可用先扣
+    tx({ type: 'expense', amount: 3000, accountId: 'a-salary', categoryId: 'c-e2', note: '週末聚餐', budget: true, budgetStatus: 'pending', occurredAt: daysAgo(0, 0, 5) }),
+    tx({ type: 'expense', amount: 65, accountId: 'a-cash', categoryId: 'c-e0', note: '麥噹噹', occurredAt: hoursAgo(3) }),
+    tx({ type: 'expense', amount: 55, accountId: 'a-cash', categoryId: 'c-e3', note: '711', occurredAt: hoursAgo(1) }),
+    tx({ type: 'valuation', amount: 41000, accountId: 'a-0050', note: '', occurredAt: hoursAgo(0.5) }),
+  ];
+  d.recurring = [
+    {
+      id: 'r-sample', name: '影音訂閱', amount: 390, day: SAMPLE.recurringDay, categoryId: 'c-e7', accountId: 'a-salary',
+      order: 0, nextMonth: firstMonthFrom(SAMPLE.recurringDay, now), createdAt: now.toISOString(),
+    },
   ];
   return d;
 }

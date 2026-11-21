@@ -179,6 +179,10 @@ export interface Settings {
   dailyAvg?: boolean;
   /** App 字體（2.6）：缺值或 'system'＝跟隨系統；其他值見 src/fonts.ts。只存選了哪套，字體檔另外下載存在手機裡 */
   appFont?: string;
+  /** 3.0：目前是範例資料（首頁上方顯示「目前是範例資料｜清空」）。清空範例、清空紀錄、清空所有資料後消失。缺值＝不是範例 */
+  sample?: boolean;
+  /** 3.0 新手教學：'pending'＝第一次安裝、還沒看；看完或跳過＝'done'。缺值（舊使用者、舊備份）＝不自動出現 */
+  tutorial?: 'pending' | 'done';
 }
 
 export type ThemeMode = 'light' | 'dark' | 'system';

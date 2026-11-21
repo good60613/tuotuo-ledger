@@ -14,5 +14,22 @@ export function clearRecords(d: AppData): AppData {
   const extra: NoteTag[] = allNotes(d)
     .filter((n) => !known.has(n.text))
     .map((n, i) => ({ id: uid('n'), text: n.text, order: i, pinned: false }));
-  return { ...d, transactions: [], noteTags: [...d.noteTags, ...extra] };
+  return { ...d, transactions: [], noteTags: [...d.noteTags, ...extra], settings: { ...d.settings, sample: false } };
+}
+
+/**
+ * 3.0 教學結束〔清空範例，開始記帳〕、首頁範例提示的〔清空〕：
+ * 帳戶、紀錄、定期扣款回到全新（五顆球各一個空帳戶），分類與標籤用預設；
+ * 外觀、字體等使用者在教學中可能調過的設定保留，只清掉跟範例帳戶有關的設定。
+ */
+export function clearSample(d: AppData, blank: AppData): AppData {
+  return {
+    ...blank,
+    settings: {
+      ...d.settings,
+      sample: false,
+      defaultReimburseAccountId: null,
+      lastUsedAccountId: null,
+    },
+  };
 }

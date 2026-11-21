@@ -2,7 +2,8 @@
 import { describe, expect, it } from 'vitest';
 import { applySettingsImport, checkSettingsImport, exportJson, parseBackup, readBackup, BACKUP_FILE_VERSION } from '../src/data/backup';
 import { migrate } from '../src/data/migrate';
-import { emptyData, sampleData } from '../src/data/seed';
+import { emptyData } from '../src/data/seed';
+import { legacySampleData as sampleData } from './fixtures/legacySample';
 import { allBalances } from '../src/data/calc';
 import { DATA_VERSION, type AppData } from '../src/data/types';
 import { DEFAULT_COLOR, MISSING_ICON } from '../src/categoryStyle';

@@ -709,6 +709,9 @@ html.glass-blur .glass-nav {
 .home-head { height: 40px; padding-top: 6px; align-items: center; justify-content: space-between; }
 .home-title { font-size: 22px; font-weight: 800; }
 .home-date { font-size: 13px; }
+/* 3.0 範例資料提示：標題旁的小膠囊，點了清空範例 */
+.sample-chip { margin-right: auto; display: flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--card); color: var(--muted); border-radius: 999px; padding: 3px 4px 3px 10px; font-size: 12px; white-space: nowrap; }
+.sample-chip-x { background: var(--accent); color: var(--on-accent); border-radius: 999px; padding: 2px 8px; font-weight: 700; }
 .home > .home-sum { flex: none; }
 .home-sum { border-radius: 20px; padding: 14px 16px 12px; }
 .sum-top { display: flex; align-items: center; gap: 14px; }
@@ -919,3 +922,8 @@ html:not(.no-glass) .collapse-bar.glass { background: color-mix(in srgb, var(--c
 .toast-hold-label { position: relative; }
 .toast-capsule.held .toast-timer { animation-play-state: paused; }
 .toast-hold:disabled { opacity: .5; }
+
+/* 3.0 從其他軟體匯入：三個步驟 */
+.steps { margin: 8px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 12px; }
+.steps li { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; font-size: 14px; }
+.link-btn { border: 0; background: none; padding: 0; color: var(--accent); text-decoration: underline; }

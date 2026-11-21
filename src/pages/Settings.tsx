@@ -4,6 +4,8 @@ import type { ComponentChildren } from 'preact';
 import type { Settings } from '../data/types';
 import { fontById, DEFAULT_APP_FONT } from '../fonts';
 import { FontPicker, confirmAndDownload } from '../components/FontPicker';
+import { checkImport, importSummary, normalizeImport, AI_PROMPT } from '../data/aiImport';
+import { copyText, shareToAi } from '../aiShare';
 import { requestNotifPermission, isNative, setAppIcon } from '../widget';
 import { RecurringPanel } from './RecurringSettings';
 import { useEffect, useRef, useState } from 'preact/hooks';
@@ -96,7 +98,7 @@ import { applyTheme, themeOf, THEME_LABEL, type ThemeMode } from '../theme';
 const MULTI_KINDS: AccountKind[] = ['ewallet', 'invest', 'saving', 'other'];
 
 /** 設定目錄的項目（首頁只列項目，點了才進入子頁） */
-type View = 'menu' | 'accounts' | 'small' | 'categories' | 'recurring' | 'backup' | 'demo';
+type View = 'menu' | 'accounts' | 'small' | 'categories' | 'recurring' | 'backup' | 'demo' | 'help';
 
 type SheetState =
   | null
@@ -123,11 +125,29 @@ export function SettingsPage() {
   useBackLayer(s.page === PAGES.indexOf('設定') && view !== 'menu', () => setView('menu'));
   const [catType, setCatType] = useState<CategoryType>('expense');
   const fileRef = useRef<HTMLInputElement>(null);
+  // 3.0 從其他軟體匯入：選好的舊 App 檔案
+  const oldRef = useRef<HTMLInputElement>(null);
+  const [oldFiles, setOldFiles] = useState<File[]>([]);
   // App 圖示只有 APK 版能換
   const [native, setNative] = useState(false);
   useEffect(() => {
     isNative().then(setNative);
   }, []);
+
+  // 3.0：別頁要求打開某個畫面（教學、首頁範例提示）
+  useEffect(() => {
+    const it = s.settingsIntent;
+    if (!it) return;
+    setState({ settingsIntent: null });
+    if (it === 'add-account') {
+      setView('accounts');
+      setSheet({ k: 'account', kind: 'bank' });
+    } else if (it === 'import-other') {
+      setView('backup');
+    } else if (it === 'help') {
+      setView('help');
+    }
+  }, [s.settingsIntent]);
 
   /** 改一個或幾個設定值 */
   const setSetting = (patch: Partial<Settings>) => updateData((x) => ({ ...x, settings: { ...x.settings, ...patch } }));
@@ -233,10 +253,25 @@ export function SettingsPage() {
     try {
       const parsed = readBackup(await file.text());
       if (parsed.type === 'full') {
-        const next = parsed.data;
+        // 3.0：先檢查（AI 做的檔案可能有錯），錯誤可以複製貼回給 AI；自己匯出的備份一定通過
+        const errs = checkImport(parsed.data);
+        if (errs.length > 0) {
+          const v = await ask('這個檔案有問題', `${errs.slice(0, 6).join('\n')}${errs.length > 6 ? `\n…共 ${errs.length} 個問題` : ''}\n\n如果是 AI 做的檔案：按〔複製錯誤〕貼給 AI，請它修正後重新給你檔案。`, [
+            { label: '複製錯誤', value: 'copy', style: 'primary' },
+            { label: '取消', value: 'no', style: 'secondary' },
+            { label: '仍要匯入', value: 'force', style: 'danger' },
+          ]);
+          if (v === 'copy') {
+            const ok = await copyText(`拖拖記帳匯入時出現這些錯誤，請修正後重新給我完整的 .json 檔：\n${errs.join('\n')}`);
+            showToast(ok ? '已複製，貼給 AI 就好' : '複製失敗');
+            return;
+          }
+          if (v !== 'force') return;
+        }
+        const next = normalizeImport({ ...parsed.data, settings: { ...parsed.data.settings, sample: false } });
         const ok = await confirmDanger(
-          '用完整備份取代目前資料？',
-          `備份內有 ${next.accounts.length} 個帳戶、${next.transactions.length} 筆紀錄。\n目前手機上的資料會被整個取代。建議先匯出一份目前的資料。`,
+          '用這個檔案取代目前資料？',
+          `匯入後：\n${importSummary(next)}\n\n請跟原本的 App 核對金額。目前手機上的資料會被整個取代（會先自動留底）。`,
           '取代',
         );
         if (!ok) return;
@@ -531,7 +566,7 @@ export function SettingsPage() {
       ) : (
         <div class="sub-head">
           <button class="icon-btn" onClick={() => setView('menu')} aria-label="返回設定"><Icon name="chevron-left" /></button>
-          <h1 class="page-title">{{ accounts: '帳戶管理', small: '小帳戶管理', categories: '分類管理', recurring: '定期扣款', backup: '資料備份', demo: '清空或範例' }[view]}</h1>
+          <h1 class="page-title">{{ accounts: '帳戶管理', small: '小帳戶管理', categories: '分類管理', recurring: '定期扣款', backup: '資料備份', demo: '清空或範例', help: '說明' }[view]}</h1>
         </div>
       )}
 
@@ -643,6 +678,49 @@ export function SettingsPage() {
             const f = e.currentTarget.files?.[0];
             e.currentTarget.value = '';
             if (f) doImport(f);
+          }}
+        />
+      </section>}
+
+      {(view === 'backup' || view === 'menu') && <section class="panel" id="import-other">
+        <h3>從其他軟體匯入</h3>
+        <p class="muted small">用過別的記帳 App？把它的備份檔交給你常用的 AI（ChatGPT、Gemini、Claude…），請它轉成拖拖記帳的格式。</p>
+        <ol class="steps">
+          <li>
+            <span>在舊 App 匯出備份檔，選起來</span>
+            <button class="btn secondary" onClick={() => oldRef.current?.click()}>
+              {oldFiles.length ? `已選 ${oldFiles.length} 個檔案（重選）` : '選擇舊檔案'}
+            </button>
+            {oldFiles.length > 0 && <span class="muted small">{oldFiles.map((f) => f.name).join('、')}</span>}
+          </li>
+          <li>
+            <span>交給 AI：會一起附上格式說明、範本和提示詞</span>
+            <button
+              class="btn"
+              onClick={() =>
+                shareToAi(getState().data, oldFiles)
+                  .then((msg) => msg && showToast(msg))
+                  .catch(() => showToast('分享失敗'))
+              }
+            >
+              交給我的 AI
+            </button>
+            <button class="link-btn small" onClick={async () => showToast((await copyText(AI_PROMPT)) ? '提示詞已複製' : '複製失敗')}>
+              只複製提示詞
+            </button>
+          </li>
+          <li>
+            <span>AI 做好 .json 檔後存到手機，按上面的〔從備份匯入〕。匯入前會列出各帳戶餘額，請跟舊 App 核對。</span>
+          </li>
+        </ol>
+        <input
+          ref={oldRef}
+          type="file"
+          multiple
+          style={{ display: 'none' }}
+          onChange={(e) => {
+            setOldFiles([...(e.currentTarget.files ?? [])]);
+            e.currentTarget.value = '';
           }}
         />
       </section>}
