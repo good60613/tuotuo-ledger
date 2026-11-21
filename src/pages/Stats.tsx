@@ -17,6 +17,8 @@ import type { AppData } from '../data/types';
 import { Donut, LineChart, BarChart, PALETTE } from '../components/Charts';
 import { money } from '../format';
 import { STATS_RANGE } from '../config';
+import { loggedDays, currentStreak, streakCheer } from '../data/streak';
+import { STREAK_COIN_SRC } from '../coins';
 
 const MONTH_ZH = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二'];
 const md = (k: string) => `${Number(k.slice(5, 7))}/${Number(k.slice(8))}`;
@@ -34,6 +36,10 @@ export function StatsPage() {
   const [lineShow, setLineShow] = useState<'both' | 'expense' | 'income'>('both');
   const [barShow, setBarShow] = useState<'expense' | 'income'>('expense');
   const [pickCustom, setPickCustom] = useState(false);
+  // 3.1 打卡：有記帳的日子＋連續天數（一律算到今天，跟正在看哪個月無關）
+  const logged = loggedDays(d);
+  const streak = currentStreak(logged, now);
+  const cheer = streakCheer(streak);
 
   // ---- 依檢視整理要畫的資料（計算規則全部沿用現有：statEffect） ----
   let scope: StatScope;
@@ -125,6 +131,22 @@ export function StatsPage() {
         </span>
       </div>
 
+      {mode === 'month' && (
+        <section class="panel">
+          <div class="cal-head">
+            <h3>日曆</h3>
+            <div class="streak">
+              <img class="streak-coin" src={STREAK_COIN_SRC[cheer.coin]} alt="" />
+              <span class="streak-text">
+                {streak.days > 0 && <span class="streak-n">連續記帳 <b>{streak.days}</b> 天</span>}
+                <span class="streak-cheer">{cheer.text}</span>
+              </span>
+            </div>
+          </div>
+          <MonthCalendar days={periodDays(month, sd)} today={dayKey(now)} series={series} logged={logged} onPick={(day) => jump({ day })} />
+        </section>
+      )}
+
       <div class="month-sum">
         <div>
           <div class="amt-label">{sumLabel}支出</div>
@@ -143,13 +165,6 @@ export function StatsPage() {
 
       <CategorySection title="支出分類" data={d} list={exp} total={m.expense} onPick={(id) => jump({ categoryId: id })} />
       <CategorySection title="收入分類" data={d} list={inc} total={m.income} onPick={(id) => jump({ categoryId: id })} />
-
-      {mode === 'month' && (
-        <section class="panel">
-          <h3>日曆</h3>
-          <MonthCalendar days={periodDays(month, sd)} today={dayKey(now)} series={series} onPick={(day) => jump({ day })} />
-        </section>
-      )}
 
       <section class="panel">
         <div class="panel-head">
@@ -284,7 +299,7 @@ function CategorySection({ title, data, list, total, onPick }: { title: string; 
   );
 }
 
-function MonthCalendar({ days, today, series, onPick }: { days: string[]; today: string; series: { income: number; expense: number }[]; onPick: (day: string) => void }) {
+function MonthCalendar({ days, today, series, logged, onPick }: { days: string[]; today: string; series: { income: number; expense: number }[]; logged: Set<string>; onPick: (day: string) => void }) {
   const first = new Date(days[0] + 'T00:00').getDay();
   const cells: (number | null)[] = [...Array(first).fill(null), ...days.map((_, i) => i)];
   return (
@@ -297,7 +312,7 @@ function MonthCalendar({ days, today, series, onPick }: { days: string[]; today:
         const key = days[dd];
         return (
           <button key={key} class={`cal-d${key === today ? ' today' : ''}`} onClick={() => onPick(key)}>
-            <span class="cal-n">{Number(key.slice(8))}</span>
+            <span class={`cal-n${logged.has(key) ? ' stamp' : ''}`}>{Number(key.slice(8))}</span>
             {(t.income || t.expense) ? (
               <span class={`cal-v ${net >= 0 ? 'income' : 'expense'}`}>{net >= 0 ? '+' : '-'}{Math.abs(net).toLocaleString('en-US')}</span>
             ) : null}

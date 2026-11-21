@@ -310,7 +310,7 @@ export const ARTICLES: { id: string; title: string; summary: string; body: () =>
   },
   {
     id: 'backup',
-    title: '備份、自動留底、換手機',
+    title: '備份、自動存檔、換手機',
     summary: '資料只在手機裡，先學會備份',
     body: () => (
       <>
@@ -318,10 +318,10 @@ export const ARTICLES: { id: string; title: string; summary: string; body: () =>
         <h4>匯出與匯入（設定頁往下的「匯出與匯入」）</h4>
         <ul>
           <li>完整備份：設定加上所有紀錄。</li>
-          <li>只匯出設定：帳戶、小帳戶、分類、備註標籤、結算日，不含紀錄。</li>
+          <li>匯出設定：帳戶、小帳戶、分類、備註標籤、結算日，不含紀錄。</li>
           <li>匯入會取代目前全部資料。</li>
         </ul>
-        <h4>自動留底</h4>
+        <h4>自動存檔</h4>
         <ul>
           <li>每天第一次開啟留一份，保留最近 7 天。</li>
           <li>匯入、清空、載入範例、還原、資料升級之前，也各留一份，保留最近 5 份。</li>
@@ -331,11 +331,11 @@ export const ARTICLES: { id: string; title: string; summary: string; body: () =>
         <h4>換手機</h4>
         <ol>
           <li>舊手機：匯出完整備份，把檔案傳到新手機。</li>
-          <li>新手機：安裝拖拖記帳，到資料備份按〔從備份匯入〕。</li>
+          <li>新手機：安裝拖拖記帳，到資料備份按〔匯入備份〕。</li>
           <li>如果你用了 App 字體，字體檔不在備份裡，要在新手機重新下載。</li>
         </ol>
         <h4>出問題時</h4>
-        <p>如果開啟時讀不到資料，App 會出現保護畫面，不會亂存、也不會換成範例。你可以重試、從自動留底還原，或從備份檔匯入。</p>
+        <p>如果開啟時讀不到資料，App 會出現保護畫面，不會亂存、也不會換成範例。你可以重試、從自動存檔還原，或從備份檔匯入。</p>
       </>
     ),
   },
@@ -387,7 +387,7 @@ export const ARTICLES: { id: string; title: string; summary: string; body: () =>
               <li>也可以按〔只複製提示詞〕自己貼。</li>
             </ul>
           </li>
-          <li>AI 做好 .json 檔後，存到手機，按上面「匯出與匯入」裡的〔從備份匯入〕。</li>
+          <li>AI 做好 .json 檔後，存到手機，按上面「匯出與匯入」裡的〔匯入備份〕。</li>
         </ol>
         <h4>匯入前的檢查</h4>
         <ul>
@@ -397,7 +397,7 @@ export const ARTICLES: { id: string; title: string; summary: string; body: () =>
         <h4>注意</h4>
         <ul>
           <li>匯入會取代目前全部資料。</li>
-          <li>匯入前 App 會自動留一份底，可以從自動留底還原。</li>
+          <li>匯入前 App 會自動留一份底，可以從自動存檔還原。</li>
         </ul>
       </>
     ),

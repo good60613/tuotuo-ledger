@@ -1,7 +1,7 @@
 // 儲存層：用手機瀏覽器內建的 IndexedDB（手機本機資料庫）。
 //
 // 2.0 修正批：
-// - 主資料一個資料庫（ledger-app），自動留底另一個資料庫（ledger-app-snapshots），
+// - 主資料一個資料庫（ledger-app），自動存檔另一個資料庫（ledger-app-snapshots），
 //   兩邊是各自的寫入動作，主資料寫壞不會連留底一起壞。
 // - 寫入鎖：開啟時預設鎖住，讀檔成功才打開（見 boot.ts）。保護狀態下任何存檔都會失敗，
 //   不會發生「讀不到資料 → 畫面上的範例資料被存進去 → 真帳本被蓋掉」。
@@ -71,7 +71,7 @@ export async function saveData(data: AppData): Promise<void> {
   });
 }
 
-// ---------------- 自動留底 ----------------
+// ---------------- 自動存檔 ----------------
 
 export async function listSnapshots(): Promise<SnapshotMeta[]> {
   const d = await snapDb();

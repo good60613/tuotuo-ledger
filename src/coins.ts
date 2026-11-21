@@ -30,3 +30,16 @@ export const coinLabel = (id: CoinId) => (COINS.find((c) => c.id === id) ?? COIN
 
 /** 依設定決定要顯示哪一張：auto（預設）＝跟著心情 */
 export const resolveCoin = (pick: CoinPick | undefined, mood: Mood): CoinId => (!pick || pick === 'auto' ? mood : pick);
+
+// 3.1 新增六張（購物、吃飯、交通、投資、撲滿、帳單），先用在統計頁日曆的打卡區。原圖：素材/拖拖硬幣/原圖/3.1新增六張.jpg
+import shop31 from './assets/coins31/shop.png';
+import eat31 from './assets/coins31/eat.png';
+import transit31 from './assets/coins31/transit.png';
+import rich31 from './assets/coins31/rich.png';
+import piggy31 from './assets/coins31/piggy.png';
+import bill31 from './assets/coins31/bill.png';
+import type { StreakCoin } from './data/streak';
+
+export const STREAK_COIN_SRC: Record<StreakCoin, string> = {
+  shop: shop31, eat: eat31, transit: transit31, rich: rich31, piggy: piggy31, bill: bill31,
+};

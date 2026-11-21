@@ -378,7 +378,7 @@ export async function replaceData(next: AppData, reason: SnapshotReason) {
   }
 }
 
-/** 從某份自動留底還原（還原前會先把目前資料再留一份） */
+/** 從某份自動存檔還原（還原前會先把目前資料再留一份） */
 export async function restoreSnapshot(id: string) {
   const data = await loadSnapshotData(deviceStorage, id);
   await replaceData(data, 'pre-restore');

@@ -85,11 +85,11 @@ async function askDeleteSpecial(t: Transaction) {
 }
 
 /**
- * 3.0 清空範例、開始記帳（首頁範例提示、教學最後一頁）：先問，清空前自動留底，
+ * 3.0 清空範例、開始記帳（首頁範例提示、教學最後一頁）：先問，清空前自動存檔，
  * 清完到設定頁打開「新增帳戶」，讓使用者建立第一個帳戶。
  */
 export async function clearSampleAndStart(askFirst = true): Promise<boolean> {
-  if (askFirst && !(await confirmDanger('清空範例資料？', '範例的帳戶、紀錄會全部清掉，換成你自己的。外觀、字體等設定會保留。\n（清空前會自動留底，可以還原）', '清空'))) return false;
+  if (askFirst && !(await confirmDanger('清空範例資料？', '範例的帳戶、紀錄會全部清掉，換成你自己的。外觀、字體等設定會保留。\n（清空前會自動存檔，可以還原）', '清空'))) return false;
   try {
     await replaceData(clearSample(getState().data, blankData()), 'pre-clear-all');
   } catch {

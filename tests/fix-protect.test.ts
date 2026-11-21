@@ -183,7 +183,7 @@ describe('自動留底（工單驗證）', () => {
     // 留底失敗：不取代
     const kept = JSON.parse(JSON.stringify(s.main));
     s.failSnapshot = true;
-    await expect(replaceWithSnapshot(st, kept, blankData(), 'pre-clear-all', NOW)).rejects.toThrow('自動留底失敗');
+    await expect(replaceWithSnapshot(st, kept, blankData(), 'pre-clear-all', NOW)).rejects.toThrow('自動存檔失敗');
     expect(s.main).toEqual(kept);
   });
 

@@ -2,7 +2,7 @@
 //
 // 規則：
 // - 手機上本來就沒有資料（第一次使用）→ 載入範例並存檔，照舊。
-//   但如果沒有主資料、卻有自動留底（代表資料被清掉了，不是第一次用）→ 進保護狀態，讓 PK 選要不要還原。
+//   但如果沒有主資料、卻有自動存檔（代表資料被清掉了，不是第一次用）→ 進保護狀態，讓 PK 選要不要還原。
 // - 讀取失敗、資料升級失敗、資料版本比 App 新 → 進「保護狀態」：絕不寫入、絕不用範例蓋掉。
 // - 資料版本比 App 舊、要升級 → 升級前先把原樣留一份。
 // - 正常讀到 → 每天第一次開啟時留一份每日留底。
@@ -68,7 +68,7 @@ export async function boot(st: Storage, now: Date = new Date()): Promise<BootRes
     try {
       snaps = await st.listSnapshots();
     } catch { /* 留底也讀不到：當成第一次使用 */ }
-    if (snaps.length > 0) return blocked(st, 'missing', '手機上找不到帳本資料，但有自動留底。', raw);
+    if (snaps.length > 0) return blocked(st, 'missing', '手機上找不到帳本資料，但有自動存檔。', raw);
     const data = sampleData(now);
     // 3.0：只有真的第一次安裝才自動出現新手教學（舊使用者的資料沒有這欄＝不出現）
     data.settings.tutorial = 'pending';
@@ -91,7 +91,7 @@ export async function boot(st: Storage, now: Date = new Date()): Promise<BootRes
     try {
       await takeSnapshot(st, raw, 'pre-upgrade', now);
     } catch {
-      warnings.push('升級前的自動留底沒有成功');
+      warnings.push('升級前的自動存檔沒有成功');
     }
   }
 
@@ -113,7 +113,7 @@ export async function boot(st: Storage, now: Date = new Date()): Promise<BootRes
   try {
     await ensureDailySnapshot(st, data, now);
   } catch {
-    warnings.push('今天的自動留底沒有成功');
+    warnings.push('今天的自動存檔沒有成功');
   }
   return { kind: 'ok', data, firstRun: false, warnings };
 }
@@ -133,7 +133,7 @@ export async function replaceWithSnapshot(
     try {
       await takeSnapshot(st, current, reason, now);
     } catch (e) {
-      throw new Error(`自動留底失敗，這次沒有執行（${errText(e)}）`);
+      throw new Error(`自動存檔失敗，這次沒有執行（${errText(e)}）`);
     }
   }
   st.setWriteLock(false);

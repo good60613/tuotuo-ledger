@@ -20,7 +20,7 @@ export const BACKUP_FILE_VERSION = 2;
 
 export type BackupType = 'full' | 'settings';
 
-/** 只匯出設定時的內容：整份資料去掉紀錄 */
+/** 匯出設定時的內容：整份資料去掉紀錄 */
 export type SettingsData = Omit<AppData, 'transactions'>;
 
 export type ParsedBackup = { type: 'full'; data: AppData } | { type: 'settings'; data: SettingsData };

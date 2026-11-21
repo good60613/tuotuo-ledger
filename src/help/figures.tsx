@@ -126,7 +126,7 @@ export function FigImport() {
       <rect x="0" y="0" width="240" height="130" rx="12" fill="var(--bg)" stroke="var(--line)" />
       <Box x={10} n="1" title="舊檔案" sub="舊 App 匯出" />
       <Box x={89} n="2" title="AI" sub="轉成新格式" />
-      <Box x={168} n="3" title="拖拖記帳" sub="從備份匯入" />
+      <Box x={168} n="3" title="拖拖記帳" sub="匯入備份" />
       <path d="M76 62 L86 62 M82 58 L86 62 L82 66" stroke="var(--accent)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" />
       <path d="M155 62 L165 62 M161 58 L165 62 L161 66" stroke="var(--accent)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" />
       <text x="120" y="116" text-anchor="middle" font-size="11" fill="var(--muted)">核對餘額和筆數沒問題，再按取代</text>

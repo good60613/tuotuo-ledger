@@ -1,6 +1,6 @@
 // 3.0 從其他軟體匯入：交給使用者自己的 AI（ChatGPT、Gemini、Claude…）轉成拖拖記帳的完整備份檔。
 // - 這裡放：給 AI 的提示詞、格式說明（AI 看的）、匯入前的檢查、匯入前的預覽摘要。
-// - 檢查也套用在一般的「從備份匯入」：自己 App 匯出的備份一定過得了；過不了的是 AI 做錯，
+// - 檢查也套用在一般的「匯入備份」：自己 App 匯出的備份一定過得了；過不了的是 AI 做錯，
 //   錯誤訊息寫成可以直接貼回去給 AI 修正的句子。
 import type { AppData, Transaction } from './types';
 import { DATA_VERSION, KIND_LABEL } from './types';
@@ -27,7 +27,7 @@ const COLOR_KEYS = CATEGORY_COLORS.map((c) => `${c.key}（${c.label}）`).join('
 export function formatDoc(): string {
   return `# 拖拖記帳 備份檔格式說明（給 AI 看）
 
-把舊記帳 App 的資料轉成下面這個格式，存成一個 .json 檔。使用者會用拖拖記帳的「從備份匯入」匯入，匯入前 App 會檢查格式並顯示各帳戶餘額讓使用者核對。
+把舊記帳 App 的資料轉成下面這個格式，存成一個 .json 檔。使用者會用拖拖記帳的「匯入備份」匯入，匯入前 App 會檢查格式並顯示各帳戶餘額讓使用者核對。
 
 ## 1. 外層
 

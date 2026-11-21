@@ -1,4 +1,4 @@
-// 自動留底清單（設定頁「自動留底」與資料保護畫面共用）：列出每份的時間、原因、帳戶與紀錄筆數，點一份還原。
+// 自動存檔清單（設定頁「自動存檔」與資料保護畫面共用）：列出每份的時間、原因、帳戶與紀錄筆數，點一份還原。
 import { useEffect, useState } from 'preact/hooks';
 import { listSnapshots } from '../data/storage';
 import { REASON_LABEL, byNewest, type SnapshotMeta } from '../data/snapshots';
@@ -15,7 +15,7 @@ export function SnapshotList({ onRestored }: { onRestored?: () => void }) {
   const load = () =>
     listSnapshots()
       .then((l) => setList([...l].sort(byNewest)))
-      .catch((e) => setErr(e instanceof Error ? e.message : '讀不到自動留底'));
+      .catch((e) => setErr(e instanceof Error ? e.message : '讀不到自動存檔'));
   useEffect(() => {
     void load();
   }, []);
@@ -46,9 +46,9 @@ export function SnapshotList({ onRestored }: { onRestored?: () => void }) {
     }
   };
 
-  if (err) return <p class="muted small">讀不到自動留底（{err}）</p>;
+  if (err) return <p class="muted small">讀不到自動存檔（{err}）</p>;
   if (!list) return <p class="muted small">讀取中…</p>;
-  if (list.length === 0) return <p class="muted small">還沒有自動留底。每天第一次開啟 App 會自動留一份。</p>;
+  if (list.length === 0) return <p class="muted small">還沒有自動存檔。每天第一次開啟 App 會自動留一份。</p>;
   return (
     <div>
       {list.map((m) => (

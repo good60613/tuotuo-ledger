@@ -85,7 +85,7 @@ export const SETTLE = {
 export const RECURRING_CHECK_MS = 30 * 60 * 1000;
 
 /**
- * 自動留底（2.0 修正批）：存在 App 自己的另一個資料庫，和主資料分開寫。
+ * 自動存檔（2.0 修正批）：存在 App 自己的另一個資料庫，和主資料分開寫。
  * 每份大約等於一份完整備份檔大小（一千筆紀錄約 0.3 MB），兩種合計最多 12 份。
  */
 export const SNAPSHOT = {

@@ -95,6 +95,7 @@ import { accountIconOf, accountIconStyleOf } from '../categoryStyle';
 import { carrierError, isValidCarrier, normalizeCarrier } from '../data/carrier';
 import { Barcode } from '../components/Barcode';
 import { applyTheme, themeOf, THEME_LABEL, type ThemeMode } from '../theme';
+import { WhatsNew } from '../whatsNew';
 
 /** 可以有多個帳戶的小帳戶類型（其他類型固定一個） */
 const MULTI_KINDS: AccountKind[] = ['ewallet', 'invest', 'saving', 'other'];
@@ -114,6 +115,7 @@ type SheetState =
   | { k: 'moveAccount'; from: Account }
   | { k: 'moveCategory'; from: Category }
   | { k: 'snapshots' }
+  | { k: 'whatsNew' }
   | { k: 'font' }
   | { k: 'coin'; which: 'coinHome' | 'coinWidget' | 'appIcon' };
 
@@ -284,13 +286,13 @@ export function SettingsPage() {
         const next = normalizeImport({ ...parsed.data, settings: { ...parsed.data.settings, sample: false } });
         const ok = await confirmDanger(
           '用這個檔案取代目前資料？',
-          `匯入後：\n${importSummary(next)}\n\n請跟原本的 App 核對金額。目前手機上的資料會被整個取代（會先自動留底）。`,
+          `匯入後：\n${importSummary(next)}\n\n請跟原本的 App 核對金額。目前手機上的資料會被整個取代（會先自動存檔）。`,
           '取代',
         );
         if (!ok) return;
         await replaceData(next, 'pre-import');
         setState({ ...resetFilters });
-        showToast('已從備份還原（原本的資料已自動留底）');
+        showToast('已從備份還原（原本的資料已自動存檔）');
         return;
       }
       // 只有設定：紀錄保留，找不到的帳戶、分類一個一個問要移到哪裡
@@ -365,7 +367,7 @@ export function SettingsPage() {
     if (v === 'export') doExport('full');
     return v === 'yes';
   };
-  /** 清空、載入範例：先自動留底（失敗就不執行），再取代 */
+  /** 清空、載入範例：先自動存檔（失敗就不執行），再取代 */
   const applyReset = async (next: (x: typeof d) => typeof d, reason: SnapshotReason, msg: string) => {
     try {
       await replaceData(next(getState().data), reason);
@@ -383,7 +385,7 @@ export function SettingsPage() {
       '繼續',
     ))) return;
     if (!(await confirmDanger('再確認一次', '帳戶和設定都會被蓋掉，整個換成範例資料。確定嗎？', '換成範例'))) return;
-    await applyReset(() => sampleData(), 'pre-sample', '已載入範例資料（原本的資料已自動留底）');
+    await applyReset(() => sampleData(), 'pre-sample', '已載入範例資料（原本的資料已自動存檔）');
   };
   const clearRecordsOnly = async () => {
     const n = getState().data.transactions.length;
@@ -392,7 +394,7 @@ export function SettingsPage() {
       `會刪除全部 ${n} 筆記帳紀錄（含校正、報帳、轉帳），無法復原。\n帳戶、小帳戶、分類、備註標籤、結算日等設定都會保留，帳戶金額回到初始餘額。\n建議先匯出完整備份。`,
       '清空紀錄',
     ))) return;
-    await applyReset((x) => clearRecords(x), 'pre-clear-records', '已清空紀錄，設定保留（原本的資料已自動留底）');
+    await applyReset((x) => clearRecords(x), 'pre-clear-records', '已清空紀錄，設定保留（原本的資料已自動存檔）');
   };
   const clearAll = async () => {
     if (!(await firstConfirm(
@@ -401,7 +403,7 @@ export function SettingsPage() {
       '繼續',
     ))) return;
     if (!(await confirmDanger('再確認一次', '帳戶、紀錄、設定全部清除，無法復原。確定嗎？', '全部清除'))) return;
-    await applyReset(() => blankData(), 'pre-clear-all', '已清空所有資料（原本的資料已自動留底）');
+    await applyReset(() => blankData(), 'pre-clear-all', '已清空所有資料（原本的資料已自動存檔）');
   };
 
   const banks = bankAccounts(d);
@@ -683,17 +685,17 @@ export function SettingsPage() {
         <p class="muted small">資料只存在這支手機上。換手機或清除瀏覽器資料前，請先匯出完整備份。</p>
         <div class="btn-row">
           <button class="btn" onClick={() => doExport('full')}>匯出完整備份</button>
-          <button class="btn secondary" onClick={() => doExport('settings')}>只匯出設定</button>
+          <button class="btn secondary" onClick={() => doExport('settings')}>匯出設定</button>
         </div>
-        <p class="muted small">完整備份＝設定＋所有紀錄。只匯出設定＝帳戶、小帳戶、分類、備註標籤、結算日，不含紀錄。<br />2.1 版起的備份，舊版 App（2.0.x）讀不了；舊版的備份可以匯入新版。</p>
+        <p class="muted small">完整備份：記帳紀錄＋所有設定值。<br />匯出設定：帳戶、小帳戶、分類及所有設定值，不含記帳紀錄。</p>
         <div class="btn-row">
-          <button class="btn secondary" onClick={() => fileRef.current?.click()}>從備份匯入</button>
+          <button class="btn secondary" onClick={() => fileRef.current?.click()}>匯入備份</button>
         </div>
-        <p class="muted small">會自動判斷檔案類型：完整備份會取代全部資料；只有設定的檔案只取代設定，紀錄保留。</p>
+        <p class="muted small">會自動判斷備份類型。要匯入其他軟體的紀錄，請用下面的〔從其他軟體匯入〕。</p>
         <div class="btn-row">
-          <button class="btn secondary" onClick={() => setSheet({ k: 'snapshots' })}>自動留底</button>
+          <button class="btn secondary" onClick={() => setSheet({ k: 'snapshots' })}>自動存檔</button>
         </div>
-        <p class="muted small">App 每天第一次開啟、以及匯入、清空、載入範例、還原之前，會自動在手機裡留一份，可以選一份還原。只存在這支手機上，換手機仍要靠匯出備份。</p>
+        <p class="muted small">每天自動暫存一份在這支手機上。要換手機、重灌，請用完整備份。</p>
         <input
           ref={fileRef}
           type="file"
@@ -735,7 +737,7 @@ export function SettingsPage() {
             </button>
           </li>
           <li>
-            <span>AI 做好 .json 檔後存到手機，按上面的〔從備份匯入〕。匯入前會列出各帳戶餘額，請跟舊 App 核對。</span>
+            <span>AI 做好 .json 檔後存到手機，按上面的〔匯入備份〕。匯入前會列出各帳戶餘額，請跟舊 App 核對。</span>
           </li>
         </ol>
         <input
@@ -750,13 +752,6 @@ export function SettingsPage() {
         />
       </section>}
 
-      {view === 'menu' && (
-        <button class="setting-row license-row" onClick={() => setSheet({ k: 'license' })}>
-          <span>開放原始碼授權</span>
-          <span class="muted">Lucide ›</span>
-        </button>
-      )}
-
       {(view === 'demo' || view === 'menu') && <section class="panel">
         <h3>清空或範例</h3>
         <div class="btn-row three">
@@ -770,7 +765,19 @@ export function SettingsPage() {
       {view === 'help' && <HelpPage />}
 
       {/* 3.0：最下面顯示版本號（APK 讀 App 本身的版本，改版不用另外改這裡） */}
-      {view === 'menu' && <p class="app-version muted small">拖拖記帳 {appVersion}</p>}
+      {view === 'menu' && (
+        <button class="setting-row license-row" onClick={() => setSheet({ k: 'license' })}>
+          <span>開放原始碼授權</span>
+          <span class="muted">Lucide ›</span>
+        </button>
+      )}
+
+      {view === 'menu' && (
+        <p class="app-version muted small">
+          拖拖記帳 {appVersion}
+          <button class="link-btn whats-new" onClick={() => setSheet({ k: 'whatsNew' })}>更新了什麼？</button>
+        </p>
+      )}
 
       {sheet?.k === 'account' && <AccountForm kind={sheet.kind} existing={sheet.existing} onClose={() => setSheet(null)} />}
       {sheet?.k === 'category' && <CategoryForm type={sheet.type} existing={sheet.existing} onClose={() => setSheet(null)} />}
@@ -797,8 +804,13 @@ export function SettingsPage() {
           <pre class="license-text">{LUCIDE_LICENSE}</pre>
         </Sheet>
       )}
+      {sheet?.k === 'whatsNew' && (
+        <Sheet title="更新了什麼？" onClose={() => setSheet(null)}>
+          <WhatsNew />
+        </Sheet>
+      )}
       {sheet?.k === 'snapshots' && (
-        <Sheet title="自動留底" onClose={() => setSheet(null)}>
+        <Sheet title="自動存檔" onClose={() => setSheet(null)}>
           <p class="muted small">點一份還原。還原前會先把目前資料再留一份，按錯可以還原回來。</p>
           <SnapshotList onRestored={() => {
             setSheet(null);

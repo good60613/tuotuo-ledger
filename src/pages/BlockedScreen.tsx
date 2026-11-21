@@ -1,6 +1,6 @@
 import { Icon } from '../components/Icon';
 // 資料保護畫面（2.0 修正批）：讀不到帳本、升級失敗、版本比 App 新、或找不到主資料時顯示。
-// 這時不會存任何變更；只提供重試、從自動留底還原、從備份檔匯入（版本太新時只能重試，請更新 App）。
+// 這時不會存任何變更；只提供重試、從自動存檔還原、從備份檔匯入（版本太新時只能重試，請更新 App）。
 import { useRef, useState } from 'preact/hooks';
 import { useAppState, getState, initStore, replaceData, startFresh, confirmDanger, showToast, setState } from '../store';
 import { readBackup } from '../data/backup';
@@ -50,7 +50,7 @@ export function BlockedScreen() {
   };
 
   const fresh = async () => {
-    if (!(await confirmDanger('從範例開始？', '會建立一本新的範例帳本。之後要找回舊資料，仍可從設定的「自動留底」還原。', '從範例開始'))) return;
+    if (!(await confirmDanger('從範例開始？', '會建立一本新的範例帳本。之後要找回舊資料，仍可從設定的「自動存檔」還原。', '從範例開始'))) return;
     try {
       await startFresh();
     } catch (e) {
@@ -67,13 +67,13 @@ export function BlockedScreen() {
 
       <div class="blocked-btns">
         <button class="btn" disabled={busy} onClick={retry}>重試</button>
-        {canRescue && <button class="btn secondary" onClick={() => setShowSnaps((v) => !v)}>從自動留底還原</button>}
+        {canRescue && <button class="btn secondary" onClick={() => setShowSnaps((v) => !v)}>從自動存檔還原</button>}
         {canRescue && <button class="btn secondary" onClick={() => fileRef.current?.click()}>從備份檔匯入</button>}
         {b.reason === 'missing' && <button class="btn secondary" onClick={fresh}>從範例開始</button>}
       </div>
       {showSnaps && (
         <section class="panel">
-          <h3>自動留底</h3>
+          <h3>自動存檔</h3>
           <SnapshotList onRestored={() => setState({ page: 2 })} />
         </section>
       )}
