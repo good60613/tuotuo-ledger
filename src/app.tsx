@@ -12,6 +12,7 @@ import { TodoPage } from './pages/Todo';
 import { SettingsPage } from './pages/Settings';
 import { applyTheme, themeOf } from './theme';
 import { glassOn } from './features';
+import { applyAppFont } from './fonts';
 import { UI_ICONS } from './icons';
 import { Icon } from './components/Icon';
 import { BlockedScreen } from './pages/BlockedScreen';
@@ -63,6 +64,12 @@ export function App() {
   useEffect(() => {
     if (s.ready) applyTheme(themeMode);
   }, [s.ready, themeMode]);
+
+  // 2.6 App 字體：讀到設定或換字體時套用（沒下載或載入失敗＝維持手機字體）
+  const appFont = s.data?.settings.appFont;
+  useEffect(() => {
+    if (s.ready) void applyAppFont(appFont);
+  }, [s.ready, appFont]);
 
   // 毛玻璃關閉時在 <html> 加 no-glass，讓毛玻璃元素改成實心
   const glass = glassOn(s.data?.settings);

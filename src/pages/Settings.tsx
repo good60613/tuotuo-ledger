@@ -1,19 +1,19 @@
 // 設定（右二）：只放讓其他功能能運作的項目。
-import { advanceOwedOn, recurringOn, glassOn, detailHome, prevBalanceOn, notifBarOn, notifHideLockOn, entryAccountMode } from '../features';
+import { advanceOwedOn, recurringOn, glassOn, detailHome, prevBalanceOn, notifBarOn, notifHideLockOn, entryAccountMode, dailyAvgOn } from '../features';
+import type { ComponentChildren } from 'preact';
+import type { Settings } from '../data/types';
+import { fontById, DEFAULT_APP_FONT } from '../fonts';
+import { FontPicker, confirmAndDownload } from '../components/FontPicker';
 import { requestNotifPermission, isNative, setAppIcon } from '../widget';
 import { RecurringPanel } from './RecurringSettings';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { COINS, coinLabel, type CoinId } from '../coins';
 
-/** 2.5 拖拖硬幣：一排可點的硬幣（auto＝多一個「跟著心情」） */
-function CoinRow({ label, value, onPick, auto, note }: { label: string; value: string; onPick: (v: string) => void; auto?: boolean; note?: string }) {
+/** 2.5 拖拖硬幣：一排可點的硬幣（auto＝多一個「自動」＝跟著心情換）。2.6 起放在第二層彈窗裡 */
+function CoinStrip({ value, onPick, auto, note }: { value: string; onPick: (v: string) => void; auto?: boolean; note?: string }) {
   return (
-    <div class="setting-row coin-row">
-      <div class="coin-row-head">
-        <span>{label}</span>
-        <span class="muted small">{value === 'auto' ? '跟著心情換' : coinLabel(value as CoinId)}</span>
-      </div>
-      <div class="coin-strip">
+    <div class="coin-pick">
+      <div class="coin-strip wrap">
         {auto && (
           <button class={`coin-opt auto${value === 'auto' ? ' on' : ''}`} onClick={() => onPick('auto')}>
             自動
@@ -25,7 +25,32 @@ function CoinRow({ label, value, onPick, auto, note }: { label: string; value: s
           </button>
         ))}
       </div>
-      {note && <span class="muted small">{note}</span>}
+      {note && <p class="muted small">{note}</p>}
+    </div>
+  );
+}
+
+const coinText = (v: string) => (v === 'auto' ? '跟著心情換' : coinLabel(v as CoinId));
+
+/** 2.6 開／關按鈕框（樣式同「外觀：亮色／暗色／跟隨系統」） */
+function OnOff({ on, onChange }: { on: boolean; onChange: (on: boolean) => void }) {
+  return (
+    <div class="mini-seg">
+      <button class={on ? 'on' : ''} onClick={() => !on && onChange(true)}>開</button>
+      <button class={on ? '' : 'on'} onClick={() => on && onChange(false)}>關</button>
+    </div>
+  );
+}
+
+/** 2.6 一列：名稱（可加一行小字說明）＋右邊的按鈕框 */
+function Row({ label, note, children }: { label: string; note?: string; children: ComponentChildren }) {
+  return (
+    <div class="setting-row">
+      <span class="row-label">
+        {label}
+        {note && <span class="muted small row-note">{note}</span>}
+      </span>
+      {children}
     </div>
   );
 }
@@ -84,7 +109,9 @@ type SheetState =
   | { k: 'carrier' }
   | { k: 'moveAccount'; from: Account }
   | { k: 'moveCategory'; from: Category }
-  | { k: 'snapshots' };
+  | { k: 'snapshots' }
+  | { k: 'font' }
+  | { k: 'coin'; which: 'coinHome' | 'coinWidget' | 'appIcon' };
 
 export function SettingsPage() {
   const s = useAppState();
@@ -101,6 +128,33 @@ export function SettingsPage() {
   useEffect(() => {
     isNative().then(setNative);
   }, []);
+
+  /** 改一個或幾個設定值 */
+  const setSetting = (patch: Partial<Settings>) => updateData((x) => ({ ...x, settings: { ...x.settings, ...patch } }));
+
+  // 2.6 字體：appFont 有值且不是 system＝用 App 字體
+  const fontOn = !!fontById(d.settings.appFont);
+  const useAppFont = async () => {
+    const f = fontById(DEFAULT_APP_FONT)!;
+    if (await confirmAndDownload(f)) setSetting({ appFont: f.id });
+  };
+
+  /** 圖示第二層：選好就關掉回第一層 */
+  const pickCoin = async (which: 'coinHome' | 'coinWidget' | 'appIcon', v: string) => {
+    if (which === 'appIcon') {
+      if (v !== (d.settings.appIcon ?? 'original')) {
+        if (!(await setAppIcon(v))) {
+          showToast('換圖示失敗');
+          return;
+        }
+        setSetting({ appIcon: v });
+        showToast(`App 圖示換成「${coinLabel(v as CoinId)}」`);
+      }
+    } else {
+      setSetting({ [which]: v });
+    }
+    setSheet(null);
+  };
 
   const sortAccounts = (ids: string[]) => updateData((x) => ({ ...x, accounts: reorder(x.accounts, ids) }));
   const sortCategories = (ids: string[]) => updateData((x) => ({ ...x, categories: reorder(x.categories, ids) }));
@@ -325,7 +379,9 @@ export function SettingsPage() {
       {view === 'menu' ? (
         <>
           <h1 class="page-title">設定</h1>
+          {/* 2.6 依用途分五類；選項短的用按鈕框，長的進下一層或彈窗 */}
           <section class="panel">
+            <h3>外觀</h3>
             <div class="setting-row">
               <span>外觀</span>
               <div class="mini-seg">
@@ -343,89 +399,44 @@ export function SettingsPage() {
                 ))}
               </div>
             </div>
-            <button
-              class="setting-row"
-              onClick={() => {
-                const on = !glassOn(d.settings);
-                updateData((x) => ({ ...x, settings: { ...x.settings, glass: on } }));
-              }}
-            >
-              <span>毛玻璃效果</span>
-              <span class="muted">{glassOn(d.settings) ? '開啟' : '關閉'}（手機卡頓時可關閉）</span>
-            </button>
-            <button
-              class="setting-row"
-              onClick={() => {
-                const on = !prevBalanceOn(d.settings);
-                updateData((x) => ({ ...x, settings: { ...x.settings, showPrevBalance: on } }));
-              }}
-            >
-              <span>明細顯示記帳前餘額</span>
-              <span class="muted">{prevBalanceOn(d.settings) ? '開啟' : '關閉'}</span>
-            </button>
-            <button
-              class="setting-row"
-              onClick={() => {
-                const next = entryAccountMode(d.settings) === 'last' ? 'first' : 'last';
-                updateData((x) => ({ ...x, settings: { ...x.settings, entryAccount: next } }));
-              }}
-            >
-              <span>記帳預設帳戶</span>
-              <span class="muted">{entryAccountMode(d.settings) === 'last' ? '上一筆用的帳戶' : '第一個帳戶'}</span>
-            </button>
-            <CoinRow
-              label="首頁小語圖示"
-              auto
-              value={d.settings.coinHome ?? 'auto'}
-              onPick={(v) => updateData((x) => ({ ...x, settings: { ...x.settings, coinHome: v } }))}
-            />
-            <CoinRow
-              label="桌面小工具圖示"
-              auto
-              value={d.settings.coinWidget ?? 'auto'}
-              onPick={(v) => updateData((x) => ({ ...x, settings: { ...x.settings, coinWidget: v } }))}
-            />
-            {native && (
-              <CoinRow
-                label="手機桌面 App 圖示"
-                note="換了之後，有些手機會把桌面上的舊圖示拿掉，要從 App 列表再拖一次到桌面"
-                value={d.settings.appIcon ?? 'original'}
-                onPick={async (v) => {
-                  if (v === (d.settings.appIcon ?? 'original')) return;
-                  if (!(await setAppIcon(v))) {
-                    showToast('換圖示失敗');
-                    return;
-                  }
-                  updateData((x) => ({ ...x, settings: { ...x.settings, appIcon: v } }));
-                  showToast(`App 圖示換成「${coinLabel(v as CoinId)}」`);
-                }}
-              />
+            <Row label="毛玻璃" note="關閉讓手機更順，開啟畫面更有質感">
+              <OnOff on={glassOn(d.settings)} onChange={(on) => setSetting({ glass: on })} />
+            </Row>
+            <div class="setting-row">
+              <span>字體</span>
+              <div class="mini-seg">
+                <button class={!fontOn ? 'on' : ''} onClick={() => fontOn && setSetting({ appFont: 'system' })}>跟隨系統</button>
+                <button class={fontOn ? 'on' : ''} onClick={() => !fontOn && useAppFont()}>App 字體</button>
+              </div>
+            </div>
+            {fontOn && (
+              <button class="setting-row" onClick={() => setSheet({ k: 'font' })}>
+                <span>選擇字體</span>
+                <span class="muted">{fontById(d.settings.appFont)?.label} ›</span>
+              </button>
             )}
-            <button
-              class="setting-row"
-              onClick={async () => {
-                const on = !notifBarOn(d.settings);
-                // 打開時 Android 13 以上要先向使用者要通知權限；被拒絕就維持關閉並說明原因
-                if (on && !(await requestNotifPermission())) {
-                  showToast('沒有通知權限，快捷列無法顯示。要用的話，請到手機設定 → 應用程式 → 拖拖記帳 → 通知，允許通知');
-                  return;
-                }
-                updateData((x) => ({ ...x, settings: { ...x.settings, notifBar: on } }));
-              }}
-            >
-              <span>通知欄快捷列</span>
-              <span class="muted">{notifBarOn(d.settings) ? '開啟' : '關閉'}（剩餘可用、今日收支與快捷按鈕）</span>
+          </section>
+
+          <section class="panel">
+            <h3>圖示</h3>
+            <button class="setting-row" onClick={() => setSheet({ k: 'coin', which: 'coinHome' })}>
+              <span>首頁小語圖示</span>
+              <span class="muted">{coinText(d.settings.coinHome ?? 'auto')} ›</span>
             </button>
-            <button
-              class="setting-row"
-              onClick={() => {
-                const on = !notifHideLockOn(d.settings);
-                updateData((x) => ({ ...x, settings: { ...x.settings, notifHideOnLock: on } }));
-              }}
-            >
-              <span>鎖定畫面隱藏金額</span>
-              <span class="muted">{notifHideLockOn(d.settings) ? '開啟' : '關閉'}（只影響通知欄快捷列）</span>
+            <button class="setting-row" onClick={() => setSheet({ k: 'coin', which: 'coinWidget' })}>
+              <span>桌面小工具圖示</span>
+              <span class="muted">{coinText(d.settings.coinWidget ?? 'auto')} ›</span>
             </button>
+            {native && (
+              <button class="setting-row" onClick={() => setSheet({ k: 'coin', which: 'appIcon' })}>
+                <span>手機桌面 App 圖示</span>
+                <span class="muted">{coinText(d.settings.appIcon ?? 'original')} ›</span>
+              </button>
+            )}
+          </section>
+
+          <section class="panel">
+            <h3>記帳</h3>
             <div class="setting-row">
               <span>首頁使用</span>
               <div class="mini-seg">
@@ -433,38 +444,38 @@ export function SettingsPage() {
                   <button
                     key={k}
                     class={(detailHome(d.settings) ? 'detail' : 'accounts') === k ? 'on' : ''}
-                    onClick={() => updateData((x) => ({ ...x, settings: { ...x.settings, homePage: k } }))}
+                    onClick={() => setSetting({ homePage: k })}
                   >
                     {label}
                   </button>
                 ))}
               </div>
             </div>
-            <button class="setting-row" onClick={() => setView('accounts')}><span>帳戶管理</span><span class="muted">{banks.length} 個 ›</span></button>
-            <button class="setting-row" onClick={() => setView('small')}><span>小帳戶管理</span><span class="muted">電子錢包、投資標的、儲蓄目標 ›</span></button>
-            <button class="setting-row" onClick={() => setView('categories')}>
-              <span>分類管理</span>
-              <span class="muted">{d.settings.autoSortCategories ? '自動排序' : '手動排序'} ›</span>
-            </button>
-            <button class="setting-row" onClick={() => setSheet({ k: 'tags' })}>
-              <span>備註標籤</span>
-              <span class="muted">自動篩選，已釘選 {pinnedCount(d)} 個 ›</span>
-            </button>
-            <button class="setting-row" onClick={() => setSheet({ k: 'defaultReimb' })}>
-              <span>預設報帳帳戶</span>
-              <span class="muted">{d.settings.defaultReimburseAccountId ? accountName(d, d.settings.defaultReimburseAccountId) : '不設定'} ›</span>
-            </button>
-            <button
-              class="setting-row"
-              onClick={() => {
-                const on = !advanceOwedOn(d.settings);
-                updateData((x) => ({ ...x, settings: { ...x.settings, advanceOwedEnabled: on } }));
-                showToast(on ? '已開啟先付／先欠' : '已關閉先付／先欠（已記的照常顯示與計算）');
-              }}
-            >
-              <span>先付／先欠</span>
-              <span class="muted">{advanceOwedOn(d.settings) ? '開啟' : '關閉'} ›</span>
-            </button>
+            <Row label="首頁平均／日" note="剩餘可用 ÷ 離結算日天數">
+              <OnOff on={dailyAvgOn(d.settings)} onChange={(on) => setSetting({ dailyAvg: on })} />
+            </Row>
+            <div class="setting-row">
+              <span>記帳預設帳戶</span>
+              <div class="mini-seg">
+                {([['last', '上一筆用的'], ['first', '第一個']] as const).map(([k, label]) => (
+                  <button key={k} class={entryAccountMode(d.settings) === k ? 'on' : ''} onClick={() => setSetting({ entryAccount: k })}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <Row label="明細顯示記帳前餘額">
+              <OnOff on={prevBalanceOn(d.settings)} onChange={(on) => setSetting({ showPrevBalance: on })} />
+            </Row>
+            <Row label="先付／先欠">
+              <OnOff
+                on={advanceOwedOn(d.settings)}
+                onChange={(on) => {
+                  setSetting({ advanceOwedEnabled: on });
+                  showToast(on ? '已開啟先付／先欠' : '已關閉先付／先欠（已記的照常顯示與計算）');
+                }}
+              />
+            </Row>
             <button class="setting-row" onClick={() => setView('recurring')}>
               <span>定期扣款</span>
               <span class="muted">{recurringOn(d.settings) ? `${d.recurring.length} 項` : '關閉'} ›</span>
@@ -472,6 +483,44 @@ export function SettingsPage() {
             <button class="setting-row" onClick={() => setSheet({ k: 'settle' })}>
               <span>結算日</span>
               <span class="muted">每月 {d.settings.settleDay} 號 ›</span>
+            </button>
+            <button class="setting-row" onClick={() => setSheet({ k: 'defaultReimb' })}>
+              <span>預設報帳帳戶</span>
+              <span class="muted">{d.settings.defaultReimburseAccountId ? accountName(d, d.settings.defaultReimburseAccountId) : '不設定'} ›</span>
+            </button>
+          </section>
+
+          <section class="panel">
+            <h3>通知與隱私</h3>
+            <Row label="通知欄快捷列">
+              <OnOff
+                on={notifBarOn(d.settings)}
+                onChange={async (on) => {
+                  // 打開時 Android 13 以上要先向使用者要通知權限；被拒絕就維持關閉並說明原因
+                  if (on && !(await requestNotifPermission())) {
+                    showToast('沒有通知權限，快捷列無法顯示。要用的話，請到手機設定 → 應用程式 → 拖拖記帳 → 通知，允許通知');
+                    return;
+                  }
+                  setSetting({ notifBar: on });
+                }}
+              />
+            </Row>
+            <Row label="鎖定畫面隱藏金額">
+              <OnOff on={notifHideLockOn(d.settings)} onChange={(on) => setSetting({ notifHideOnLock: on })} />
+            </Row>
+          </section>
+
+          <section class="panel">
+            <h3>管理</h3>
+            <button class="setting-row" onClick={() => setView('accounts')}><span>帳戶管理</span><span class="muted">{banks.length} 個 ›</span></button>
+            <button class="setting-row" onClick={() => setView('small')}><span>小帳戶管理</span><span class="muted">錢包、投資、儲蓄 ›</span></button>
+            <button class="setting-row" onClick={() => setView('categories')}>
+              <span>分類管理</span>
+              <span class="muted">{d.settings.autoSortCategories ? '自動排序' : '手動排序'} ›</span>
+            </button>
+            <button class="setting-row" onClick={() => setSheet({ k: 'tags' })}>
+              <span>備註標籤</span>
+              <span class="muted">已釘選 {pinnedCount(d)} 個 ›</span>
             </button>
             <button class="setting-row" onClick={() => setSheet({ k: 'carrier' })}>
               <span>手機條碼載具</span>
@@ -618,6 +667,20 @@ export function SettingsPage() {
       {sheet?.k === 'account' && <AccountForm kind={sheet.kind} existing={sheet.existing} onClose={() => setSheet(null)} />}
       {sheet?.k === 'category' && <CategoryForm type={sheet.type} existing={sheet.existing} onClose={() => setSheet(null)} />}
       {sheet?.k === 'settle' && <SettleForm onClose={() => setSheet(null)} />}
+      {sheet?.k === 'font' && <FontPicker value={d.settings.appFont} onPick={(id) => setSetting({ appFont: id })} onClose={() => setSheet(null)} />}
+      {sheet?.k === 'coin' && (
+        <Sheet
+          title={{ coinHome: '首頁小語圖示', coinWidget: '桌面小工具圖示', appIcon: '手機桌面 App 圖示' }[sheet.which]}
+          onClose={() => setSheet(null)}
+        >
+          <CoinStrip
+            auto={sheet.which !== 'appIcon'}
+            value={sheet.which === 'appIcon' ? d.settings.appIcon ?? 'original' : d.settings[sheet.which] ?? 'auto'}
+            note={sheet.which === 'appIcon' ? '有些手機換完會拿掉桌面舊圖示，請從 App 列表再拖一次。' : '「自動」＝跟著心情換。'}
+            onPick={(v) => void pickCoin(sheet.which, v)}
+          />
+        </Sheet>
+      )}
       {sheet?.k === 'carrier' && <CarrierForm onClose={() => setSheet(null)} />}
       {sheet?.k === 'tags' && <TagManager onClose={() => setSheet(null)} />}
       {sheet?.k === 'license' && (

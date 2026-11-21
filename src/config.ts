@@ -133,7 +133,8 @@ export const HOME = {
   cardHeightPx: 68,
   ballPx: 54,
   /** 剩餘可用大卡 */
-  sum: { bigPx: 36, labelPx: 12, rowPx: 15 },
+  /** avgPx：2.6「平均／日」金額字級（放在剩餘可用與右側小字欄之間） */
+  sum: { bigPx: 36, labelPx: 12, rowPx: 15, avgPx: 20 },
   /** 拿起卡片時，最下面「支出／收入」放置區的最小高度（螢幕太矮時仍要出現） */
   dropZoneMinPx: 96,
   /** 拿起時放置區上緣提示字那一行的高度 */
@@ -251,6 +252,8 @@ export const ICON = {
 export const HOME_SUM = {
   /** 首頁「本月」「今日」兩行：支出與收入之間的間距（PK 補充，先給 12px，手機看過再調） */
   gapPx: 12,
+  /** 2.6：剩餘可用那一列放不下時，字最多縮到原本的幾倍 */
+  minFitK: 0.6,
 } as const;
 
 /** 帳戶圖示（卡片左側、帳戶編輯預覽）：38 見方、圓角 12、圖示 22 */
@@ -348,3 +351,6 @@ export const TX_DRAG = {
 
 /** 2.5 記帳後提示條「長按刪除」：要按住多久才刪 */
 export const HOLD_DELETE_MS = 1500;
+
+/** 2.6 App 字體：下載後存在手機 App 資料夾裡的哪個子資料夾（字體清單見 src/fonts.ts） */
+export const FONT = { dir: 'fonts' } as const;

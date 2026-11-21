@@ -175,6 +175,10 @@ export interface Settings {
   notifBar?: boolean;
   /** 鎖定畫面隱藏金額（2.3），缺值＝開啟。判斷一律用 features.ts 的 notifHideLockOn() */
   notifHideOnLock?: boolean;
+  /** 首頁「平均／日」（2.6），缺值＝關閉。判斷一律用 features.ts 的 dailyAvgOn()。舊資料、舊備份不用升版 */
+  dailyAvg?: boolean;
+  /** App 字體（2.6）：缺值或 'system'＝跟隨系統；其他值見 src/fonts.ts。只存選了哪套，字體檔另外下載存在手機裡 */
+  appFont?: string;
 }
 
 export type ThemeMode = 'light' | 'dark' | 'system';

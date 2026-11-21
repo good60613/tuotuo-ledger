@@ -34,6 +34,11 @@ export function notifHideLockOn(settings: Pick<Settings, 'notifHideOnLock'> | un
   return settings?.notifHideOnLock !== false;
 }
 
+/** 首頁剩餘可用旁是否顯示「平均／日」（2.6，缺值＝關閉） */
+export function dailyAvgOn(settings: Pick<Settings, 'dailyAvg'> | undefined): boolean {
+  return settings?.dailyAvg === true;
+}
+
 /** 首頁是否用明細頁（2.2，缺值＝帳戶頁） */
 export function detailHome(settings: Pick<Settings, 'homePage'> | undefined): boolean {
   return settings?.homePage === 'detail';

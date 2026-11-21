@@ -1,6 +1,7 @@
 import { useLayoutEffect, useEffect, useRef, useState } from 'preact/hooks';
 import { useAppState, setState, openOverlay, showToast, goPage, TODO_PAGE, PAGES, pageIndex, getState, updateData } from '../store';
-import { allBalances, spendableTotal, totals, periodKey, dayKey, pendingBudgetByAccount, pendingBudgetTotal, pendingOwedTotal, recurringReserved } from '../data/calc';
+import { allBalances, spendableTotal, totals, periodKey, dayKey, pendingBudgetByAccount, pendingBudgetTotal, pendingOwedTotal, recurringReserved, dailyAllowance } from '../data/calc';
+import { dailyAvgOn } from '../features';
 import { overdueCount } from '../data/budget';
 import { bankAccounts, accountName } from '../selectors';
 import { ballDropTarget, OpError } from '../data/ops';
@@ -227,7 +228,43 @@ export function HomePage() {
     });
   }
 
+  // 2.6：剩餘可用、平均／日、右側小字欄三塊放不下時（金額很大、字體較寬），一起等比例縮小，不切字
+  const sumTopRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const top = sumTopRef.current;
+    if (!top) return;
+    const fit = () => {
+      top.style.setProperty('--amt-k', '1');
+      for (let i = 0; i < 3; i++) {
+        const kids = [...top.children] as HTMLElement[];
+        const gap = parseFloat(getComputedStyle(top).columnGap) || 0;
+        const need = kids.reduce((s, c) => s + c.scrollWidth, 0) + gap * (kids.length - 1);
+        const k = parseFloat(top.style.getPropertyValue('--amt-k')) || 1;
+        if (need <= top.clientWidth) break;
+        top.style.setProperty('--amt-k', String(Math.max(HOME_SUM.minFitK, Math.floor(k * (top.clientWidth / need) * 0.98 * 100) / 100)));
+      }
+      // 本月、今日那一列也一樣：任一欄放不下就兩欄一起縮（字比較寬的字體會用到）
+      const rows = top.parentElement?.querySelector<HTMLElement>('.sum-rows');
+      if (rows) {
+        rows.style.setProperty('--row-k', '1');
+        const r = Math.min(1, ...[...rows.querySelectorAll<HTMLElement>('.sum-vals')].map((v) => (v.clientWidth / v.scrollWidth) * 0.98));
+        if (r < 1) rows.style.setProperty('--row-k', String(Math.max(HOME_SUM.minFitK, Math.floor(r * 100) / 100)));
+      }
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(top);
+    document.fonts?.addEventListener('loadingdone', fit);
+    return () => {
+      ro.disconnect();
+      document.fonts?.removeEventListener('loadingdone', fit);
+    };
+  });
+
+  const spendable = spendableTotal(d);
+  const avg = dailyAvgOn(d.settings) ? dailyAllowance(spendable, now, d.settings.settleDay) : null;
   const sumVars = {
+    '--sum-avg': `${HOME.sum.avgPx}px`,
     '--amt-budget': `${HOME.amount.budgetPx}px`,
     '--amt-k': '1',
     '--sum-gap': `${HOME_SUM.gapPx}px`,
@@ -254,11 +291,18 @@ export function HomePage() {
 
       {/* 剩餘可用大卡（毛玻璃） */}
       <div class="home-sum glass" style={sumVars}>
-        <div class="sum-top">
+        <div class="sum-top" ref={sumTopRef}>
           <div class="sum-main">
             <div class="sum-label">剩餘可用</div>
-            <div class="sum-big">{money(spendableTotal(d))}</div>
+            <div class="sum-big">{money(spendable)}</div>
           </div>
+          {/* 2.6 平均／日：剩餘可用 ÷ 離結算日天數（設定可關） */}
+          {avg !== null && (
+            <div class="sum-avg">
+              <div class="sum-label">平均／日</div>
+              <div class={`sum-avg-val${avg < 0 ? ' neg' : ''}`}>{money(avg)}</div>
+            </div>
+          )}
           {sideItems.length > 0 && <div class="amt-divider" />}
           <SideNotes items={sideItems} />
         </div>

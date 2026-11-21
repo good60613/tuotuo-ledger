@@ -330,6 +330,21 @@ export function periodRange(key: string, settleDay: number): { start: Date; end:
   return { start, end };
 }
 
+/**
+ * 離下一個結算日還有幾天（2.6，首頁「平均／日」用）：不含今天。
+ * 例：結算日 5 號，11/21 → 12/5 ＝ 14 天；12/4 ＝ 1 天；12/5 當天已是新的一期 → 算到 1/5。最少 1。
+ */
+export function daysToSettle(now: Date, settleDay: number): number {
+  const { end } = periodRange(periodKey(now, settleDay), settleDay);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.max(1, Math.round((end.getTime() - today.getTime()) / 86400000));
+}
+
+/** 平均每天可用＝剩餘可用 ÷ 離結算日天數，四捨五入到整數（負數照樣算） */
+export function dailyAllowance(spendable: number, now: Date, settleDay: number): number {
+  return Math.round(spendable / daysToSettle(now, settleDay));
+}
+
 /** 某一期的每一天（dayKey 陣列），日曆、曲線用 */
 export function periodDays(key: string, settleDay: number): string[] {
   const { start, end } = periodRange(key, settleDay);
