@@ -5,6 +5,11 @@ def keystorePropsFile = rootProject.file('../../記帳APP-金鑰/keystore.proper
 def keystoreProps = new Properties()
 if (keystorePropsFile.exists()) keystorePropsFile.withInputStream { keystoreProps.load(it) }
 
+// 雲端打包（GitHub Actions）：有 ANDROID_KEYSTORE_FILE 環境變數就改用環境變數裡的金鑰；沒有就維持上面本機的做法
+def envKeystoreFile = System.getenv('ANDROID_KEYSTORE_FILE')
+def useEnvSigning = envKeystoreFile != null && !envKeystoreFile.isEmpty()
+def hasSigning = useEnvSigning || keystorePropsFile.exists()
+
 android {
     namespace = "tw.pk.ledger"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -12,8 +17,8 @@ android {
         applicationId "tw.pk.ledger"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 21
-        versionName "3.1.0"
+        versionCode 22
+        versionName "3.3.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -23,7 +28,12 @@ android {
     }
     signingConfigs {
         release {
-            if (keystorePropsFile.exists()) {
+            if (useEnvSigning) {
+                storeFile file(envKeystoreFile)
+                storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('ANDROID_KEY_ALIAS')
+                keyPassword System.getenv('ANDROID_KEY_PASSWORD')
+            } else if (keystorePropsFile.exists()) {
                 storeFile new File(keystorePropsFile.parentFile, keystoreProps['storeFile'])
                 storePassword keystoreProps['storePassword']
                 keyAlias keystoreProps['keyAlias']
@@ -33,7 +43,7 @@ android {
     }
     buildTypes {
         release {
-            signingConfig keystorePropsFile.exists() ? signingConfigs.release : null
+            signingConfig hasSigning ? signingConfigs.release : null
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }

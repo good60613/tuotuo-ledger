@@ -1,0 +1,113 @@
+# 發正式版：push 一個 v3.x.x 格式的 tag（例如 v3.3.0）就會跑。
+# 打出用正式金鑰簽章的 APK，建立 GitHub Release 並把 APK 附上去；App 之後會自動提醒使用者更新。
+# 說明文字：有 release-notes/<tag>.md 就用它，沒有就讓 GitHub 自動產生。
+name: 發正式版 Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: 下載程式碼
+        uses: actions/checkout@v4
+
+      - name: 確認 tag 版本跟 build.gradle 的 versionName 一致
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION_NAME=$(grep -oP 'versionName\s+"\K[^"]+' android/app/build.gradle | head -n 1)
+          if [ "${TAG#v}" != "$VERSION_NAME" ]; then
+            echo "::error::tag 是 ${TAG}，但 android/app/build.gradle 的 versionName 是 ${VERSION_NAME}。請先把 versionName、versionCode 改好再打 tag（App 靠這兩個版本號比對有沒有新版）"
+            exit 1
+          fi
+
+      - name: 安裝 Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: 安裝 JDK 21（Capacitor 8 / Android Gradle Plugin 9 需要）
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: 安裝套件
+        run: npm ci
+
+      - name: 型別檢查
+        run: npm run typecheck
+
+      - name: 跑測試
+        run: npm test
+
+      - name: 建置網頁
+        run: npm run build
+
+      - name: 同步到 Android 專案
+        run: npx cap sync android
+
+      - name: 檢查簽章金鑰 Secrets 有沒有設定
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ] || [ -z "$ANDROID_KEYSTORE_PASSWORD" ] || [ -z "$ANDROID_KEY_ALIAS" ] || [ -z "$ANDROID_KEY_PASSWORD" ]; then
+            echo "::error::還沒設定簽章金鑰 Secrets，請看 文件/GitHub使用說明.md"
+            exit 1
+          fi
+
+      - name: 還原簽章金鑰檔（只放在這次執行的暫存資料夾）
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      - name: 打包 Release APK
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: 改名並確認有簽章
+        id: apk
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          SRC=android/app/build/outputs/apk/release/app-release.apk
+          if [ ! -f "$SRC" ]; then
+            echo "::error::找不到簽好章的 APK（app-release.apk），打包可能沒有成功簽章"
+            exit 1
+          fi
+          NAME="tuotuo-ledger-${TAG#v}.apk"
+          mkdir -p out
+          cp "$SRC" "out/$NAME"
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -n 1)
+          "$APKSIGNER" verify --print-certs "out/$NAME" | grep -i "SHA-256" || true
+          echo "path=out/$NAME" >> "$GITHUB_OUTPUT"
+
+      - name: 建立 GitHub Release 並附上 APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APK_PATH: ${{ steps.apk.outputs.path }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          NOTES="release-notes/${TAG}.md"
+          if [ -f "$NOTES" ]; then
+            gh release create "$TAG" "$APK_PATH" --title "$TAG" --notes-file "$NOTES"
+          else
+            gh release create "$TAG" "$APK_PATH" --title "$TAG" --generate-notes
+          fi

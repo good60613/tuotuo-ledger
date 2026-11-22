@@ -18,6 +18,7 @@ import { setState } from './store';
 import { UI_ICONS } from './icons';
 import { Icon } from './components/Icon';
 import { BlockedScreen } from './pages/BlockedScreen';
+import { maybeAutoCheck } from './updateFlow';
 
 /** 導覽列圖示跟著顯示的名稱走（首頁使用明細頁時，中間是「首頁」、第四格是「帳戶」） */
 const navIcon = (label: string) => (label === '帳戶' ? 'wallet' : UI_ICONS[label as keyof typeof UI_ICONS]);
@@ -71,6 +72,13 @@ export function App() {
   useEffect(() => {
     if (s.ready && !s.blocked && s.data.settings.tutorial === 'pending') setState({ tutorial: true });
   }, [s.ready]);
+
+  // 3.3 開機自動檢查更新：資料讀好後稍等一下再查（只有 APK 版、設定沒關、距離上次超過 20 小時才會真的連線）
+  useEffect(() => {
+    if (!s.ready || s.blocked) return;
+    const t = setTimeout(() => void maybeAutoCheck(), 2500);
+    return () => clearTimeout(t);
+  }, [s.ready, !!s.blocked]);
 
   // 2.6 App 字體：讀到設定或換字體時套用（沒下載或載入失敗＝維持手機字體）
   const appFont = s.data?.settings.appFont;

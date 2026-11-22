@@ -360,3 +360,16 @@ export const SAMPLE = { settleDay: 5, recurringDay: 4 } as const;
 
 /** 3.0 新手教學：亮出來那一塊比元素本身大多少（四邊各加） */
 export const TUTORIAL = { holePadPx: 6, trackMs: 60 } as const;
+
+/** 3.3 更新檢查：只在「檢查更新」時連到 GitHub 公開的 Releases，不帶任何使用者資料、不帶 token */
+export const UPDATE = {
+  /** GitHub 倉庫（擁有者/名稱） */
+  repo: 'good60613/tuotuo-ledger',
+  /** 開機自動檢查：距離上次檢查不到這麼多小時就不查 */
+  minHoursBetween: 20,
+  /** 連線逾時（毫秒）；逾時視為查不到，安靜略過 */
+  timeoutMs: 8000,
+  /** 更新說明對話框：最多顯示幾行、幾個字 */
+  notesMaxLines: 10,
+  notesMaxChars: 400,
+} as const;

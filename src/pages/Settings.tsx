@@ -12,6 +12,8 @@ import { requestNotifPermission, isNative, setAppIcon } from '../widget';
 import { RecurringPanel } from './RecurringSettings';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { COINS, coinLabel, type CoinId } from '../coins';
+import { getAppVersion } from '../appVersion';
+import { checkUpdateNow } from '../updateFlow';
 
 /** 2.5 拖拖硬幣：一排可點的硬幣（auto＝多一個「自動」＝跟著心情換）。2.6 起放在第二層彈窗裡 */
 function CoinStrip({ value, onPick, auto, note }: { value: string; onPick: (v: string) => void; auto?: boolean; note?: string }) {
@@ -140,12 +142,8 @@ export function SettingsPage() {
   // 3.0 版本號：APK 版讀 Android 的 versionName；網頁版（開發用）顯示「網頁版」
   const [appVersion, setAppVersion] = useState('');
   useEffect(() => {
-    import('@capacitor/core').then(async ({ Capacitor }) => {
-      if (!Capacitor.isNativePlatform()) return setAppVersion('網頁版');
-      const { App } = await import('@capacitor/app');
-      const info = await App.getInfo();
-      setAppVersion(`v${info.version}`);
-    }).catch(() => setAppVersion(''));
+    // 3.3 版本號來源改在 src/appVersion.ts（更新檢查共用）
+    getAppVersion().then((v) => setAppVersion(v ? `v${v}` : '網頁版')).catch(() => setAppVersion(''));
   }, []);
 
   // 3.0：別頁要求打開某個畫面（教學、首頁範例提示）
@@ -770,6 +768,19 @@ export function SettingsPage() {
           <span>開放原始碼授權</span>
           <span class="muted">Lucide ›</span>
         </button>
+      )}
+
+      {view === 'menu' && (
+        <section class="panel">
+          <h3>更新</h3>
+          <Row label="自動檢查更新" note="開 App 時看看有沒有新版，只會連到 GitHub">
+            <OnOff on={d.settings.autoUpdateCheck !== false} onChange={(on) => setSetting({ autoUpdateCheck: on })} />
+          </Row>
+          <button class="setting-row" onClick={() => void checkUpdateNow()}>
+            <span>現在檢查</span>
+            <span class="muted">{appVersion} ›</span>
+          </button>
+        </section>
       )}
 
       {view === 'menu' && (

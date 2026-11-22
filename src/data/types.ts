@@ -183,6 +183,8 @@ export interface Settings {
   sample?: boolean;
   /** 3.0 新手教學：'pending'＝第一次安裝、還沒看；看完或跳過＝'done'。缺值（舊使用者、舊備份）＝不自動出現 */
   tutorial?: 'pending' | 'done';
+  /** 3.3 開機自動檢查更新：缺值＝開啟，只有 false 才關。判斷一律 `autoUpdateCheck === false`。舊資料、舊備份不用升版 */
+  autoUpdateCheck?: boolean;
 }
 
 export type ThemeMode = 'light' | 'dark' | 'system';
