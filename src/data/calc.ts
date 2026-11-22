@@ -9,7 +9,7 @@
 //
 // 第四批（PK 定案）：預算。預算紀錄不扣帳戶、不算當月支出；剩餘可用扣掉「未付」的預算。
 // 真的付錢時另外新增一筆一般支出（扣帳戶、算當月支出），預算同時改成已付（見 budget.ts）。
-import type { Account, AccountKind, AppData, Transaction } from './types';
+import type { Account, AccountKind, AppData, Recurring, RecurringFreq, Transaction } from './types';
 
 /** 算進「剩餘可用金額」的帳戶類型：只有一般帳戶 */
 export const SPENDABLE_KINDS: AccountKind[] = ['bank'];
@@ -134,8 +134,111 @@ export function chargeDue(day: number, month: string, now: Date): boolean {
   return dayKey(chargeDate(day, month)) <= dayKey(now);
 }
 
-/** 防呆：一次最多往後看幾個月（資料亂掉時不會跑不完） */
+/** 防呆：一次最多往後看幾次（資料亂掉時不會跑不完；每週 240 次≈4 年半） */
 export const RECURRING_MAX_MONTHS = 240;
+
+// 3.x 週期（每週／每月／每年）。每一次扣款用一個「key」代表（存在 nextMonth、recurringMonth）：
+// 每月 'YYYY-MM'、每年 'YYYY'、每週＝那天 'YYYY-MM-DD'。
+type Sched = Pick<Recurring, 'freq' | 'day' | 'weekday' | 'monthOfYear'>;
+
+/** 週期，缺值＝每月 */
+export const freqOf = (r: Pick<Recurring, 'freq'>): RecurringFreq => r.freq ?? 'month';
+
+/** 這一次（key）的扣款日（當地 0 點）。月底、2/29 遇到沒有那天＝當月最後一天 */
+export function occDate(r: Sched, key: string): Date {
+  const f = freqOf(r);
+  if (f === 'week') {
+    const [y, m, d] = key.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+  if (f === 'year') {
+    const y = Number(key), m0 = (r.monthOfYear ?? 1) - 1;
+    return new Date(y, m0, Math.min(Math.max(1, r.day), daysIn(y, m0)));
+  }
+  return chargeDate(r.day, key);
+}
+
+/** 下一次的 key */
+export function occNext(r: Sched, key: string): string {
+  const f = freqOf(r);
+  if (f === 'week') {
+    const d = occDate(r, key);
+    d.setDate(d.getDate() + 7);
+    return dayKey(d);
+  }
+  if (f === 'year') return String(Number(key) + 1);
+  return shiftPeriod(key, 1);
+}
+
+/** 扣款日在 from 當天或之後的第一次（以日期比，不看幾點） */
+export function occFirstFrom(r: Sched, from: Date): string {
+  const f0 = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  const f = freqOf(r);
+  if (f === 'week') {
+    const d = new Date(f0);
+    d.setDate(d.getDate() + (((r.weekday ?? 0) - d.getDay() + 7) % 7));
+    return dayKey(d);
+  }
+  if (f === 'year') {
+    const y = f0.getFullYear();
+    return occDate(r, String(y)) >= f0 ? String(y) : String(y + 1);
+  }
+  const m = monthKey(f0);
+  return chargeDate(r.day, m) >= f0 ? m : shiftPeriod(m, 1);
+}
+
+/**
+ * 這一次該不該自動記了（3.x PK 定案）：扣款日「過完」才記，也就是隔天起。
+ * 扣款日當天錢還在預留裡，剩餘可用不受影響；隔天記成支出時預留同時解除。
+ */
+export function occDue(r: Sched, key: string, now: Date): boolean {
+  return dayKey(occDate(r, key)) < dayKey(now);
+}
+
+/** 自動記的那筆寫在扣款日的幾點（3.x PK 定案：當天 23:59，排在那天最後） */
+export function occPostTime(r: Sched, key: string): Date {
+  const d = occDate(r, key);
+  d.setHours(23, 59, 0, 0);
+  return d;
+}
+
+/** key 的格式是否符合這個週期（每週還要剛好是那個星期幾） */
+export function occKeyValid(r: Sched, key: unknown): key is string {
+  if (typeof key !== 'string') return false;
+  const f = freqOf(r);
+  if (f === 'year') return /^\d{4}$/.test(key);
+  if (f === 'month') return /^\d{4}-(0[1-9]|1[0-2])$/.test(key);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) return false;
+  const d = occDate(r, key);
+  return dayKey(d) === key && d.getDay() === (r.weekday ?? 0);
+}
+
+/**
+ * 定期扣款「本月合計」（3.x，PK 定案：只算這一期）：這一期已經自動記的（照實際金額）＋這一期還沒扣、之後會扣的。
+ * 不分一般帳戶、小帳戶，清單上的每一項都算；已刪除的項目不算。開關關掉＝只算已經記的。
+ */
+export function recurringPeriodTotal(data: Pick<AppData, 'recurring' | 'transactions' | 'settings'>, now: Date = new Date()): number {
+  const { start, end } = periodRange(periodKey(now, data.settings.settleDay), data.settings.settleDay);
+  const ids = new Set(data.recurring.map((r) => r.id));
+  let sum = 0;
+  const posted = new Set<string>();
+  for (const t of data.transactions) {
+    if (!t.recurringId || !ids.has(t.recurringId)) continue;
+    const at = new Date(t.occurredAt);
+    if (at >= start && at < end) sum += t.amount;
+    posted.add(`${t.recurringId}@${t.recurringMonth}`);
+  }
+  if (data.settings.recurringEnabled === false) return sum;
+  for (const r of data.recurring) {
+    let k = r.nextMonth;
+    for (let i = 0; i < RECURRING_MAX_MONTHS; i++, k = occNext(r, k)) {
+      const c = occDate(r, k);
+      if (c >= end) break;
+      if (c >= start && !posted.has(`${r.id}@${k}`)) sum += r.amount;
+    }
+  }
+  return sum;
+}
 
 /**
  * 剩餘可用要預留的定期扣款（比照預算）：
@@ -151,9 +254,10 @@ export function recurringReserved(data: SpendableData, now: Date = new Date()): 
   let sum = 0;
   for (const r of list) {
     if (kindOf(r.accountId) !== 'bank') continue;
+    // 每週：這期還沒扣的每一次都預留；每年：扣款日落在這期才整筆預留（PK 3.x 定案）
     let m = r.nextMonth;
-    for (let i = 0; i < RECURRING_MAX_MONTHS; i++, m = shiftPeriod(m, 1)) {
-      const c = chargeDate(r.day, m);
+    for (let i = 0; i < RECURRING_MAX_MONTHS; i++, m = occNext(r, m)) {
+      const c = occDate(r, m);
       if (c >= end) break;
       if (c >= start && !posted.has(`${r.id}@${m}`)) sum += r.amount;
     }

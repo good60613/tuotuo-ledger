@@ -212,7 +212,7 @@ export function HomePage() {
       label: '定期扣款',
       amount: recurSum,
       tone: 'budget',
-      onClick: () => goPage(PAGES.indexOf('設定')),
+      onClick: () => { setState({ todoTab: 'recurring' }); goPage(PAGES.indexOf('待辦')); },
     });
   }
   if (owedSum > 0) {

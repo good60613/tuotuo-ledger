@@ -97,7 +97,7 @@ export interface Transaction {
   budgetOfId?: string;
   /** 定期扣款（補強批，v6）自動記的支出：是哪一項定期扣款 */
   recurringId?: string;
-  /** 定期扣款自動記的支出：是哪個月份的扣款（'YYYY-MM'），同一項同一月只記一次 */
+  /** 定期扣款自動記的支出：是哪一次的扣款（格式同 Recurring.nextMonth），同一項同一次只記一次 */
   recurringMonth?: string;
   /** 調整紀錄的方向：up＝實際比帳上多，down＝實際比帳上少 */
   adjustDir?: 'up' | 'down';
@@ -194,25 +194,41 @@ export type ThemeMode = 'light' | 'dark' | 'system';
 /** UI 風格 id（見 src/uiStyle.ts） */
 export type UiStyleId = 'glass' | 'flat' | 'paper' | 'pixel' | 'liquid';
 
+/** 定期扣款週期（3.x）：每週／每月／每年。缺值＝每月（舊資料、舊備份不用升版） */
+export type RecurringFreq = 'week' | 'month' | 'year';
+/** 定期扣款「在哪取消」（3.x）：應用商城／App 內／網頁／其他；缺值＝沒填 */
+export type CancelVia = 'store' | 'app' | 'web' | 'other';
+
 /**
- * 定期扣款（補強批，v6）：固定金額的每月訂閱（HBO、Spotify）。
- * 每月 day 號自動記一筆支出；當月沒有那天（例如 31 號遇到 11 月）就在當月最後一天扣。
+ * 定期扣款（補強批，v6）：固定金額的週期性訂閱（HBO、Spotify）。
+ * 每月：day 號扣；每週：weekday 那天扣；每年：monthOfYear 月 day 號扣。
+ * 當月沒有那天（例如 31 號遇到 11 月、2/29 遇到平年）就在當月最後一天扣。
  */
 export interface Recurring {
   id: string;
   name: string;
-  /** 每月金額（正整數元） */
+  /** 每次扣的金額（正整數元） */
   amount: number;
-  /** 每月幾號扣（1～31） */
+  /** 週期（3.x），缺值＝每月。判斷一律用 calc.ts 的 freqOf() */
+  freq?: RecurringFreq;
+  /** 每週：星期幾扣（0＝日…6＝六） */
+  weekday?: number;
+  /** 每年：幾月扣（1～12），搭配 day */
+  monthOfYear?: number;
+  /** 每月／每年：幾號扣（1～31）；每週不用（存 1） */
   day: number;
+  /** 在哪取消（3.x，只是記給自己看，不影響金額） */
+  cancelVia?: CancelVia;
+  /** 其他備註（3.x，例如取消網址） */
+  cancelNote?: string;
   /** 支出分類 */
   categoryId: string;
   /** 預設扣款帳戶 */
   accountId: string;
   order: number;
   /**
-   * 下一個要自動記帳的月份（'YYYY-MM'）。比它早的月份都已經處理過，不會再記，
-   * 所以 App 很久沒開、補記時也不會重複。
+   * 下一次要自動記帳的那一次（欄位名沿用舊的，內容依週期：每月 'YYYY-MM'、每年 'YYYY'、每週那天 'YYYY-MM-DD'）。
+   * 比它早的都已經處理過，不會再記，所以 App 很久沒開、補記時也不會重複。
    */
   nextMonth: string;
   createdAt: string;

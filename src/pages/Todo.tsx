@@ -7,7 +7,9 @@ import { ReimburseTab } from './Reimburse';
 import { BudgetTab } from './BudgetTab';
 import { OwedTab } from './OwedTab';
 import { pendingBudgets } from '../data/budget';
-import { advanceOwedOn } from '../features';
+import { advanceOwedOn, recurringOn } from '../features';
+import { RecurringPanel } from './RecurringSettings';
+import { recurringReserved } from '../data/calc';
 
 export function TodoPage() {
   const s = useAppState();
@@ -17,12 +19,15 @@ export function TodoPage() {
   const advCount = txs.filter((t) => t.reimbursable && t.reimburseKind === 'advance' && t.reimburseStatus === 'pending').length;
   const owedCount = txs.filter((t) => t.type === 'owed' && t.owedStatus !== 'paid').length;
   const budgetCount = pendingBudgets(d).length;
+  const recurCount = recurringOn(d.settings) ? d.recurring.filter((r) => recurringReserved({ ...d, recurring: [r] }) > 0).length : 0;
   const on = advanceOwedOn(d.settings);
   const showAdv = on || txs.some((t) => t.reimburseKind === 'advance');
   const showOwed = on || txs.some((t) => t.type === 'owed');
   const tabs: { key: TodoTab; label: string; count: number }[] = [
     { key: 'reimb', label: '報帳', count: reimbCount },
     ...(showAdv ? [{ key: 'advance' as const, label: '先付', count: advCount }] : []),
+    // 定期扣款（3.x）：從設定搬一個入口到待辦頁，放正中間（PK 定案：不打破左右兩側原本的位置）；數字＝本期還沒扣的項目數
+    { key: 'recurring', label: '扣款', count: recurCount },
     ...(showOwed ? [{ key: 'owed' as const, label: '先欠', count: owedCount }] : []),
     { key: 'budget', label: '預算', count: budgetCount },
   ];
@@ -35,6 +40,7 @@ export function TodoPage() {
       {cur === 'advance' && <ReimburseTab key="advance" kind="advance" onBar={setBarOn} />}
       {cur === 'owed' && <OwedTab onBar={setBarOn} />}
       {cur === 'budget' && <BudgetTab onBar={setBarOn} />}
+      {cur === 'recurring' && <RecurringPanel />}
       {!barOn && (
         <BottomBar class="todo-tabs">
           {tabs.map((t) => (

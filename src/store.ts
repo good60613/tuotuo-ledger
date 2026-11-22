@@ -13,7 +13,7 @@ import type { SnapshotReason } from './data/snapshots';
 export const PAGES = ['待辦', '統計', '首頁', '明細', '設定'] as const;
 export const TODO_PAGE = 0;
 /** 待辦頁的分頁 */
-export type TodoTab = 'reimb' | 'advance' | 'owed' | 'budget';
+export type TodoTab = 'reimb' | 'advance' | 'owed' | 'budget' | 'recurring';
 /** 中間那格＝首頁（開 App、返回鍵回到這裡）。裡面放哪一頁看設定「首頁使用」 */
 export const HOME_PAGE = 2;
 export type PageId = (typeof PAGES)[number];

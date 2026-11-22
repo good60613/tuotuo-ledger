@@ -570,6 +570,15 @@ button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 .todo-tabs button { flex: 1; border: 0; background: var(--card); padding: 10px; border-radius: 12px; font-size: 16px; font-weight: 700; color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; min-width: 0; }
 .todo-tabs button.on.reimb { background: var(--reimb); color: var(--on-color); }
 .todo-tabs button.on.budget { background: var(--budget); color: var(--on-color); }
+/* 定期扣款表單（3.x）：星期幾七顆擠一排、每年的月份＋幾號並排、清單上的取消資訊 */
+.recur-seg { justify-content: stretch; }
+.recur-seg button { flex: 1; min-width: 0; }
+.recur-weekdays button { padding-left: 0; padding-right: 0; min-height: 42px; }
+.recur-ymd { display: flex; gap: 8px; }
+.recur-ymd select, .recur-ymd input { flex: 1; min-width: 0; }
+.recur-cancel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+/* 定期扣款分頁：首頁小字也用預算色（都是「先預留的錢」），這裡沿用 */
+.todo-tabs button.on.recurring { background: var(--budget); color: var(--on-color); }
 .todo-count { min-width: 20px; padding: 0 6px; border-radius: 10px; background: var(--overlay-soft); font-size: 12px; line-height: 20px; }
 .todo-tab { display: flex; flex-direction: column; flex: 1; }
 .seg button.on.budget { background: var(--budget); color: var(--on-color); }
