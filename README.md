@@ -82,6 +82,91 @@
 - **拖拖硬幣等美術素材**：保留所有權利，詳見 [ASSETS-LICENSE.md](ASSETS-LICENSE.md)。
 - 圖示使用 [Lucide](https://lucide.dev)（ISC 授權）。
 
-## 🛠️ 給想看程式的人
+---
 
-使用 Preact、TypeScript、Vite，再用 Capacitor 包成 Android App。怎麼在電腦上跑起來、怎麼打包與發版，都寫在 [開發說明](文件/開發說明.md)。
+# 🛠️ 技術說明（給開發者）
+
+以下是給想在電腦上跑、改、打包拖拖記帳的人。一般使用者不用看。
+
+技術：Preact 10、TypeScript、Vite、Vitest；用 Capacitor 8 包成 Android App。
+
+## 在電腦上跑起來
+
+需要 Node.js（本機開發用的版本是 24）。
+
+```
+npm install
+npm run dev
+```
+
+網頁預覽預設在 `http://localhost:5173/`。想用手機看：手機與電腦連**同一個 Wi-Fi**，用手機 Chrome 打開終端機印出的 `Network:` 網址（Windows 防火牆詢問時按「允許」）。Windows 上也可以直接雙擊 `start-dev.bat`。
+
+> 網頁版的資料存在瀏覽器裡，跟著「網址」走，換網址（例如換 Wi-Fi）就是一份新的空資料。換之前請先在「設定」匯出備份。
+
+開發模式專用的預覽參數（正式版沒有）：
+
+| 網址參數 | 用途 |
+|---|---|
+| `?style=glass｜flat｜paper｜pixel｜liquid` | 直接套用某個外觀風格（不存進設定） |
+| `&theme=light｜dark｜system` | 直接套用亮／暗色 |
+| `?splash=hold` | 開啟動畫停在畫面上，方便檢查 |
+
+## 常用指令
+
+| 指令 | 用途 |
+|---|---|
+| `npm run dev` | 開發伺服器（同 `start-dev.bat`） |
+| `npm run typecheck` | 型別檢查 |
+| `npm test` | 自動檢查（計算規則、報帳流程、備份、動畫、風格、更新檢查…） |
+| `npm run build` | 建置網頁到 `dist/` |
+
+## 微調手感與動畫
+
+- 手勢數值（長按時間、移動門檻、換頁距離、震動長度、拖曳時卡片大小…）：`src/config.ts`，改完存檔，手機重新整理就會生效。
+- 動畫數值（各風格的進退場時間與曲線）：`src/motion.ts`。
+
+## 資料夾結構
+
+```
+src/
+  config.ts          手勢、版面、更新檢查等設定
+  motion.ts          動畫數值與離場殘影
+  theme.ts           顏色（亮／暗＋各風格微調）
+  uiStyle.ts         外觀風格切換
+  styles.css         基礎樣式；styles/ui-*.css 是各風格的覆蓋樣式
+  data/              資料格式、計算規則、記帳／報帳操作、儲存、備份、範例資料
+  gestures/          卡片拖曳、左右換頁、震動、防誤觸護盾
+  pages/             五個主頁面、記帳頁、小帳戶頁
+  components/        卡片、小球、計算機、時間軸、圖表、選單
+  help/              App 內的使用說明
+tests/               自動檢查
+android/             Android 原生專案（Capacitor）、桌面小工具
+tools/               打包與圖片處理小工具
+文件/                更新紀錄、設計說明、各種說明文件
+工單/                每一版的施工紀錄
+```
+
+## 打包與發版
+
+- **在電腦上打包 APK**：雙擊 `打包APK.bat`（簽章金鑰放在專案外面的資料夾，不進 git）。詳細步驟見 [更新流程](文件/更新流程.md)。
+- **用 GitHub 自動打包、發版**（含用手機開發的做法）：見 [GitHub 使用說明](文件/GitHub使用說明.md)。推到 `v` 開頭的分支會自動打出試用 APK；推 `v3.x.x` 格式的 tag 會自動發 Release。
+
+重要提醒：
+
+- 每次發版，`android/app/build.gradle` 的 `versionCode` 一定要比上一版大，`versionName` 要跟 tag 對得上（例如 tag `v3.4.0` 對 `3.4.0`）。
+- 簽章金鑰與密碼絕對不要放進 git；每一版必須用同一把金鑰簽，否則手機無法覆蓋安裝。
+- Windows 上改含中文的檔案，請用編輯器或 `Edit` 類工具，不要用 PowerShell 5.1 的 `Get-Content`／`Set-Content` 重寫（會把中文寫壞或加上 BOM）。
+
+## 已知限制
+
+- iPhone 版尚未提供；iPhone 的瀏覽器不支援震動（網頁版的視覺回饋仍有）。
+
+## 更多文件
+
+| 文件 | 內容 |
+|---|---|
+| [更新紀錄](文件/更新紀錄.md) | 每一版改了什麼 |
+| [設計說明](文件/設計說明.md) | 設計想法與決定 |
+| [小工具說明](文件/小工具說明.md) | 桌面小工具如何取得數字與更新 |
+| [技術審查報告](文件/技術審查報告.md) | 技術面的檢查結果 |
+| [`工單/`](工單/) | 每一版的施工工單與紀錄 |
