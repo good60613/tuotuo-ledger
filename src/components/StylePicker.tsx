@@ -53,7 +53,7 @@ export function StylePicker({ current, theme, onPick }: { current: UiStyleId; th
         <span>風格</span>
         <span class="muted small">亮色、暗色都能搭配</span>
       </div>
-      <div class="style-strip" role="group" aria-label="外觀風格">
+      <div class="style-strip" role="group" aria-label="外觀風格" data-no-swipe>
         {UI_STYLES.map((s) => {
           const on = s.id === current;
           return (

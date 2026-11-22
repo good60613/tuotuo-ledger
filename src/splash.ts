@@ -35,7 +35,12 @@ export function runSplash() {
     if (gone) return;
     gone = true;
     el.classList.add('sp-out');
-    setTimeout(() => el.remove(), SPLASH.fadeMs + 80);
+    setTimeout(() => {
+      el.remove();
+      // 開啟動畫的底色規則（index.html 的 html[data-sp]）只管動畫期間；一定要拿掉，否則會永遠蓋住主題真正的背景色
+      // （3.3 實測：暗色時背景整片變亮、Liquid 背景變白）
+      document.documentElement.removeAttribute('data-sp');
+    }, SPLASH.fadeMs + 80);
   };
   const check = () => {
     if (splashShouldHide(performance.now() - t0, getState().ready, reduced)) hide();
