@@ -11,7 +11,7 @@ import type { ThemeMode } from './theme';
 export type { UiStyleId };
 
 export const UI_STYLES: { id: UiStyleId; label: string; desc: string }[] = [
-  { id: 'glass', label: '毛玻璃', desc: '半透明卡片，現行外觀' },
+  { id: 'glass', label: '預設', desc: '半透明卡片，原本的樣子' },
   { id: 'flat', label: '簡約扁平', desc: '實心色塊，乾淨俐落' },
   { id: 'paper', label: '手帳紙本', desc: '米色紙感，像貼便條' },
   { id: 'pixel', label: '像素復古', desc: '粗框硬影，遊戲機感' },
