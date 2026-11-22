@@ -1,0 +1,118 @@
+/* 3.3 UI 風格「手帳紙本」：米色紙感、虛線邊框、小圓角（6～9px，略帶手繪的不規則感）、貼在紙上的便條卡片
+   （很淡的陰影＋CSS 紙紋，不用圖片）、重點標題旁的小裝飾（純 CSS 偽元素，不加 DOM）。
+   顏色在 src/theme.ts 的 STYLE_PALETTE.paper（亮＝暖米白＋墨綠＋赭紅；暗＝深褐牛皮紙）。
+   規則：一律 html[data-style="paper"] 開頭，不碰任何版面尺寸；偽元素一律絕對定位，不佔版面。
+   會被「選取、拖曳」等狀態改色的屬性（邊框顏色）用 :where() 壓低優先權，讓狀態規則照常生效。 */
+
+html[data-style="paper"] {
+  --radius: 8px;
+  --r-card: 9px 7px 8px 6px / 7px 9px 6px 8px;
+  --r-row: 7px 6px 8px 6px / 6px 8px 6px 7px;
+  --r-ctl: 7px 6px 7px 6px / 6px 7px 6px 7px;
+  --r-pill: 8px;
+  --r-icon: 8px;
+  --bd-w: 1px;
+  --bd-style: dashed;
+  --sh-card: 1px 2px 3px var(--shadow-xs);
+  --sh-ctl: 1px 2px 0 color-mix(in srgb, var(--text) 28%, transparent);
+  /* 紙紋：細斜纖維＋上緣淡淡的光 */
+  --paper-fiber: repeating-linear-gradient(115deg, color-mix(in srgb, var(--text) 2.6%, transparent) 0 1px, transparent 1px 4px);
+  --paper-light: linear-gradient(180deg, rgba(255, 255, 255, .28), rgba(255, 255, 255, 0) 55%);
+  --paper-rule: color-mix(in srgb, var(--text) 5%, transparent);
+}
+html[data-style="paper"][data-theme="dark"] {
+  --paper-light: linear-gradient(180deg, rgba(255, 228, 180, .07), rgba(255, 228, 180, 0) 55%);
+  --paper-rule: color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+/* 背景：像有橫線的手帳內頁（每 28px 一條很淡的線）＋左上角淡淡的光 */
+html[data-style="paper"] body {
+  background:
+    repeating-linear-gradient(0deg, transparent 0 27px, var(--paper-rule) 27px 28px),
+    radial-gradient(ellipse 90% 40% at 12% 0%, color-mix(in srgb, var(--glow-a) 60%, transparent), transparent 75%),
+    var(--bg);
+}
+
+/* ---- 圓角 ---- */
+html[data-style="paper"] :is(.card, .home-sum, .recent-card, .empty, .cards > .empty, .panel, .month-sum, .blocked-safe, .help-item, .goal-row, .mini-card, .xfer-acc, .tour-bubble, .dialog, .action-bar, .todo-sub, .font-opt, .drop-zone) {
+  border-radius: var(--r-card);
+}
+html[data-style="paper"] :is(.tx-card, .home-recent .recent-slot) { border-radius: var(--r-row); }
+html[data-style="paper"] .sheet { border-radius: 10px 8px 0 0; }
+html[data-style="paper"] :is(.btn, .pill-btn, .period-switch, .seg button, .todo-tabs button, .field input, .field select, .inline-add input, .pay-input, .when-cell, .cap-search, .add-row, .icon-btn, .coin-opt, .icon-cell, .cat, .ball, .pick-row, .color-tag) {
+  border-radius: var(--r-ctl);
+}
+html[data-style="paper"] .mini-seg { border-radius: 7px; }
+html[data-style="paper"] .mini-seg button { border-radius: 5px; }
+html[data-style="paper"] :is(.cap, .mark-chip, .chip, .tag, .toast-undo, .toast-hold, .quote-quick, .sample-chip, .sample-chip-x, .collapse-bar, .notice-btn, .todo-count) { border-radius: var(--r-pill); }
+html[data-style="paper"] .bottom-nav { border-radius: 10px 8px 10px 8px / 8px 10px 8px 10px; }
+html[data-style="paper"] .nav-icon { border-radius: 8px; }
+html[data-style="paper"] .toast-capsule { border-radius: 9px 7px 8px 7px / 7px 9px 7px 8px; }
+html[data-style="paper"] .ball-dot { border-radius: 14px 12px 13px 12px / 12px 14px 12px 13px; }
+html[data-style="paper"] :is(.cal-d, .badge, .tx-flag) { border-radius: 6px; }
+
+/* ---- 虛線邊框（只換線型，顏色沿用／用低優先權設定，狀態色照常蓋過去） ---- */
+html[data-style="paper"] :is(.glass, .recent-card, .help-item, .pill-btn, .period-switch, .cap, .tx-card, .toast-capsule, .mini-card:not(.on), .goal-row:not(.on), .sample-chip, .xfer-acc) { border-style: dashed; }
+:where(html[data-style="paper"]) .tx-card { border-color: var(--border-strong); border-width: 1px; }
+:where(html[data-style="paper"]) :is(.recent-card, .help-item, .period-switch, .cap, .pill-btn) { border-color: var(--border-strong); }
+html[data-style="paper"] :is(.panel, .month-sum, .dialog) { border: 1px dashed var(--border-strong); }
+html[data-style="paper"] .sheet { border-top: 2px dashed var(--border-strong); }
+html[data-style="paper"] :is(.field input, .field select, .inline-add input, .pay-input) { border-color: var(--border-strong); }
+/* 清單分隔線也改虛線 */
+/* 注意：只對「本來就有那一邊框線」的元素改線型；沒有框線的邊若只設 style，會跑出預設 3px 粗線 */
+html[data-style="paper"] :is(.list-row, .setting-row, .kv) { border-bottom-style: dashed; }
+html[data-style="paper"] :is(.recent-row, .quote-row, .bar-row, .sum-rows) { border-top-style: dashed; }
+html[data-style="paper"] .sheet-head { border-bottom-style: dashed; }
+html[data-style="paper"] .tl-axis::before,
+html[data-style="paper"] .timeline > .day:last-child > .tl-row:last-child > .tl-axis::after {
+  box-sizing: border-box; background: none; border-left: 2px dashed var(--border-strong); width: 2px;
+}
+
+/* ---- 便條紙卡片：淡淡的陰影＋紙紋 ---- */
+html[data-style="paper"] :is(.card, .home-sum, .recent-card, .panel, .month-sum, .dialog, .sheet, .tx-card, .mini-card, .goal-row, .help-item, .bottom-nav) {
+  background-image: var(--paper-fiber), var(--paper-light);
+}
+html[data-style="paper"] :is(.panel, .month-sum, .recent-card, .help-item, .mini-card, .goal-row, .toast-capsule) { box-shadow: var(--sh-card); }
+html[data-style="paper"] .sheet { box-shadow: 0 -2px 6px var(--shadow-xs); }
+html[data-style="paper"] .dialog { box-shadow: 2px 3px 8px var(--shadow-md); }
+html[data-style="paper"] .action-bar { box-shadow: 1px 3px 6px var(--shadow-md); }
+html[data-style="paper"] .calc-key.ok { box-shadow: none; }
+/* 立起來的小膠囊（像貼紙）：一點點硬陰影 */
+html[data-style="paper"] .mark-chip.glass { box-shadow: var(--sh-ctl); }
+
+/* 按鈕：像蓋章的實心色塊，下方有一道很淡的墨影；按下時貼平 */
+html[data-style="paper"] :is(.btn, .toast-undo, .quote-quick) { box-shadow: var(--sh-ctl); }
+html[data-style="paper"] .fab { box-shadow: 2px 3px 0 color-mix(in srgb, var(--text) 30%, transparent); }
+html[data-style="paper"] :is(.btn, .toast-undo, .fab):active { transform: translate(1px, 1px); box-shadow: none; opacity: 1; }
+html[data-style="paper"] .mini-seg button.on { box-shadow: var(--sh-ctl); }
+
+/* ---- 重點標題旁的小裝飾（純 CSS，絕對定位，不佔版面） ---- */
+/* 頁面大標題：底下一小段手畫的虛線 */
+html[data-style="paper"] .page-title { position: relative; letter-spacing: .04em; }
+html[data-style="paper"] .page-title::after {
+  content: ''; position: absolute; left: 0; bottom: -3px; width: 58px; height: 2px; opacity: .75;
+  background: repeating-linear-gradient(90deg, var(--accent) 0 7px, transparent 7px 11px);
+}
+/* 首頁標題：前面一顆小菱形 */
+html[data-style="paper"] .home-title::before {
+  content: ''; flex: none; width: 8px; height: 8px; background: var(--accent); transform: rotate(45deg); border-radius: 1px;
+}
+/* 面板：右上角貼一小條紙膠帶（奇偶交錯，角度不同） */
+html[data-style="paper"] .panel { position: relative; }
+html[data-style="paper"] .panel::after {
+  content: ''; position: absolute; top: -6px; right: 22px; width: 46px; height: 13px; pointer-events: none;
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
+  transform: rotate(2.5deg);
+}
+html[data-style="paper"] .panel:nth-child(even)::after { right: auto; left: 22px; transform: rotate(-2.5deg); background: color-mix(in srgb, var(--reimb) 28%, transparent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--reimb) 18%, transparent); }
+/* 面板小標題：前面一個小圓點（像項目符號） */
+html[data-style="paper"] .panel h3::before {
+  content: ''; display: inline-block; width: 6px; height: 6px; margin-right: 6px; vertical-align: .12em; border-radius: 50%; background: var(--accent);
+}
+html[data-style="paper"] :is(.sheet-head, .dialog-title, .panel h3, .home-title) { letter-spacing: .04em; }
+/* 月曆打卡章：虛線圈，像手蓋的 */
+html[data-style="paper"] .cal-n.stamp { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent); }
+
+/* 按下回饋：貼紙被壓平的感覺（輕微位移，不縮放） */
+html[data-style="paper"] :is(.tx-card, .icon-btn, .tag, .cat):active { transform: translateY(1px); opacity: .88; }

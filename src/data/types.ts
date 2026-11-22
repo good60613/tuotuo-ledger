@@ -185,9 +185,14 @@ export interface Settings {
   tutorial?: 'pending' | 'done';
   /** 3.3 開機自動檢查更新：缺值＝開啟，只有 false 才關。判斷一律 `autoUpdateCheck === false`。舊資料、舊備份不用升版 */
   autoUpdateCheck?: boolean;
+  /** 3.3 UI 風格（毛玻璃／簡約扁平／手帳紙本／像素復古／Liquid Glass）；缺值或不認得的值＝'glass'（現行外觀）。與亮暗色獨立。舊資料、舊備份不用升版 */
+  uiStyle?: UiStyleId;
 }
 
 export type ThemeMode = 'light' | 'dark' | 'system';
+
+/** UI 風格 id（見 src/uiStyle.ts） */
+export type UiStyleId = 'glass' | 'flat' | 'paper' | 'pixel' | 'liquid';
 
 /**
  * 定期扣款（補強批，v6）：固定金額的每月訂閱（HBO、Spotify）。

@@ -1,0 +1,93 @@
+/* 3.3 UI 風格「像素復古」：圓角 0～2px、2px 粗硬邊框（亮色＝黑、暗色＝亮）、硬偏移陰影、飽和有限色盤、
+   按下時陰影消失＋位移（像實體按鍵）、動畫改成 steps() 階梯感（只動本風格；動畫總體設計之後 B2 再做）。
+   顏色在 src/theme.ts 的 STYLE_PALETTE.pixel（亮＝奶油底＋紅／藍／黃；暗＝深藍紫底＋亮黃／綠／粉）。
+   規則：一律 html[data-style="pixel"] 開頭，不碰任何版面尺寸（height / width / padding / margin / gap）。
+   沒有框的元素用 inset 內描邊當框（不增加尺寸）；原本有框的只把 1px 換 2px（最多差 2px）。
+   會被「選取、拖曳」等狀態改色的屬性（邊框顏色）用 :where() 壓低優先權，讓狀態規則照常生效。 */
+
+html[data-style="pixel"] {
+  --radius: 2px;
+  --r-card: 2px;
+  --r-row: 2px;
+  --r-ctl: 2px;
+  --r-pill: 2px;
+  --r-icon: 2px;
+  --bd-w: 2px;
+  --bd-style: solid;
+  /* 框與硬陰影：亮色用文字色（近黑）；暗色框用亮色、陰影用較暗的紫，不要整片刺眼 */
+  --px-ink: var(--text);
+  --px-sh: var(--text);
+  --sh-card: 3px 3px 0 var(--px-sh);
+  --sh-ctl: 2px 2px 0 var(--px-sh);
+}
+html[data-style="pixel"][data-theme="dark"] { --px-sh: var(--border-strong); }
+
+/* 背景：8px 小點陣，像格子紙 */
+html[data-style="pixel"] body {
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--text) 14%, transparent) 1px, transparent 1.4px) 0 0 / 8px 8px,
+    var(--bg);
+}
+
+/* ---- 圓角（全部 2px 以內） ---- */
+html[data-style="pixel"] :is(.card, .home-sum, .recent-card, .empty, .cards > .empty, .panel, .month-sum, .blocked-safe, .help-item, .goal-row, .mini-card, .xfer-acc, .tour-bubble, .dialog, .action-bar, .todo-sub, .font-opt, .drop-zone, .tx-card, .home-recent .recent-slot, .btn, .pill-btn, .period-switch, .seg button, .todo-tabs button, .field input, .field select, .inline-add input, .pay-input, .when-cell, .cap-search, .add-row, .icon-btn, .coin-opt, .icon-cell, .cat, .ball, .term, .pick-row, .color-tag, .cap, .mark-chip, .chip, .tag, .toast-undo, .toast-hold, .quote-quick, .sample-chip, .sample-chip-x, .collapse-bar, .notice-btn, .todo-count, .bottom-nav, .toast-capsule, .fab, .card-icon, .cat-icon, .tx-icon, .recent-icon, .toast-icon, .acc-icon.badge, .bar-icon.cat-bg, .pick-icon.cat-bg, .row-icon, .ball-dot, .nav-icon, .check, .cal-n, .cal-d, .badge, .tx-flag, .mark-ghost, .mini-seg, .mini-seg button, .bar-track, .bar-fill, .goal-fill) {
+  border-radius: var(--r-card);
+}
+html[data-style="pixel"] .sheet { border-radius: 3px 3px 0 0; }
+
+/* ---- 2px 粗硬邊框：原本有框的 → 2px（顏色用低優先權，狀態色照常蓋過去） ---- */
+html[data-style="pixel"] :is(.glass, .recent-card, .help-item, .pill-btn, .period-switch, .cap, .mini-card, .goal-row, .sample-chip, .xfer-acc, .font-opt, .coin-opt, .cat, .tx-card, .toast-hold) { border-width: 2px; }
+:where(html[data-style="pixel"]) :is(.recent-card, .help-item, .pill-btn, .period-switch, .cap, .mini-card, .goal-row, .sample-chip, .xfer-acc, .tx-card, .toast-capsule, .field input, .field select, .inline-add input, .pay-input) { border-color: var(--px-ink); }
+html[data-style="pixel"] :is(.field input, .field select, .inline-add input, .pay-input) { border-width: 2px; box-shadow: inset 2px 2px 0 color-mix(in srgb, var(--text) 14%, transparent); }
+html[data-style="pixel"] .cap-search { border-width: 2px; }
+html[data-style="pixel"] .toast-capsule { border-width: 2px; border-style: solid; }
+html[data-style="pixel"] .note-input { border-bottom: 2px solid var(--px-ink); }
+html[data-style="pixel"] .calc { background: var(--px-ink); border-top: 2px solid var(--px-ink); }
+html[data-style="pixel"] .calc-key.ok { box-shadow: none; }
+html[data-style="pixel"] .sheet { border-top: 3px solid var(--px-ink); }
+html[data-style="pixel"] :is(.sheet-head, .sub-top, .entry-top) { border-bottom: 2px solid var(--px-ink); }
+html[data-style="pixel"] .amount-row { border-top: 2px solid var(--px-ink); }
+
+/* 沒有框的：用內描邊當框（不增加尺寸） */
+html[data-style="pixel"] :is(.btn, .seg button, .todo-tabs button, .when-cell, .fab, .toast-undo, .quote-quick, .chip, .tag) { box-shadow: inset 0 0 0 2px var(--px-ink); }
+html[data-style="pixel"] :is(.mini-seg, .mini-seg button.on, .todo-sub) { box-shadow: inset 0 0 0 2px var(--px-ink); }
+html[data-style="pixel"] :is(.cat-icon, .tx-icon, .recent-icon, .card-icon, .toast-icon, .check, .badge) { box-shadow: inset 0 0 0 2px var(--px-ink); }
+html[data-style="pixel"] :is(.panel, .month-sum, .blocked-safe, .dialog) { box-shadow: inset 0 0 0 2px var(--px-ink), 4px 4px 0 var(--px-sh); }
+
+/* ---- 硬偏移陰影（卡片 3px、小按鈕 2px） ---- */
+html[data-style="pixel"] :is(.glass, .recent-card, .help-item, .mini-card, .goal-row, .xfer-acc) { box-shadow: var(--sh-card); }
+html[data-style="pixel"] :is(.pill-btn, .period-switch, .cap, .sample-chip, .tx-card) { box-shadow: var(--sh-ctl); }
+html[data-style="pixel"] :is(.btn, .fab, .toast-undo, .quote-quick, .seg button, .todo-tabs button, .chip) { box-shadow: inset 0 0 0 2px var(--px-ink), var(--sh-ctl); }
+html[data-style="pixel"] .toast-capsule { box-shadow: 4px 4px 0 var(--px-sh); }
+html[data-style="pixel"] .action-bar { box-shadow: inset 0 0 0 2px var(--px-ink), 3px 3px 0 var(--px-sh); }
+html[data-style="pixel"] .mark-chip.glass { box-shadow: var(--sh-ctl); }
+html[data-style="pixel"] .mark-chip.glass.on { box-shadow: inset 0 0 0 2px var(--px-ink), var(--sh-ctl); }
+html[data-style="pixel"] .nav-item.active .nav-icon { background: var(--accent); color: var(--on-accent); box-shadow: inset 0 0 0 2px var(--px-ink); }
+/* 拿起中的影子仍保持原本的 !important 外觀，這裡只換成硬陰影 */
+html[data-style="pixel"] .drag-ghost { box-shadow: 5px 5px 0 var(--px-sh) !important; }
+
+/* 提示、教學泡泡 */
+html[data-style="pixel"] .tour-bubble { box-shadow: inset 0 0 0 2px var(--px-ink), 4px 4px 0 var(--px-sh); }
+html[data-style="pixel"] .tour-hole { border-radius: 2px; }
+
+/* ---- 按下：陰影消失＋往陰影方向位移（像實體鍵被按下去） ---- */
+html[data-style="pixel"] :is(.btn, .fab, .toast-undo, .quote-quick, .seg button, .todo-tabs button, .chip):active {
+  transform: translate(2px, 2px); box-shadow: inset 0 0 0 2px var(--px-ink); opacity: 1;
+}
+html[data-style="pixel"] :is(.pill-btn, .cap, .tx-card, .sample-chip, .mark-chip.glass):active {
+  transform: translate(2px, 2px); box-shadow: none; opacity: 1;
+}
+html[data-style="pixel"] :is(.icon-btn, .tag, .cat, .amt-budget):active { transform: translate(1px, 1px); opacity: 1; }
+html[data-style="pixel"] .calc-key:active { background: var(--accent); color: var(--on-accent); }
+
+/* 標題：字距拉開，更像遊戲選單 */
+html[data-style="pixel"] :is(.page-title, .home-title, .panel h3, .sheet-head, .dialog-title, .sub-title) { letter-spacing: .06em; }
+html[data-style="pixel"] :is(.btn, .pill-btn, .seg button, .todo-tabs button, .cap .cap-main) { letter-spacing: .03em; }
+
+/* ---- 動畫：階梯感（只換節奏，不換內容；減少動態時仍由 styles.css 關掉） ---- */
+html[data-style="pixel"] .toast-capsule { animation-timing-function: steps(6, end); }
+html[data-style="pixel"] .toast-capsule.leaving { animation-timing-function: steps(5, end); }
+html[data-style="pixel"] :is(.overlay, .sheet, .tour-bubble) { animation-timing-function: steps(4, end); }
+html[data-style="pixel"] :is(.drop-zone, .home-zones .drop-zone, .drag-ghost, .mark-ghost, .term.marked) { animation-timing-function: steps(4, end); }
+html[data-style="pixel"] .app.fading .page[aria-hidden="false"] { animation-timing-function: steps(5, end); }
+html[data-style="pixel"] :is(.tx-card, .btn, .icon-btn, .tag, .cat, .amt-budget, .card, .ball, .term, .drop-zone, .tx-trash, .tour-hole, .toast-hold) { transition-timing-function: steps(2, end); }

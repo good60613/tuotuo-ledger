@@ -96,7 +96,9 @@ import { ACCOUNT_ICONS, ICON_LABELS } from '../icons';
 import { accountIconOf, accountIconStyleOf } from '../categoryStyle';
 import { carrierError, isValidCarrier, normalizeCarrier } from '../data/carrier';
 import { Barcode } from '../components/Barcode';
-import { applyTheme, themeOf, THEME_LABEL, type ThemeMode } from '../theme';
+import { applyTheme, themeOf, resolveTheme, THEME_LABEL, type ThemeMode } from '../theme';
+import { applyUiStyle, styleOf } from '../uiStyle';
+import { StylePicker } from '../components/StylePicker';
 import { WhatsNew } from '../whatsNew';
 
 /** 可以有多個帳戶的小帳戶類型（其他類型固定一個） */
@@ -447,9 +449,19 @@ export function SettingsPage() {
                 ))}
               </div>
             </div>
-            <Row label="毛玻璃" note="關閉讓手機更順，開啟畫面更有質感">
-              <OnOff on={glassOn(d.settings)} onChange={(on) => setSetting({ glass: on })} />
-            </Row>
+            <StylePicker
+              current={styleOf(d.settings)}
+              theme={resolveTheme(themeOf(d.settings))}
+              onPick={(id) => {
+                applyUiStyle(id); // 立即套用
+                setSetting({ uiStyle: id });
+              }}
+            />
+            {(styleOf(d.settings) === 'glass' || styleOf(d.settings) === 'liquid') && (
+              <Row label="毛玻璃" note="關閉讓手機更順，開啟畫面更有質感">
+                <OnOff on={glassOn(d.settings)} onChange={(on) => setSetting({ glass: on })} />
+              </Row>
+            )}
             <div class="setting-row">
               <span>字體</span>
               <div class="mini-seg">

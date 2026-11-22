@@ -11,6 +11,7 @@ import { StatsPage } from './pages/Stats';
 import { TodoPage } from './pages/Todo';
 import { SettingsPage } from './pages/Settings';
 import { applyTheme, themeOf } from './theme';
+import { applyUiStyle, styleOf, devPreviewLock } from './uiStyle';
 import { glassOn } from './features';
 import { applyAppFont } from './fonts';
 import { Tutorial } from './components/Tutorial';
@@ -65,8 +66,14 @@ export function App() {
   // 讀到設定或設定變動時套用外觀
   const themeMode = themeOf(s.data?.settings);
   useEffect(() => {
-    if (s.ready) applyTheme(themeMode);
+    if (s.ready && !devPreviewLock().theme) applyTheme(themeMode); // 開發預覽（?theme=）時不蓋掉
   }, [s.ready, themeMode]);
+
+  // 3.3 UI 風格：讀到設定或換風格時套用（開發預覽 ?style= 時不蓋掉）
+  const uiStyle = styleOf(s.data?.settings);
+  useEffect(() => {
+    if (s.ready && !devPreviewLock().style) applyUiStyle(uiStyle);
+  }, [s.ready, uiStyle]);
 
   // 3.0 第一次安裝：讀完資料後打開新手教學
   useEffect(() => {
