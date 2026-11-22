@@ -5,6 +5,7 @@
 import type { UiStyleId } from './data/types';
 import { GLASS } from './config';
 import { setPaletteStyle, previewTheme } from './theme';
+import { applyMotionVars } from './motion';
 import type { ThemeMode } from './theme';
 
 export type { UiStyleId };
@@ -42,6 +43,7 @@ function paintStyle(id: UiStyleId) {
   root.dataset.style = id;
   root.classList.toggle('glass-blur', liveBlurFor(id));
   setPaletteStyle(id); // 通知 theme 用新色票重畫
+  applyMotionVars(id); // B2：動畫數值（--mo-*）跟著風格換
 }
 
 /** 套用風格（即時生效）並記到 localStorage（開機第一幕用）。非法值退回 glass */

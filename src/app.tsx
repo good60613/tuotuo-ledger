@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'preact/hooks';
 import { PAGES, getState, goPage, useAppState, pageOrder, navLabel, type PageId } from './store';
 import { ToastHost } from './components/ToastHost';
 import { attachPager } from './gestures/pager';
-import { PAGER, BOTTOM_BAR } from './config';
+import { BOTTOM_BAR } from './config';
+import { pageTransition } from './motion';
 import { HomePage } from './pages/Home';
 import { OverlayHost } from './pages/OverlayHost';
 import { DialogHost } from './components/DialogHost';
@@ -42,7 +43,7 @@ export function App() {
     if (!t) return;
     const base = -getState().page * 100;
     if (dx === null) {
-      t.style.transition = `transform ${PAGER.animMs}ms ease-out`;
+      t.style.transition = pageTransition();
       t.style.transform = `translateX(${base}%)`;
     } else {
       t.style.transition = 'none';
@@ -121,14 +122,14 @@ export function App() {
   const toastLift = topOverlay ? topOverlay.kind === 'sub' : order[s.page] === '明細';
 
   return (
-    <div class={`app${s.fade ? ' fading' : ''}`} style={{ '--bottom-bar-h': `${hasBar ? BOTTOM_BAR.heightPx + BOTTOM_BAR.gapPx * 2 : 0}px` }}>
+    <div class={`app${s.fade ? ' fading' : ''}${s.overlays.length > 0 ? ' has-overlay' : ''}`} style={{ '--bottom-bar-h': `${hasBar ? BOTTOM_BAR.heightPx + BOTTOM_BAR.gapPx * 2 : 0}px` }}>
       <div class="pager" ref={pagerRef}>
         <div
           class="track"
           ref={trackRef}
           style={{
             transform: `translateX(${-s.page * 100}%)`,
-            transition: s.fade ? 'none' : `transform ${PAGER.animMs}ms ease-out`,
+            transition: s.fade ? 'none' : pageTransition(),
           }}
         >
           {order.map((id, i) => (

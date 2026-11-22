@@ -13,6 +13,7 @@ import './styles/ui-liquid.css';
 import { BOTTOM_BAR, TIMELINE, GLASS, HOME, DRAG_FX, TOAST_IN_MS, TOAST_EXIT_MS } from './config';
 import { applyCachedTheme } from './theme';
 import { applyCachedUiStyle, applyDevPreview } from './uiStyle';
+import { runSplash } from './splash';
 
 // 第一個畫面前先套顏色（上次存的外觀，沒有就亮色），讀到設定後由 App 再套正確模式
 applyCachedTheme();
@@ -62,3 +63,5 @@ void installWidgetSync(
   (target) => void navFromNative(target),
 );
 render(<App />, document.getElementById('app')!);
+// 3.3 B3 開啟動畫：資料讀好＋最短時間到就淡出移除（最長 3 秒保險）
+runSplash();

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 開啟畫面底色：與網頁端開啟動畫（index.html 的 #splash）及 src/theme.ts 的亮色 bg 一致，原生啟動畫面→網頁動畫才不會跳色 -->
+<resources>
+    <color name="splash_bg">#FFF2F9FC</color>
+</resources>

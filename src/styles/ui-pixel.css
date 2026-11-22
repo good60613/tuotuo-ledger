@@ -87,7 +87,18 @@ html[data-style="pixel"] :is(.btn, .pill-btn, .seg button, .todo-tabs button, .c
 /* ---- 動畫：階梯感（只換節奏，不換內容；減少動態時仍由 styles.css 關掉） ---- */
 html[data-style="pixel"] .toast-capsule { animation-timing-function: steps(6, end); }
 html[data-style="pixel"] .toast-capsule.leaving { animation-timing-function: steps(5, end); }
-html[data-style="pixel"] :is(.overlay, .sheet, .tour-bubble) { animation-timing-function: steps(4, end); }
+html[data-style="pixel"] .tour-bubble { animation-timing-function: steps(4, end); }
 html[data-style="pixel"] :is(.drop-zone, .home-zones .drop-zone, .drag-ghost, .mark-ghost, .term.marked) { animation-timing-function: steps(4, end); }
 html[data-style="pixel"] .app.fading .page[aria-hidden="false"] { animation-timing-function: steps(5, end); }
 html[data-style="pixel"] :is(.tx-card, .btn, .icon-btn, .tag, .cat, .amt-budget, .card, .ball, .term, .drop-zone, .tx-trash, .tour-hole, .toast-hold) { transition-timing-function: steps(2, end); }
+
+/* ---- B2 動畫系統：階梯、純位移、無彈性（時間與 steps(6) 曲線來自 src/motion.ts 的 STYLE_MOTION.pixel） ---- */
+@keyframes dialog-in-px { from { transform: translateY(18px); opacity: 0; } }
+@keyframes dialog-out-px { to { transform: translateY(18px); opacity: 0; } }
+html[data-style="pixel"] .dialog { animation-name: dialog-in-px; }
+html[data-style="pixel"] .dialog-backdrop.ghost-out .dialog { animation-name: dialog-out-px; }
+/* 子視窗開著時，底下主頁面只變暗、不縮小 */
+html[data-style="pixel"] .app.has-overlay .pager { scale: none; filter: brightness(.8); }
+/* 補上的按下回饋：像實體鍵往陰影方向位移 */
+html[data-style="pixel"] .card:not(.is-source):not(.drop-hover):active { transform: translate(2px, 2px); }
+html[data-style="pixel"] .nav-item:active .nav-icon { scale: 1; translate: 1px 1px; }

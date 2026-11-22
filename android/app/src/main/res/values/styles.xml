@@ -16,7 +16,12 @@
     </style>
 
 
+    <!-- 開啟畫面（Android 12+ 的系統啟動畫面）：底色＝網頁端開啟動畫同色（亮 #f2f9fc／暗 #16171a，見 splash_colors.xml），
+         中間放拖拖硬幣（ic_fg_happy，與網頁動畫同一隻）。啟動後由網頁端 #splash 接手播落下翻轉動畫 -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
-        <item name="android:background">@drawable/splash</item>
+        <item name="windowSplashScreenBackground">@color/splash_bg</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_fg_happy</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
+        <item name="android:background">@color/splash_bg</item>
     </style>
 </resources>

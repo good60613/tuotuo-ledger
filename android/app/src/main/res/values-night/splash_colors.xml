@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 開啟畫面底色（系統暗色模式用）：色名與 values/splash_colors.xml 一致，色值對照 src/theme.ts 的暗色 bg -->
+<resources>
+    <color name="splash_bg">#FF16171A</color>
+</resources>

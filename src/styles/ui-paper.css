@@ -116,3 +116,7 @@ html[data-style="paper"] .cal-n.stamp { box-shadow: inset 0 0 0 1px color-mix(in
 
 /* 按下回饋：貼紙被壓平的感覺（輕微位移，不縮放） */
 html[data-style="paper"] :is(.tx-card, .icon-btn, .tag, .cat):active { transform: translateY(1px); opacity: .88; }
+
+/* B2：補上的按下回饋（輕微位移，不縮放） */
+html[data-style="paper"] :is(.pill-btn, .card:not(.is-source):not(.drop-hover)):active { transform: translateY(1px); opacity: .9; }
+html[data-style="paper"] .nav-item:active .nav-icon { scale: 1; translate: 0 1px; }

@@ -162,3 +162,28 @@ html[data-style="liquid"] :is(.tx-card, .recent-slot .tx-card):active { transfor
 @media (prefers-reduced-motion: reduce) {
   html[data-style="liquid"] :is(.btn, .icon-btn, .tag, .cat, .tx-card, .pill-btn, .cap, .chip, .fab, .toast-undo, .seg button, .todo-tabs button, .mini-seg button, .mark-chip, .ball, .nav-item, .quote-quick) { transition: none; }
 }
+
+/* ---- B2 動畫系統：彈簧（時間與曲線來自 src/motion.ts 的 STYLE_MOTION.liquid）----
+   選單、對話框進場帶縮放＋模糊（blur 8px→0）的流動感，退場收縮淡出。
+   選單的「上下位移」與「縮放／模糊」分成兩個動畫：位移走不過衝的曲線（過衝會讓選單底邊浮起、露出縫），縮放走彈簧。 */
+@keyframes lq-sheet-y { from { translate: 0 calc(var(--mo-shift) * 1.8); } }
+@keyframes lq-sheet-pop { from { scale: .94; opacity: 0; filter: blur(8px); } }
+@keyframes lq-sheet-y-out { to { translate: 0 calc(var(--mo-shift) * 1.4); } }
+@keyframes lq-sheet-pop-out { to { scale: .96; opacity: 0; filter: blur(6px); } }
+@keyframes lq-dialog-in { from { scale: var(--mo-dialog-scale); opacity: 0; filter: blur(8px); } }
+@keyframes lq-dialog-out { to { scale: .88; opacity: 0; filter: blur(8px); } }
+html[data-style="liquid"] .sheet {
+  transform-origin: 50% 100%;
+  animation: lq-sheet-y var(--mo-sheet-in-ms) cubic-bezier(.22, .8, .3, 1), lq-sheet-pop var(--mo-sheet-in-ms) var(--mo-sheet-in-ease);
+}
+html[data-style="liquid"] .dialog { animation-name: lq-dialog-in; }
+html[data-style="liquid"] .sheet-backdrop.ghost-out .sheet {
+  animation: lq-sheet-y-out var(--mo-sheet-out-ms) var(--mo-sheet-out-ease) forwards, lq-sheet-pop-out var(--mo-sheet-out-ms) var(--mo-sheet-out-ease) forwards;
+}
+html[data-style="liquid"] .dialog-backdrop.ghost-out .dialog { animation-name: lq-dialog-out; }
+/* 子視窗開著時，底下主頁面縮小退後（不加 filter：filter 會讓裡面的即時模糊暫時失效） */
+html[data-style="liquid"] .app.has-overlay .pager { filter: none; }
+/* 視差：沒在看的頁面不降透明度（opacity 會讓頁面內的即時模糊暫時失效，只留縮放） */
+html[data-style="liquid"] .page[aria-hidden="true"] { opacity: 1; }
+/* 導覽圖示的按下回饋已由 .nav-item 本身的彈性縮放負責 */
+html[data-style="liquid"] .nav-item:active .nav-icon { scale: 1; }

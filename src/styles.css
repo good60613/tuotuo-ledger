@@ -40,9 +40,11 @@ button { font: inherit; color: inherit; }
 .expense { color: var(--expense); }
 
 /* ---------- 換頁 ---------- */
-.pager { flex: 1; overflow: hidden; position: relative; touch-action: pan-y; }
+.pager { flex: 1; overflow: hidden; position: relative; touch-action: pan-y; transition: scale var(--mo-push-ms) var(--mo-push-ease), filter var(--mo-push-ms) var(--mo-push-ease); }
 .track { display: flex; height: 100%; width: 100%; will-change: transform; }
-.page { flex: 0 0 100%; width: 100%; height: 100%; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; }
+.page { flex: 0 0 100%; width: 100%; height: 100%; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; transition: scale var(--mo-page-ms) var(--mo-page-ease), opacity var(--mo-page-ms) var(--mo-page-ease); }
+/* B2 輕微視差：沒在看的頁面略小略淡（只用獨立的 scale／opacity，不碰 transform，因為換頁用 transform 位移） */
+.page[aria-hidden="true"] { scale: .95; opacity: .6; }
 .page-pad { padding: 16px; padding-bottom: 96px; }
 .page-title { font-size: 20px; margin: 4px 0 12px; }
 
@@ -157,7 +159,9 @@ button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 .amt-big { font-size: calc(var(--amt-left) * var(--amt-k)); font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.12; white-space: nowrap; }
 
 /* ---------- 疊層、提示 ---------- */
-.overlay { position: absolute; inset: 0; background: var(--bg); z-index: 50; display: flex; flex-direction: column; animation: ov-in .16s ease-out; }
+/* B2：子視窗（.ov-sub）從右側滑入、記帳類（.ov-entry）由下往上；退場由離場殘影（.ghost-out，見檔尾「動畫系統」）播 */
+.overlay { position: absolute; inset: 0; background: var(--bg); z-index: 50; display: flex; flex-direction: column; animation: ov-push var(--mo-push-ms) var(--mo-push-ease); }
+.overlay.ov-entry { animation-name: ov-rise; }
 @keyframes ov-in { from { transform: translateY(16px); opacity: .4; } }
 .placeholder { padding: 32px 20px; text-align: center; }
 .big-line { font-size: 22px; font-weight: 700; }
@@ -197,14 +201,13 @@ button.amt-side-row:active { transform: scale(.97); opacity: .85; }
 @keyframes toast-timer { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 
 /* ---------- 底部選單、對話框 ---------- */
-.sheet-backdrop, .dialog-backdrop { position: absolute; inset: 0; background: var(--backdrop); z-index: 120; display: flex; }
+.sheet-backdrop, .dialog-backdrop { position: absolute; inset: 0; background: var(--backdrop); z-index: 120; display: flex; animation: bd-in var(--mo-backdrop-ms) ease-out; }
 .sheet-backdrop { align-items: flex-end; }
-.sheet { background: var(--card); width: 100%; max-height: 80%; border-radius: 18px 18px 0 0; display: flex; flex-direction: column; animation: sheet-in .18s ease-out; padding-bottom: env(safe-area-inset-bottom); }
-@keyframes sheet-in { from { transform: translateY(40px); opacity: .5; } }
+.sheet { background: var(--card); width: 100%; max-height: 80%; border-radius: 18px 18px 0 0; display: flex; flex-direction: column; animation: sheet-in var(--mo-sheet-in-ms) var(--mo-sheet-in-ease); padding-bottom: env(safe-area-inset-bottom); }
 .sheet-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; font-weight: 700; border-bottom: 1px solid var(--line); }
 .sheet-body { overflow-y: auto; padding: 8px 16px 16px; }
 .dialog-backdrop { align-items: center; justify-content: center; z-index: 150; padding: 24px; }
-.dialog { background: var(--card); border-radius: 16px; padding: 20px; width: 100%; max-width: 360px; max-height: 85vh; overflow-y: auto; }
+.dialog { background: var(--card); border-radius: 16px; padding: 20px; width: 100%; max-width: 360px; max-height: 85vh; overflow-y: auto; animation: dialog-in var(--mo-dialog-in-ms) var(--mo-dialog-in-ease); }
 .dialog-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
 .dialog-body { color: var(--muted); margin-bottom: 16px; white-space: pre-line; line-height: 1.5; }
 .dialog-btns { display: flex; gap: 10px; }
@@ -1015,3 +1018,60 @@ html:not(.no-glass) .collapse-bar.glass { background: color-mix(in srgb, var(--c
 .style-name { font-size: 13px; font-weight: 700; padding: 0 2px; white-space: nowrap; }
 .style-desc { font-size: 11px; line-height: 1.3; padding: 0 2px; }
 .style-check { position: absolute; right: 8px; top: 8px; font-size: 10px; font-weight: 700; line-height: 1; padding: 3px 6px; border-radius: 999px; background: var(--accent); color: var(--on-accent); }
+
+/* ---------- B2 動畫系統（數值在 src/motion.ts，切風格時由 applyMotionVars 寫到 :root；這裡只用變數） ---------- */
+/* 變數還沒寫入前的預設（＝毛玻璃） */
+:root {
+  --mo-page-ms: 260ms; --mo-page-ease: cubic-bezier(.22, .8, .3, 1);
+  --mo-push-ms: 230ms; --mo-push-ease: cubic-bezier(.22, .8, .3, 1);
+  --mo-pop-ms: 190ms; --mo-pop-ease: cubic-bezier(.4, 0, 1, 1);
+  --mo-sheet-in-ms: 260ms; --mo-sheet-in-ease: cubic-bezier(.22, .8, .3, 1);
+  --mo-sheet-out-ms: 200ms; --mo-sheet-out-ease: cubic-bezier(.4, 0, 1, 1);
+  --mo-dialog-in-ms: 200ms; --mo-dialog-in-ease: cubic-bezier(.22, .8, .3, 1);
+  --mo-dialog-out-ms: 150ms; --mo-dialog-out-ease: cubic-bezier(.4, 0, 1, 1);
+  --mo-backdrop-ms: 200ms; --mo-press-ms: 90ms; --mo-press-ease: ease-out;
+  --mo-shift: 28px; --mo-dialog-scale: .94;
+}
+/* 系統「減少動態效果」：全部降到 1ms、不位移（!important 才蓋得過 JS 寫在 :root 上的行內值） */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --mo-page-ms: 1ms !important; --mo-push-ms: 1ms !important; --mo-pop-ms: 1ms !important;
+    --mo-sheet-in-ms: 1ms !important; --mo-sheet-out-ms: 1ms !important;
+    --mo-dialog-in-ms: 1ms !important; --mo-dialog-out-ms: 1ms !important;
+    --mo-backdrop-ms: 1ms !important; --mo-press-ms: 1ms !important; --mo-shift: 0px !important;
+  }
+  .ghost-out { display: none !important; }
+}
+
+/* 進場 */
+@keyframes ov-push { from { transform: translateX(var(--mo-shift)); opacity: var(--mo-ov-op, 0); } }
+@keyframes ov-rise { from { transform: translateY(var(--mo-shift)); opacity: var(--mo-ov-op, 0); } }
+@keyframes bd-in { from { background-color: transparent; } }
+@keyframes sheet-in { from { transform: translateY(calc(var(--mo-shift) * 1.6)); opacity: 0; } }
+@keyframes dialog-in { from { transform: scale(var(--mo-dialog-scale)); opacity: 0; } }
+/* 疊在另一個疊層上、或關掉上層後底下那層重建出來：底下沒東西可透，不淡入／不播進場 */
+.overlay.ov-stacked { --mo-ov-op: 1; }
+.overlay.ov-quiet { animation: none; }
+/* 退場（離場殘影：卸載時複製一份放在原位播完就移除，不吃點擊） */
+@keyframes ov-pop { to { transform: translateX(var(--mo-shift)); opacity: 0; } }
+@keyframes ov-drop { to { transform: translateY(var(--mo-shift)); opacity: 0; } }
+@keyframes bd-out { to { background-color: transparent; } }
+@keyframes sheet-out { to { transform: translateY(calc(var(--mo-shift) * 1.6)); opacity: 0; } }
+@keyframes dialog-out { to { transform: scale(var(--mo-dialog-scale)); opacity: 0; } }
+.ghost-out { pointer-events: none !important; }
+.overlay.ghost-out.ov-sub { animation: ov-pop var(--mo-pop-ms) var(--mo-pop-ease) forwards; }
+.overlay.ghost-out.ov-entry { animation: ov-drop var(--mo-pop-ms) var(--mo-pop-ease) forwards; }
+.sheet-backdrop.ghost-out { animation: bd-out var(--mo-sheet-out-ms) var(--mo-sheet-out-ease) forwards; }
+.sheet-backdrop.ghost-out .sheet { animation: sheet-out var(--mo-sheet-out-ms) var(--mo-sheet-out-ease) forwards; }
+.dialog-backdrop.ghost-out { animation: bd-out var(--mo-dialog-out-ms) var(--mo-dialog-out-ease) forwards; }
+.dialog-backdrop.ghost-out .dialog { animation: dialog-out var(--mo-dialog-out-ms) var(--mo-dialog-out-ease) forwards; }
+
+/* 子視窗開啟時，底下的主頁面「退後」一點（疊層蓋滿畫面，不影響手勢命中與尺寸） */
+.app.has-overlay .pager { scale: .965; filter: brightness(.94); }
+
+/* 按下回饋：補上原本沒有的（.btn、.tx-card、.icon-btn 等本來就有，見上面「質感打磨」） */
+.pill-btn { transition: transform var(--mo-press-ms) var(--mo-press-ease), opacity var(--mo-press-ms), background .12s; }
+.pill-btn:active { transform: scale(.97); opacity: .9; }
+.nav-icon { transition: scale var(--mo-press-ms) var(--mo-press-ease), background .12s; }
+.nav-item:active .nav-icon { scale: .9; }
+/* 首頁帳戶卡不加按下縮小：長按拿起有自己的拿起動畫，避免影響拖曳手感 */

@@ -64,3 +64,8 @@ html[data-style="flat"] .mini-seg button.on { box-shadow: none; }
 
 /* ---- 按下回饋：只變深一點，不縮放 ---- */
 html[data-style="flat"] :is(.tx-card, .btn, .icon-btn, .tag, .cat, .amt-budget):active { transform: none; opacity: .8; }
+
+/* B2：補上的按下回饋也不縮放（pill-btn、卡片、導覽圖示） */
+html[data-style="flat"] :is(.pill-btn, .card:not(.is-source):not(.drop-hover)):active { transform: none; opacity: .8; }
+html[data-style="flat"] .nav-item:active .nav-icon { scale: 1; }
+html[data-style="flat"] .nav-item:active { opacity: .7; }

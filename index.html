@@ -5,8 +5,87 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#f2f9fc" /> <!-- 啟動後由 theme.ts 依外觀更新 -->
     <title>拖拖記帳</title>
+    <!-- 開啟動畫（#splash）：純 HTML＋行內樣式，JS 載入前就能顯示；移除時機由 src/splash.ts 負責 -->
+    <script>
+      // 依上次存的外觀決定底色（light／dark／system；沒有就亮色），並記下開始時間給 splash.ts 算最短顯示時間
+      (function () {
+        var dark = false;
+        try {
+          var m = localStorage.getItem('tt-theme-mode');
+          dark = m === 'dark' || (m === 'system' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+        } catch (e) {}
+        document.documentElement.setAttribute('data-sp', dark ? 'dark' : 'light');
+        window.__splashT0 = performance.now();
+      })();
+    </script>
+    <style>
+      html[data-sp="light"], html[data-sp="light"] body { background: #f2f9fc; }
+      html[data-sp="dark"], html[data-sp="dark"] body { background: #16171a; }
+      #splash {
+        position: fixed; inset: 0; z-index: 99999;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+        background: #f2f9fc; color: #1c2a33;
+        opacity: 1; transition: opacity 250ms ease-out;
+        font-family: system-ui, -apple-system, 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+      }
+      html[data-sp="dark"] #splash { background: #16171a; color: #efe9da; }
+      #splash.sp-out { opacity: 0; pointer-events: none; }
+      #splash .sp-stage { position: relative; width: 148px; height: 170px; }
+      #splash .sp-coin {
+        position: absolute; left: 0; top: 0; width: 148px; height: 148px;
+        animation: sp-drop 900ms linear both;
+      }
+      #splash .sp-img {
+        display: block; width: 100%; height: 100%; object-fit: contain;
+        animation: sp-flip 900ms cubic-bezier(.45, 0, .25, 1) both;
+        filter: drop-shadow(0 6px 10px rgba(30, 60, 80, .22));
+      }
+      html[data-sp="dark"] #splash .sp-img { filter: drop-shadow(0 0 14px rgba(231, 184, 102, .32)); }
+      /* 地面的小影子：硬幣落下時變大變濃 */
+      #splash .sp-shadow {
+        position: absolute; left: 50%; bottom: 4px; width: 90px; height: 12px; margin-left: -45px; border-radius: 50%;
+        background: rgba(30, 60, 80, .2); animation: sp-shadow 900ms linear both;
+      }
+      html[data-sp="dark"] #splash .sp-shadow { background: rgba(0, 0, 0, .55); }
+      #splash .sp-text {
+        font-size: 22px; font-weight: 700; letter-spacing: .14em; padding-left: .14em;
+        animation: sp-text 380ms ease-out 480ms both;
+      }
+      /* 落下 → 小彈跳 → 停住（總長 0.9 秒；翻轉另外在 .sp-img 上轉一圈） */
+      @keyframes sp-drop {
+        0% { transform: translateY(-260px); opacity: 0; animation-timing-function: cubic-bezier(.5, 0, 1, .6); }
+        10% { opacity: 1; }
+        42% { transform: translateY(0); animation-timing-function: cubic-bezier(.2, .6, .4, 1); }
+        60% { transform: translateY(-30px); animation-timing-function: cubic-bezier(.6, 0, .8, .5); }
+        76% { transform: translateY(0); animation-timing-function: cubic-bezier(.2, .6, .4, 1); }
+        88% { transform: translateY(-7px); animation-timing-function: cubic-bezier(.6, 0, .8, .5); }
+        100% { transform: translateY(0); opacity: 1; }
+      }
+      @keyframes sp-flip { 0%, 40% { transform: perspective(600px) rotateY(0deg); } 92%, 100% { transform: perspective(600px) rotateY(360deg); } }
+      @keyframes sp-shadow {
+        0% { transform: scale(.3); opacity: 0; }
+        42% { transform: scale(1); opacity: 1; }
+        60% { transform: scale(.7); opacity: .6; }
+        76% { transform: scale(1); opacity: 1; }
+        88% { transform: scale(.9); opacity: .85; }
+        100% { transform: scale(1); opacity: 1; }
+      }
+      @keyframes sp-text { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+      /* 系統「減少動態效果」：不彈跳不翻轉，硬幣與字樣直接靜止顯示 */
+      @media (prefers-reduced-motion: reduce) {
+        #splash .sp-coin, #splash .sp-img, #splash .sp-shadow, #splash .sp-text { animation: none; }
+        #splash { transition-duration: 160ms; }
+      }
+    </style>
   </head>
   <body>
+    <div id="splash" aria-hidden="true">
+      <div class="sp-stage">
+        <div class="sp-shadow"></div>
+        <div class="sp-coin"><img class="sp-img" src="/src/assets/coins/happy.png" alt="" draggable="false" /></div>
+      </div>
+      <div class="sp-text">拖拖記帳</div>
+    </div>
     <div id="app"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
