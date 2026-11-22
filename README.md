@@ -81,7 +81,7 @@
 ## 📜 授權與素材
 
 - **程式碼**：[PolyForm Noncommercial 1.0.0](LICENSE)。你可以閱讀、學習、個人使用與自行修改，**不可以拿去商業販售或上架營利**。
-- **拖拖硬幣等美術素材**：保留所有權利，詳見 [ASSETS-LICENSE.md](ASSETS-LICENSE.md)。
+- **拖拖硬幣等美術素材**：在法律允許的範圍內保留所有權利（部分素材使用 AI 工具生成並經編修），詳見 [ASSETS-LICENSE.md](ASSETS-LICENSE.md)。
 - 圖示使用 [Lucide](https://lucide.dev)（ISC 授權）。
 
 ---
