@@ -75,8 +75,8 @@ export const STYLE_MOTION: Record<UiStyleId, MotionSet> = {
   flat: build(0.75, { inEase: 'cubic-bezier(.3, .7, .3, 1)', shiftPx: 12, dialogScale: 0.98 }),
   // 手帳紙本：舒緩（1.1×），ease-in-out，輕微上浮
   paper: build(1.1, { inEase: 'cubic-bezier(.45, 0, .25, 1)', outEase: 'cubic-bezier(.45, 0, .55, 1)', shiftPx: 18, dialogScale: 0.96 }),
-  // 像素復古：steps(6) 階梯、純位移、無彈性
-  pixel: build(1, { inEase: 'steps(6, end)', outEase: 'steps(5, end)', pressEase: 'steps(2, end)', shiftPx: 24, dialogScale: 1 }),
+  // 像素復古：階梯、純位移、無彈性。3.3 實測：換頁用階梯會像掉格（卡卡的），所以換頁維持平滑，只有選單／對話框／子畫面用階梯
+  pixel: build(1, { inEase: 'steps(8, end)', outEase: 'steps(6, end)', pageEase: SMOOTH, pressEase: 'steps(2, end)', shiftPx: 24, dialogScale: 1 }),
   // Liquid Glass：彈簧（帶過衝）、較長（1.2×），進場帶縮放與模糊（見 ui-liquid.css）
   liquid: build(1.2, {
     inEase: 'cubic-bezier(.34, 1.56, .64, 1)',

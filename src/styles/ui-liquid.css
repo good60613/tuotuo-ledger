@@ -25,7 +25,7 @@ html[data-style="liquid"] {
   --liq-hi: inset 0 1px 0 rgba(255, 255, 255, .9), inset 0 0 0 1px rgba(255, 255, 255, .35);
   --liq-glow: rgba(70, 100, 255, .22);
   --liq-c: #ffb3de; /* 背景第三團光暈（粉） */
-  --liq-blur: blur(22px) saturate(180%);
+  --liq-blur: blur(18px) saturate(170%);
 }
 html[data-style="liquid"][data-theme="dark"] {
   --liq-fill: color-mix(in srgb, var(--card) 55%, transparent);
@@ -44,23 +44,17 @@ html[data-style="liquid"][data-theme="dark"] {
 html.no-glass[data-style="liquid"] { --liq-fill: var(--card); --liq-fill-strong: var(--card); }
 html.no-glass[data-style="liquid"] .glass { background: var(--card); border-color: var(--line); }
 
-/* ---- 背景：流動的鮮明光暈（固定圖層，只動 transform，省效能） ---- */
+/* ---- 背景：鮮明的光暈（固定圖層，靜態） ---- */
 html[data-style="liquid"] body { background: transparent; }
 html[data-style="liquid"] body::before {
-  content: ''; position: fixed; inset: -25%; z-index: -1; pointer-events: none; will-change: transform;
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background:
     radial-gradient(40% 30% at 18% 14%, color-mix(in srgb, var(--glow-a) 88%, transparent), transparent 70%),
     radial-gradient(38% 32% at 86% 30%, color-mix(in srgb, var(--glow-b) 80%, transparent), transparent 70%),
     radial-gradient(44% 34% at 28% 86%, color-mix(in srgb, var(--liq-c) 72%, transparent), transparent 70%),
     radial-gradient(34% 28% at 92% 92%, color-mix(in srgb, var(--glow-a) 70%, transparent), transparent 70%);
-  animation: liquid-flow 26s ease-in-out infinite alternate;
+  /* 3.3 實測：光暈一直在動，加上上面的即時模糊，手機每一格都要重算 → 改成靜態 */
 }
-@keyframes liquid-flow {
-  0% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
-  50% { transform: translate3d(4%, -3%, 0) rotate(6deg) scale(1.08); }
-  100% { transform: translate3d(-4%, 3%, 0) rotate(-5deg) scale(1.04); }
-}
-@media (prefers-reduced-motion: reduce) { html[data-style="liquid"] body::before { animation: none; } }
 
 /* ---- 材質：半透明＋強模糊 ---- */
 html[data-style="liquid"] :is(.panel, .month-sum, .recent-card, .help-item) { background: var(--liq-fill); }
@@ -68,7 +62,9 @@ html[data-style="liquid"] :is(.panel, .month-sum, .help-item) { box-shadow: var(
 /* 最近紀錄面板的外層 .home-recent 是 overflow:hidden 且和面板等寬，外擴的彩光會被裁成直角、在圓角外露出淡色方塊，所以這裡只用內側高光 */
 html[data-style="liquid"] .recent-card { box-shadow: var(--liq-hi); border-color: var(--liq-edge); }
 html[data-style="liquid"] .help-item { border-color: var(--liq-edge); }
-html[data-style="liquid"].glass-blur :is(.glass, .glass-nav, .panel, .month-sum, .recent-card, .help-item, .sheet, .dialog, .toast-capsule, .cap, .bottom-bar) {
+/* 3.3 實測：手機上滑動很卡 → 即時模糊只留給「不隨內容捲動」的少數元素（導覽列、底部操作列、選單、對話框、提示）。
+   會跟著內容捲動的卡片／面板改成純半透明＋高光（背景光暈本來就很柔，肉眼幾乎看不出差別） */
+html[data-style="liquid"].glass-blur :is(.glass-nav, .sheet, .dialog, .toast-capsule, .bottom-bar) {
   -webkit-backdrop-filter: var(--liq-blur);
   backdrop-filter: var(--liq-blur);
 }

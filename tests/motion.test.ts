@@ -28,7 +28,9 @@ describe('STYLE_MOTION', () => {
     expect(STYLE_MOTION.flat.pushMs).toBeLessThan(STYLE_MOTION.glass.pushMs);
     expect(STYLE_MOTION.paper.pushMs).toBeGreaterThan(STYLE_MOTION.glass.pushMs);
     expect(STYLE_MOTION.liquid.pushMs).toBeGreaterThan(STYLE_MOTION.paper.pushMs);
-    expect(STYLE_MOTION.pixel.pushEase).toMatch(/^steps\(6/);
+    expect(STYLE_MOTION.pixel.pushEase).toMatch(/^steps\(8/);
+    // 3.3 實測：換頁用階梯會像掉格，像素的換頁要維持平滑
+    expect(STYLE_MOTION.pixel.pageEase).not.toMatch(/^steps/);
     expect(STYLE_MOTION.liquid.sheetInEase).toBe('cubic-bezier(.34, 1.56, .64, 1)');
     expect(STYLE_MOTION.liquid.dialogScale).toBeCloseTo(0.92);
   });

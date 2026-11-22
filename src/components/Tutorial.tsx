@@ -127,10 +127,11 @@ export function Tutorial() {
             {sample && (
               <button class="btn" onClick={async () => { close(); await clearSampleAndStart(); }}>清空範例，開始記帳</button>
             )}
-            <button class="btn secondary" onClick={() => { close(); setState({ settingsIntent: 'import-other' }); goPage(pageIndex('設定')); }}>
+            {/* 已經不是範例資料時（沒有「清空範例」那顆），主要動作就是「用 AI 搬過來」，用主色；範例資料時主色留給「清空範例」 */}
+            <button class={sample ? 'btn secondary' : 'btn'} onClick={() => { close(); setState({ settingsIntent: 'import-other' }); goPage(pageIndex('設定')); }}>
               用 AI 從舊 App 搬過來
             </button>
-            <button class="btn secondary" onClick={close}>{sample ? '先留著範例玩玩看' : '完成'}</button>
+            <button class="btn secondary" onClick={close}>{sample ? '先留著範例玩玩看' : '暫時略過'}</button>
           </div>
         ) : (
           <div class="tour-nav">
