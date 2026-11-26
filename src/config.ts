@@ -380,7 +380,7 @@ export const UPDATE = {
  * APK 版不用填：Android 靠套件名稱＋簽章指紋辨認（在 Google Cloud 另登記一組 Android 用戶端）。
  */
 export const CLOUD = {
-  webClientId: '',
+  webClientId: '816909046593-7kg04ejo3plsa2pg1476isrj6nff2ub0.apps.googleusercontent.com',
   /** 只要這一個權限：App 專用隱藏區（看不到使用者雲端裡的其他檔案） */
   scope: 'https://www.googleapis.com/auth/drive.appdata',
   fileName: 'tuotuo-backup.json',
