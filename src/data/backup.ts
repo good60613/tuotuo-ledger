@@ -15,6 +15,7 @@ import { migrate } from './migrate';
 import { normalizeBatches } from './ops';
 import { normalizeBudgets } from './budget';
 import { normalizeOwed } from './owed';
+import { laterNext } from './recurring';
 
 export const BACKUP_FILE_VERSION = 2;
 
@@ -190,10 +191,11 @@ export function applySettingsImport(
   if (settings.defaultReimburseAccountId && !ids.has(settings.defaultReimburseAccountId)) settings.defaultReimburseAccountId = null;
   if (settings.lastUsedAccountId && !ids.has(settings.lastUsedAccountId)) settings.lastUsedAccountId = null;
   // 定期扣款：同一項在現在的資料裡已經扣到比較後面的月份 → 用比較後面的，避免舊設定檔讓已扣過的月份再扣一次
-  const curNext = new Map((current.recurring ?? []).map((r) => [r.id, r.nextMonth]));
+  // （3.x）週期可能不同（每週／每月／每年），比較交給 laterNext
+  const curById = new Map((current.recurring ?? []).map((r) => [r.id, r]));
   const recurring = (incoming.recurring ?? []).map((r) => {
-    const c = curNext.get(r.id);
-    return c && c > r.nextMonth ? { ...r, nextMonth: c } : r;
+    const c = curById.get(r.id);
+    return c ? laterNext(r, c) : r;
   });
   const data = normalizeOwed(normalizeBudgets(normalizeBatches({ ...incoming, recurring, settings, transactions })));
   return { data, removedSelfTransfers: removed };

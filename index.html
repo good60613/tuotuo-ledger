@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#f2f9fc" /> <!-- 啟動後由 theme.ts 依外觀更新 -->
     <title>拖拖記帳</title>
+    <!-- 3.5 網頁版：iPhone／Android「加入主畫面」後像 App 一樣全螢幕打開（APK 版用不到，放著無害） -->
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icon-180.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="拖拖記帳" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <!-- 開啟動畫（#splash）：純 HTML＋行內樣式，JS 載入前就能顯示；移除時機由 src/splash.ts 負責 -->
     <script>
       // 依上次存的外觀決定底色（light／dark／system；沒有就亮色），並記下開始時間給 splash.ts 算最短顯示時間

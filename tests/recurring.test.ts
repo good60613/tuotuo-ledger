@@ -41,9 +41,11 @@ describe('定期扣款（工單驗證）', () => {
 
   it('2. 扣款日自動記一筆支出、帳戶扣款、預留解除，沒有重複扣', () => {
     let d = add(base(), at(11, 1)).data;
-    // 11/6 還沒到 → 不記
+    // 11/6 還沒到、11/7 扣款日當天也還不記（3.x：扣款日過完、隔天才記）→ 不記
     expect(postDueRecurring(d, at(11, 6)).posted).toHaveLength(0);
-    const r = postDueRecurring(d, at(11, 7));
+    expect(postDueRecurring(d, at(11, 7)).posted).toHaveLength(0);
+    expect(spendableTotal(d, at(11, 7))).toBe(9610); // 當天錢還在預留裡
+    const r = postDueRecurring(d, at(11, 8));
     expect(r.posted).toHaveLength(1);
     d = r.data;
     const t = autoTx(d)[0];
@@ -51,14 +53,16 @@ describe('定期扣款（工單驗證）', () => {
     expect(t.amount).toBe(390);
     expect(t.note).toBe('HBO');
     expect(dayKey(t.occurredAt)).toBe('2026-11-07');
+    expect(new Date(t.occurredAt).getHours()).toBe(23); // 記在扣款日 23:59
+    expect(new Date(t.occurredAt).getMinutes()).toBe(59);
     expect(allBalances(d).get('cash')).toBe(9610);
     expect(totals(d, { period: periodKey(at(11, 7), 5) }).expense).toBe(390);
     expect(totals(d, { day: '2026-11-07' }).expense).toBe(390);
     // 預留解除：剩餘可用只少一次 390
-    expect(recurringReserved(d, at(11, 7))).toBe(0);
-    expect(spendableTotal(d, at(11, 7))).toBe(9610);
-    // 同一天再跑一次、隔天再跑：不會再記
-    expect(postDueRecurring(d, at(11, 7)).posted).toHaveLength(0);
+    expect(recurringReserved(d, at(11, 8))).toBe(0);
+    expect(spendableTotal(d, at(11, 8))).toBe(9610);
+    // 同一天再跑一次、之後再跑：不會再記
+    expect(postDueRecurring(d, at(11, 8)).posted).toHaveLength(0);
     expect(postDueRecurring(d, at(11, 20)).posted).toHaveLength(0);
     expect(spendableTotal(d, at(11, 20))).toBe(9610);
   });
@@ -72,13 +76,14 @@ describe('定期扣款（工單驗證）', () => {
     // 再打開幾次都不會多記
     expect(postDueRecurring(d, at(11, 10)).posted).toHaveLength(0);
     expect(postDueRecurring(d, at(11, 30)).posted).toHaveLength(0);
-    expect(postDueRecurring(d, at(12, 7)).posted).toHaveLength(1);
+    expect(postDueRecurring(d, at(12, 7)).posted).toHaveLength(0);
+    expect(postDueRecurring(d, at(12, 8)).posted).toHaveLength(1);
   });
 
   it('4. 備份匯出再匯入：定期扣款完整還原；舊備份匯入不壞', () => {
     let d = add(base(), at(11, 1)).data;
     d = add(d, at(11, 1), { name: 'Spotify', amount: 149, day: 31, categoryId: 'c-e1', accountId: 'lp' }).data;
-    d = postDueRecurring(d, at(11, 7)).data;
+    d = postDueRecurring(d, at(11, 8)).data;
     d = { ...d, settings: { ...d.settings, recurringEnabled: false } };
     const back = parseBackup(exportJson(d));
     expect(back.version).toBe(DATA_VERSION);
@@ -107,7 +112,8 @@ describe('定期扣款（邊界與保守做法）', () => {
     expect(dayKey(chargeDate(31, '2026-12'))).toBe('2026-12-31');
     let d = add(base(), at(11, 1), { ...HBO, day: 31 }).data;
     expect(postDueRecurring(d, at(11, 29)).posted).toHaveLength(0);
-    d = postDueRecurring(d, at(11, 30)).data;
+    expect(postDueRecurring(d, at(11, 30)).posted).toHaveLength(0);
+    d = postDueRecurring(d, at(12, 1)).data;
     expect(dayKey(autoTx(d)[0].occurredAt)).toBe('2026-11-30');
   });
 
@@ -117,9 +123,10 @@ describe('定期扣款（邊界與保守做法）', () => {
     expect(postDueRecurring(d, at(11, 10)).posted).toHaveLength(0);
     // 本期（11/5～12/4）沒有要扣的 → 不預留
     expect(recurringReserved(d, at(11, 10))).toBe(0);
-    // 新增當天剛好是扣款日 → 當天就扣
+    // 新增當天剛好是扣款日 → 這次要扣（隔天記）
     const d2 = add(base(), at(11, 7)).data;
-    expect(postDueRecurring(d2, at(11, 7)).posted).toHaveLength(1);
+    expect(postDueRecurring(d2, at(11, 7)).posted).toHaveLength(0);
+    expect(postDueRecurring(d2, at(11, 8)).posted).toHaveLength(1);
   });
 
   it('開關關掉：不自動記、不動帳戶、不預留；重新打開時關閉期間錯過的不補記', () => {
@@ -132,19 +139,19 @@ describe('定期扣款（邊界與保守做法）', () => {
     d = setRecurringEnabled(d, true, at(12, 20));
     expect(d.recurring[0].nextMonth).toBe('2027-01');
     expect(postDueRecurring(d, at(12, 20)).posted).toHaveLength(0);
-    expect(postDueRecurring(d, at(1, 7 + 365)).posted.length).toBeGreaterThanOrEqual(1);
+    expect(postDueRecurring(d, at(1, 8 + 365)).posted.length).toBeGreaterThanOrEqual(1);
   });
 
   it('預設帳戶是小帳戶：自動記在小帳戶、不算主帳支出、不預留剩餘可用', () => {
     let d = add(base(), at(11, 1), { ...HBO, accountId: 'lp' }).data;
     expect(recurringReserved(d, at(11, 5))).toBe(0);
-    d = postDueRecurring(d, at(11, 7)).data;
+    d = postDueRecurring(d, at(11, 8)).data;
     expect(allBalances(d).get('lp')).toBe(610);
     expect(totals(d, { period: periodKey(at(11, 7), 5) }).expense).toBe(0);
   });
 
   it('自動記的那筆可以改帳戶；改完不會被重複補記', () => {
-    let d = postDueRecurring(add(base(), at(11, 1)).data, at(11, 7)).data;
+    let d = postDueRecurring(add(base(), at(11, 1)).data, at(11, 8)).data;
     const t = autoTx(d)[0];
     d = updateTransaction(d, t.id, { type: 'expense', amount: 390, accountId: 'lp', categoryId: 'c-e1', note: 'HBO', occurredAt: t.occurredAt });
     expect(allBalances(d).get('cash')).toBe(10000);
@@ -158,7 +165,7 @@ describe('定期扣款（邊界與保守做法）', () => {
     d = updateRecurring(d, d.recurring[0].id, { ...HBO, day: 3 }, at(11, 10));
     expect(d.recurring[0].nextMonth).toBe('2026-12');
     expect(postDueRecurring(d, at(11, 10)).posted).toHaveLength(0);
-    d = postDueRecurring(d, at(12, 3)).data;
+    d = postDueRecurring(d, at(12, 4)).data;
     expect(autoTx(d)).toHaveLength(1);
     d = removeRecurring(d, d.recurring[0].id);
     expect(autoTx(d)).toHaveLength(1);
@@ -168,7 +175,7 @@ describe('定期扣款（邊界與保守做法）', () => {
   it('只匯入舊的設定檔：已經扣過的月份不會再扣一次', () => {
     const start = add(base(), at(11, 1)).data;
     const oldSettings = readBackup(exportJson(start, 'settings'));
-    const cur = postDueRecurring(start, at(11, 7)).data;
+    const cur = postDueRecurring(start, at(11, 8)).data;
     if (oldSettings.type !== 'settings') throw new Error('應該是設定檔');
     const { data: d } = applySettingsImport(cur, oldSettings.data);
     expect(d.recurring[0].nextMonth).toBe('2026-12');
@@ -179,7 +186,7 @@ describe('定期扣款（邊界與保守做法）', () => {
     const d0 = add(base(), at(11, 1)).data;
     d0.accounts.push({ id: 'post', name: '郵局', kind: 'bank', initialBalance: 0, order: 1 });
     const del = removeAccount(d0, 'cash', { mode: 'deleteRecords' });
-    expect(postDueRecurring(del, at(11, 7)).posted).toHaveLength(0);
+    expect(postDueRecurring(del, at(11, 8)).posted).toHaveLength(0);
     expect(del.recurring[0].nextMonth).toBe('2026-11');
     const moved = removeAccount(d0, 'cash', { mode: 'move', targetId: 'post' });
     expect(moved.recurring[0].accountId).toBe('post');

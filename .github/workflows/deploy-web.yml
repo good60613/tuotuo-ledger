@@ -1,0 +1,43 @@
+# 3.5 網頁版上線（給 iPhone 朋友「加入主畫面」用）：push 到 main 或手動按〔Run workflow〕，
+# 建置後放到 GitHub Pages，網址 https://toto.pkzio.com（Cloudflare CNAME 指到 good60613.github.io）。
+# 第一次要先到倉庫 Settings → Pages，Source 選「GitHub Actions」、Custom domain 填 toto.pkzio.com（見 文件/雲端備份設定.md）。
+name: 網頁版上線
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: deploy-web
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
