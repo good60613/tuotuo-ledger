@@ -1,6 +1,6 @@
 # 3.5 網頁版上線（給 iPhone 朋友「加入主畫面」用）：push 到 main 或手動按〔Run workflow〕，
-# 建置後放到 GitHub Pages（https://good60613.github.io/tuotuo-ledger/）。
-# 第一次要先到倉庫 Settings → Pages，把 Source 選成「GitHub Actions」。
+# 建置後放到 GitHub Pages，網址 https://toto.pkzio.com（Cloudflare CNAME 指到 good60613.github.io）。
+# 第一次要先到倉庫 Settings → Pages，Source 選「GitHub Actions」、Custom domain 填 toto.pkzio.com（見 文件/雲端備份設定.md）。
 name: 網頁版上線
 
 on:
