@@ -1085,3 +1085,14 @@ html:not(.no-glass) .collapse-bar.glass { background: color-mix(in srgb, var(--c
 .nav-icon { transition: scale var(--mo-press-ms) var(--mo-press-ease), background .12s; }
 .nav-item:active .nav-icon { scale: .9; }
 /* 首頁帳戶卡不加按下縮小：長按拿起有自己的拿起動畫，避免影響拖曳手感 */
+
+/* 3.5 雲端備份斷線提示條（首頁最上方）：整條可點，右邊叉叉這次先不提醒 */
+.cloud-bar { flex: none; display: flex; align-items: stretch; gap: 4px; border-radius: var(--radius); background: var(--card); border: 1px solid var(--line); overflow: hidden; }
+.cloud-bar.stale { background: #fff1e0; border-color: #f0a24a; }
+html[data-theme="dark"] .cloud-bar.stale { background: #3a2a16; border-color: #b8762c; }
+.cloud-bar-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 6px 4px 6px 10px; border: 0; background: none; color: inherit; text-align: left; font: inherit; }
+.cloud-bar-main:active { opacity: .7; }
+.cloud-bar-coin { flex: none; width: 32px; height: 32px; object-fit: contain; }
+.cloud-bar-text { flex: 1; min-width: 0; font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cloud-bar-count { flex: none; font-size: 12px; color: var(--muted); }
+.cloud-bar-x { flex: none; width: 44px; display: flex; align-items: center; justify-content: center; border: 0; border-left: 1px solid var(--line); background: none; color: var(--muted); }

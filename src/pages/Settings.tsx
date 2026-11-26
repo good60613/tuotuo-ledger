@@ -9,6 +9,7 @@ import { copyText, shareToAi } from '../aiShare';
 import { scrollInPage } from '../scrollInPage';
 import { HelpPage } from '../components/HelpPage';
 import { requestNotifPermission, isNative, setAppIcon } from '../widget';
+import { tapSync, pullFromCloud, unlink } from '../cloud/sync';
 import { RecurringPanel } from './RecurringSettings';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { COINS, coinLabel, type CoinId } from '../coins';
@@ -49,6 +50,57 @@ function OnOff({ on, onChange }: { on: boolean; onChange: (on: boolean) => void 
 }
 
 /** 2.6 一列：名稱（可加一行小字說明）＋右邊的按鈕框 */
+/** 3.5 雲端備份（Google 雲端的 App 專用隱藏區） */
+function CloudPanel({ cloud }: { cloud: CloudStatus }) {
+  const status = !cloud.linked
+    ? null
+    : cloud.phase === 'syncing'
+      ? '備份中…'
+      : cloud.phase === 'needTap'
+        ? '授權過期了，按〔立刻備份〕重新連上'
+        : cloud.phase === 'offline'
+          ? '沒有網路，連上後會自動備份'
+          : cloud.phase === 'error'
+            ? cloud.message ?? '備份失敗'
+            : cloud.pending > 0
+              ? `有 ${cloud.pending} 筆變更還沒備份`
+              : '都備份好了';
+  return (
+    <section class="panel">
+      <h3>雲端備份</h3>
+      {!cloud.linked ? (
+        <>
+          <p class="muted small">連結 Google 雲端後，記完帳會自動備份。換手機或資料不見時，登入同一個 Google 帳號就能拿回來。<br />備份存在你自己的 Google 雲端裡的「App 專用區」，雲端硬碟裡看不到、不會誤刪，拖拖記帳也看不到你雲端裡的其他檔案。</p>
+          <div class="btn-row">
+            <button class="btn" onClick={() => void tapSync()}>連結 Google 雲端</button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div class="setting-row">
+            <span>上次備份</span>
+            <span class="muted">{cloud.lastBackupAt ? fmtCloudTime(cloud.lastBackupAt) : '還沒有'}</span>
+          </div>
+          <p class="muted small">{status}</p>
+          <div class="btn-row">
+            <button class="btn" disabled={cloud.phase === 'syncing'} onClick={() => void tapSync()}>立刻備份</button>
+            <button class="btn secondary" disabled={cloud.phase === 'syncing'} onClick={() => void pullFromCloud()}>從雲端拿回來</button>
+          </div>
+          <div class="btn-row">
+            <button class="btn secondary" onClick={() => void unlink()}>中斷連結</button>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
+const fmtCloudTime = (iso: string) => {
+  const d = new Date(iso);
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getMonth() + 1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+};
+
 function Row({ label, note, children }: { label: string; note?: string; children: ComponentChildren }) {
   return (
     <div class="setting-row">
@@ -61,7 +113,7 @@ function Row({ label, note, children }: { label: string; note?: string; children
   );
 }
 import { useBackLayer } from '../backNav';
-import { PAGES } from '../store';
+import { PAGES, type CloudStatus } from '../store';
 import { useAppState, getState, updateData, showToast, ask, confirmDanger, setState, replaceData, goPage, pageIndex } from '../store';
 import {
   byOrder, reorder, uid, upsertAccount, removeAccount, countAccountRecords,
@@ -483,10 +535,13 @@ export function SettingsPage() {
               <span>首頁小語圖示</span>
               <span class="muted">{coinText(d.settings.coinHome ?? 'auto')} ›</span>
             </button>
-            <button class="setting-row" onClick={() => setSheet({ k: 'coin', which: 'coinWidget' })}>
-              <span>桌面小工具圖示</span>
-              <span class="muted">{coinText(d.settings.coinWidget ?? 'auto')} ›</span>
-            </button>
+            {/* 3.5 桌面小工具、通知欄只有 APK 版有，網頁版不顯示 */}
+            {native && (
+              <button class="setting-row" onClick={() => setSheet({ k: 'coin', which: 'coinWidget' })}>
+                <span>桌面小工具圖示</span>
+                <span class="muted">{coinText(d.settings.coinWidget ?? 'auto')} ›</span>
+              </button>
+            )}
             {native && (
               <button class="setting-row" onClick={() => setSheet({ k: 'coin', which: 'appIcon' })}>
                 <span>手機桌面 App 圖示</span>
@@ -550,7 +605,7 @@ export function SettingsPage() {
             </button>
           </section>
 
-          <section class="panel">
+          {native && <section class="panel">
             <h3>通知與隱私</h3>
             <Row label="通知欄快捷列">
               <OnOff
@@ -568,7 +623,7 @@ export function SettingsPage() {
             <Row label="鎖定畫面隱藏金額">
               <OnOff on={notifHideLockOn(d.settings)} onChange={(on) => setSetting({ notifHideOnLock: on })} />
             </Row>
-          </section>
+          </section>}
 
           <section class="panel">
             <h3>說明</h3>
@@ -690,9 +745,11 @@ export function SettingsPage() {
 
       {view === 'recurring' && <RecurringPanel />}
 
+      {(view === 'backup' || view === 'menu') && s.cloud.available && <CloudPanel cloud={s.cloud} />}
+
       {(view === 'backup' || view === 'menu') && <section class="panel">
         <h3>匯出與匯入</h3>
-        <p class="muted small">資料只存在這支手機上。換手機或清除瀏覽器資料前，請先匯出完整備份。</p>
+        <p class="muted small">資料存在這支手機上。沒有連結雲端的話，換手機或清除瀏覽器資料前，請先匯出完整備份。</p>
         <div class="btn-row">
           <button class="btn" onClick={() => doExport('full')}>匯出完整備份</button>
           <button class="btn secondary" onClick={() => doExport('settings')}>匯出設定</button>

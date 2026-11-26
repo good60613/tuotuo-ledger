@@ -373,3 +373,21 @@ export const UPDATE = {
   notesMaxLines: 10,
   notesMaxChars: 400,
 } as const;
+
+/**
+ * 3.5 雲端備份（Google 雲端的「App 專用隱藏區」，存在使用者自己的雲端，使用者看不到、也不會誤刪）。
+ * webClientId：Google Cloud 專案裡「網頁應用程式」那組 OAuth 用戶端 ID（公開資訊，不是密碼）。空字串＝網頁版不顯示雲端備份。
+ * APK 版不用填：Android 靠套件名稱＋簽章指紋辨認（在 Google Cloud 另登記一組 Android 用戶端）。
+ */
+export const CLOUD = {
+  webClientId: '',
+  /** 只要這一個權限：App 專用隱藏區（看不到使用者雲端裡的其他檔案） */
+  scope: 'https://www.googleapis.com/auth/drive.appdata',
+  fileName: 'tuotuo-backup.json',
+  /** 改完資料後等這麼久才上傳（連續記好幾筆只傳一次） */
+  uploadDelayMs: 4000,
+  /** 超過這麼多天沒備份：提示條換成顯眼的顏色 */
+  staleDays: 3,
+  /** 授權快過期前這麼久就當作過期（避免傳到一半失效） */
+  tokenSkewMs: 2 * 60 * 1000,
+} as const;

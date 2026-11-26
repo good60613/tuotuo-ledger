@@ -18,6 +18,7 @@ import { pickQuoteMood } from '../quotes';
 import { coinSrc, resolveCoin, type CoinPick } from '../coins';
 import { HOME, HOME_SUM, BOTTOM_BAR } from '../config';
 import { Icon } from '../components/Icon';
+import { CloudBar } from '../components/CloudBar';
 import type { Transaction } from '../data/types';
 
 /** 最近紀錄：依發生時間由新到舊 */
@@ -294,6 +295,9 @@ export function HomePage() {
           {mdLabel(now)} {weekday(now)}
         </div>
       </header>
+
+      {/* 3.5 雲端備份斷線提示（放在最上方，避開拖球、拖紀錄的區域） */}
+      <CloudBar cloud={s.cloud} />
 
       {/* 剩餘可用大卡（毛玻璃） */}
       <div class="home-sum glass" style={sumVars}>

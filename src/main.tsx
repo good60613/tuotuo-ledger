@@ -4,6 +4,8 @@ import { initStore, getState, subscribeState } from './store';
 import { installClickGuard } from './gestures/guard';
 import { installNativeBackButton, navFromNative } from './backNav';
 import { installWidgetSync } from './widget';
+import { installCloudSync } from './cloud/sync';
+import { registerWebApp } from './webApp';
 import './styles.css';
 // 3.3 UI 風格樣式（全部 html[data-style="…"] 開頭；毛玻璃＝現行外觀，沒有覆蓋檔）
 import './styles/ui-flat.css';
@@ -62,6 +64,9 @@ void installWidgetSync(
   subscribeState,
   (target) => void navFromNative(target),
 );
+// 3.5 雲端備份（已連結才會動）與網頁版離線使用
+void installCloudSync();
+registerWebApp();
 render(<App />, document.getElementById('app')!);
 // 3.3 B3 開啟動畫：資料讀好＋最短時間到就淡出移除（最長 3 秒保險）
 runSplash();

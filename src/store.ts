@@ -130,6 +130,26 @@ export interface State {
   settingsIntent: SettingsIntent | null;
   /** 3.0 新手教學是否開著（第一次安裝自動開；說明區可重看） */
   tutorial: boolean;
+  /** 3.5 雲端備份的狀態（畫面用；實際的存放見 cloud/sync.ts） */
+  cloud: CloudStatus;
+}
+
+/** 3.5 雲端備份狀態 */
+export interface CloudStatus {
+  /** 這一版能用雲端備份（APK，或網頁版有設定用戶端 ID） */
+  available: boolean;
+  /** 已經連結 Google 雲端 */
+  linked: boolean;
+  /** idle＝正常；syncing＝傳輸中；needTap＝授權過期，要使用者點一下；offline＝沒網路；error＝其他錯誤 */
+  phase: 'idle' | 'syncing' | 'needTap' | 'offline' | 'error';
+  /** 上次備份成功的時間（ISO） */
+  lastBackupAt: string | null;
+  /** 上次備份之後改了幾次資料 */
+  pending: number;
+  /** 錯誤說明（phase＝error 時） */
+  message?: string;
+  /** 首頁提示條這次先關掉（下次打開 App 再出現） */
+  dismissed: boolean;
 }
 
 export type SettingsIntent = 'add-account' | 'import-other' | 'help';
@@ -154,6 +174,7 @@ let state: State = {
   blocked: null,
   settingsIntent: null,
   tutorial: false,
+  cloud: { available: false, linked: false, phase: 'idle', lastBackupAt: null, pending: 0, dismissed: false },
 };
 
 /** 保護狀態時手機上的原始資料（還原、匯入前要先把它留一份） */

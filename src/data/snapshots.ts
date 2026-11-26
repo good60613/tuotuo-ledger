@@ -14,7 +14,9 @@ export type SnapshotReason =
   | 'pre-clear-records'
   | 'pre-clear-all'
   | 'pre-sample'
-  | 'pre-restore';
+  | 'pre-restore'
+  /** 3.5 從雲端拿回來之前 */
+  | 'pre-cloud-restore';
 
 export const REASON_LABEL: Record<SnapshotReason, string> = {
   daily: '每日留底',
@@ -25,6 +27,7 @@ export const REASON_LABEL: Record<SnapshotReason, string> = {
   'pre-clear-all': '清空所有資料前',
   'pre-sample': '載入範例前',
   'pre-restore': '還原留底前',
+  'pre-cloud-restore': '從雲端拿回前',
 };
 
 /** 清單用的摘要（不含資料本身，列清單時不必把每份都讀出來） */
